@@ -1,11 +1,13 @@
-#ifndef _SIMPLEX_H_
-#define _SIMPLEX_H_
+#ifndef SIMPLEX_H
+#define SIMPLEX_H
 
 #include <vector>
 
 typedef int Vertex;
 typedef std::vector<Vertex> Simplex;
 typedef std::vector<Simplex> SimplexList;
+typedef Simplex* SimplexPtr;
+typedef std::vector<SimplexPtr> SimplexPtrList;
 
 void ReadSimplexList(SimplexList &simplexList, const char *filename, bool sortVerts);
 void GenerateSimplexList(SimplexList &simplexList, int simplicesCount, int vertsCount, int dim);
@@ -23,4 +25,4 @@ bool FindDuplicates(SimplexList &simplexList);
 
 bool operator==(Simplex &a, Simplex &b);
 
-#endif // _SIMPLEX_H_
+#endif /* SIMPLEX_H */

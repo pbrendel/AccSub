@@ -1,5 +1,5 @@
-#ifndef _INTERSECTION_FLAGS_BIT_SET_H_
-#define	_INTERSECTION_FLAGS_BIT_SET_H_
+#ifndef INTERSECTIONFLAGSBITSET_H
+#define	INTERSECTIONFLAGSBITSET_H
 
 #include <assert.h>
 
@@ -185,4 +185,4 @@ inline std::istream &operator>>(std::istream &str, IntersectionFlagsBitSet &a)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-#endif // _INTERSECTION_FLAGS_BIT_SET_H_
+#endif /* INTERSECTIONFLAGSBITSET_H */

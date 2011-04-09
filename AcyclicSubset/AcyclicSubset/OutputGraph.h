@@ -1,5 +1,5 @@
-#ifndef _OUTPUT_GRAPH_H_
-#define _OUTPUT_GRAPH_H_
+#ifndef OUTPUTGRAPH_H
+#define OUTPUTGRAPH_H
 
 #include "Simplex.h"
 #include "IncidenceGraph.h"
@@ -46,4 +46,4 @@ private:
 
 };
 
-#endif // _OUTPUT_GRAPH_H_
+#endif /* OUTPUTGRAPH_H */

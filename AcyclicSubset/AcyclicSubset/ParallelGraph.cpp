@@ -15,8 +15,8 @@
 
 void ParallelGraph::DataNode::CreateIncidenceGraph(const IncidenceGraph::Params &params, AcyclicTest<IncidenceGraph::IntersectionFlags> *test)
 {
-    ig = IncidenceGraph::CreateWithBorderVerts(simplexList, borderVerts, params);
-    ig->CalculateAcyclicSubsetWithSpanningTree(test);
+//    ig = IncidenceGraph::CreateWithBorderVerts(simplexPtrList, borderVerts, params);
+//    ig->CalculateAcyclicSubsetWithSpanningTree(test);
 }
 
 void ParallelGraph::DataNode::CreateIntNodesMapWithBorderNodes()
@@ -230,7 +230,7 @@ void ParallelGraph::AcyclicTreeEdge::UpdateAcyclicConnections()
 
 ////////////////////////////////////////////////////////////////////////////////
 
-ParallelGraph::ParallelGraph(IncidenceGraph *ig, const SimplexList &simplexList, IncidenceGraph::Params params, IncidenceGraph::ParallelParams parallelParams, AcyclicTest<IncidenceGraph::IntersectionFlags> *test)
+ParallelGraph::ParallelGraph(IncidenceGraph *ig, SimplexList &simplexList, IncidenceGraph::Params params, IncidenceGraph::ParallelParams parallelParams, AcyclicTest<IncidenceGraph::IntersectionFlags> *test)
 {
     incidenceGraph = ig;
     DivideData(simplexList, parallelParams.packSize);
@@ -335,15 +335,15 @@ void ParallelGraph::PrepareData(SimplexList &simplexList, int packSize)
     delete [] descriptors;
 }
 
-void ParallelGraph::DivideData(const SimplexList& simplexList, int packSize)
+void ParallelGraph::DivideData(SimplexList& simplexList, int packSize)
 {
-    // PrepareData(const_cast<SimplexList&>(simplexList), packSize);
+    // PrepareData(simplexList, packSize);
     DataNode *currentNode =  new DataNode();
     int simplicesLeft = packSize;
-    SimplexList::const_iterator it = simplexList.begin();
+    SimplexList::iterator it = simplexList.begin();
     while (it != simplexList.end())
     {
-        currentNode->simplexList.push_back(*it);
+        currentNode->simplexPtrList.push_back(&(*it));
         for (Simplex::const_iterator i = it->begin(); i != it->end(); i++)
         {
             currentNode->verts.insert(*i);
@@ -357,7 +357,7 @@ void ParallelGraph::DivideData(const SimplexList& simplexList, int packSize)
         }
         it++;
     }
-    if (currentNode->simplexList.size() > 0)
+    if (currentNode->simplexPtrList.size() > 0)
     {
         dataNodes.push_back(currentNode);
     }

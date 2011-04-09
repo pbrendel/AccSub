@@ -1,5 +1,5 @@
-#ifndef _ACYCLIC_TEST_HPP_
-#define _ACYCLIC_TEST_HPP_
+#ifndef ACYCLICTEST_HPP
+#define ACYCLICTEST_HPP
 
 #include "Simplex.h"
 #include <map>
@@ -258,4 +258,4 @@ public:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-#endif // _ACYCLIC_TEST_HPP_
+#endif /* ACYCLICTEST_HPP */

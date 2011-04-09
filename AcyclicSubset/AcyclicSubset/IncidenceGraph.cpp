@@ -21,12 +21,13 @@ IncidenceGraph::IncidenceGraph(const Params &p) : params(p)
     CreateConfigurationsFlags(params.dim, configurationsFlags, subconfigurationsFlags);
 }
 
-IncidenceGraph::IncidenceGraph(const SimplexList &simplexList, const Params &p) : params(p)
+IncidenceGraph::IncidenceGraph(SimplexList &simplexList, const Params &p) : params(p)
 {
     // najpierw tworzymy wszystkie node'y
+    int index = 0;
     for (SimplexList::const_iterator i = simplexList.begin(); i != simplexList.end(); i++)
     {
-        nodes.push_back(new Node(this, const_cast<Simplex*>(&(*i))));
+        nodes.push_back(new Node(this, const_cast<Simplex*>(&(*i)), index++));
     }
     
     // jezeli trzeba, sortujemy (zeby zaczac przegladanie od najwiekszych sympleksow)
@@ -49,7 +50,7 @@ IncidenceGraph::~IncidenceGraph()
 
 ////////////////////////////////////////////////////////////////////////////////
 
-IncidenceGraph *IncidenceGraph::Create(const SimplexList& simplexList, const Params& params)
+IncidenceGraph *IncidenceGraph::Create(SimplexList& simplexList, const Params& params)
 {
 #ifdef USE_HELPERS
     Timer::Update();
@@ -63,7 +64,7 @@ IncidenceGraph *IncidenceGraph::Create(const SimplexList& simplexList, const Par
     return ig;
 }
 
-IncidenceGraph *IncidenceGraph::CreateWithBorderVerts(const SimplexList& simplexList, const VertsSet& borderVerts, const Params& params)
+IncidenceGraph *IncidenceGraph::CreateWithBorderVerts(SimplexList& simplexList, const VertsSet& borderVerts, const Params& params)
 {
 #ifdef USE_HELPERS
     Timer::Update();
@@ -78,7 +79,7 @@ IncidenceGraph *IncidenceGraph::CreateWithBorderVerts(const SimplexList& simplex
     return ig;
 }
 
-IncidenceGraph *IncidenceGraph::CreateAndCalculateAcyclicSubset(const SimplexList& simplexList, const Params& params, AcyclicTest<IntersectionFlags>* test)
+IncidenceGraph *IncidenceGraph::CreateAndCalculateAcyclicSubset(SimplexList& simplexList, const Params& params, AcyclicTest<IntersectionFlags>* test)
 {
 #ifdef USE_HELPERS
     Timer::Update();
@@ -95,7 +96,7 @@ IncidenceGraph *IncidenceGraph::CreateAndCalculateAcyclicSubset(const SimplexLis
     return ig;
 }
 
-IncidenceGraph *IncidenceGraph::CreateAndCalculateAcyclicSubsetOnline(const SimplexList& simplexList, const Params& params, AcyclicTest<IntersectionFlags>* test)
+IncidenceGraph *IncidenceGraph::CreateAndCalculateAcyclicSubsetOnline(SimplexList& simplexList, const Params& params, AcyclicTest<IntersectionFlags>* test)
 {
 #ifdef USE_HELPERS
     Timer::Update();
@@ -109,7 +110,7 @@ IncidenceGraph *IncidenceGraph::CreateAndCalculateAcyclicSubsetOnline(const Simp
     return ig;
 }
 
-IncidenceGraph *IncidenceGraph::CreateAndCalculateAcyclicSubsetWithSpanningTree(const SimplexList& simplexList, const Params& params, AcyclicTest<IntersectionFlags>* test)
+IncidenceGraph *IncidenceGraph::CreateAndCalculateAcyclicSubsetWithSpanningTree(SimplexList& simplexList, const Params& params, AcyclicTest<IntersectionFlags>* test)
 {
 #ifdef USE_HELPERS
     Timer::Update();
@@ -126,7 +127,7 @@ IncidenceGraph *IncidenceGraph::CreateAndCalculateAcyclicSubsetWithSpanningTree(
     return ig;
 }
 
-IncidenceGraph *IncidenceGraph::CreateAndCalculateAcyclicSubsetParallel(const SimplexList& simplexList, const Params& params, const ParallelParams& parallelParams, AcyclicTest<IntersectionFlags>* test)
+IncidenceGraph *IncidenceGraph::CreateAndCalculateAcyclicSubsetParallel(SimplexList& simplexList, const Params& params, const ParallelParams& parallelParams, AcyclicTest<IntersectionFlags>* test)
 {
     IncidenceGraph *ig = new IncidenceGraph(params);
     ParallelGraph *pg = new ParallelGraph(ig, simplexList, params, parallelParams, test);
@@ -527,6 +528,35 @@ void IncidenceGraph::CreateAcyclicSpanningTree(std::vector<IncidenceGraph::Path>
             current = next;
             next++;
         }
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+void IncidenceGraph::RemoveAcyclicSubset()
+{
+    for (Nodes::iterator i = nodes.begin(); i != nodes.end(); i++)
+    {
+        if ((*i)->IsAcyclic())
+        {
+            RemoveNodeFromGraph(*i);
+        }
+    }
+    for (Nodes::iterator i = nodes.begin(); i != nodes.end(); i++)
+    {
+        if ((*i)->IsAcyclic())
+        {
+            i = nodes.erase(i);
+        }
+    }
+}
+
+void IncidenceGraph::AssignNewIndices()
+{
+    int index = 0;
+    for (Nodes::iterator i = nodes.begin(); i != nodes.end(); i++)
+    {
+        (*i)->newIndex = index++;
     }
 }
 

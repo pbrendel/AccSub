@@ -1,5 +1,5 @@
-#ifndef _INCIDENCE_GRAPH_UTILS_H_
-#define _INCIDENCE_GRAPH_UTILS_H_
+#ifndef INCIDENCEGRAPHUTILS_H
+#define INCIDENCEGRAPHUTILS_H
 
 #include "IncidenceGraph.h"
 #include <algorithm>
@@ -193,5 +193,5 @@ void GetSortedIntersectionOfUnsortedSets(std::vector<Vertex> &intersection, cons
 
 ////////////////////////////////////////////////////////////////////////////////
 
-#endif // _INCIDENCE_GRAPH_UTILS_H_
+#endif /* INCIDENCEGRAPHUTILS_H */
 

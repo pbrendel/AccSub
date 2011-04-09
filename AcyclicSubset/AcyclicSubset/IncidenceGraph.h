@@ -1,9 +1,10 @@
-#ifndef _INCIDENCE_GRAPH_H_
-#define _INCIDENCE_GRAPH_H_
+#ifndef INCIDENCEGRAPH_H
+#define INCIDENCEGRAPH_H
 
 #include "Simplex.h"
 #include "AcyclicTest.hpp"
 #include "IntersectionFlagsBitSet.hpp"
+#include "MPIData.h"
 
 #include <list>
 #include <queue>
@@ -95,6 +96,10 @@ public:
         Simplex             *simplex;
         Edges               edges;
         void                *outputData; // tu bedzie zapisywany OutputNode
+        
+        // potrzebne do rownoleglych obliczen
+        int index;
+        int newIndex;
 
         enum  // properties flags
         {
@@ -109,7 +114,7 @@ public:
             IGNPF_HELPER_FLAG_4             = 0x8000,
         };
         
-        Node(IncidenceGraph *graph, Simplex *simplex);
+        Node(IncidenceGraph *graph, Simplex *simplex, int index);
 
         void AddNeighbour(Node *neighbour);
         bool HasNeighbour(Node *neighbour);
@@ -157,10 +162,10 @@ public:
 
     };
 
-private:
+public:
 
     IncidenceGraph(const Params &params);
-    IncidenceGraph(const SimplexList &simplexList, const Params &params);
+    IncidenceGraph(SimplexList &simplexList, const Params &params);
 
 public:
 
@@ -174,12 +179,12 @@ public:
     std::map<Simplex, IntersectionFlags> configurationsFlags;
     std::map<Simplex, IntersectionFlags> subconfigurationsFlags;
 
-    static IncidenceGraph *Create(const SimplexList &simplexList, const Params &params);
-    static IncidenceGraph *CreateWithBorderVerts(const SimplexList &simplexList, const VertsSet &borderVerts, const Params &params);
-    static IncidenceGraph *CreateAndCalculateAcyclicSubset(const SimplexList &simplexList, const Params &params, AcyclicTest<IntersectionFlags> *test);
-    static IncidenceGraph *CreateAndCalculateAcyclicSubsetOnline(const SimplexList &simplexList, const Params &params, AcyclicTest<IntersectionFlags> *test);
-    static IncidenceGraph *CreateAndCalculateAcyclicSubsetWithSpanningTree(const SimplexList &simplexList, const Params &params, AcyclicTest<IntersectionFlags> *test);
-    static IncidenceGraph *CreateAndCalculateAcyclicSubsetParallel(const SimplexList &simplexList, const Params &params, const ParallelParams &parallelParams, AcyclicTest<IntersectionFlags> *test);
+    static IncidenceGraph *Create(SimplexList &simplexList, const Params &params);
+    static IncidenceGraph *CreateWithBorderVerts(SimplexList &simplexList, const VertsSet &borderVerts, const Params &params);
+    static IncidenceGraph *CreateAndCalculateAcyclicSubset(SimplexList &simplexList, const Params &params, AcyclicTest<IntersectionFlags> *test);
+    static IncidenceGraph *CreateAndCalculateAcyclicSubsetOnline(SimplexList &simplexList, const Params &params, AcyclicTest<IntersectionFlags> *test);
+    static IncidenceGraph *CreateAndCalculateAcyclicSubsetWithSpanningTree(SimplexList &simplexList, const Params &params, AcyclicTest<IntersectionFlags> *test);
+    static IncidenceGraph *CreateAndCalculateAcyclicSubsetParallel(SimplexList &simplexList, const Params &params, const ParallelParams &parallelParams, AcyclicTest<IntersectionFlags> *test);
 
     ~IncidenceGraph();
 
@@ -210,9 +215,12 @@ private:
     void CreateAcyclicSpanningTree(std::vector<Path> &paths, int maxAcyclicSubsetID);
 
     void RemoveAcyclicSubset();
+    void AssignNewIndices();
+
+    friend class MPIData::IncidenceGraphData;
     
 };
 
 ////////////////////////////////////////////////////////////////////////////////
 
-#endif // _INCIDENCE_GRAPH_H_
+#endif /* INCIDENCEGRAPH_H */

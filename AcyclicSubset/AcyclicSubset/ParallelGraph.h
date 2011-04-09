@@ -1,5 +1,5 @@
-#ifndef _PARALLEL_GRAPH_H_
-#define _PARALLEL_GRAPH_H_
+#ifndef PARALLELGRAPH_H
+#define PARALLELGRAPH_H
 
 #include "IncidenceGraph.h"
 
@@ -23,7 +23,7 @@ public:
 
     struct DataNode
     {
-        SimplexList simplexList;
+        SimplexPtrList simplexPtrList;
         std::set<Vertex> verts;
         std::set<Vertex> borderVerts;
         std::vector<DataEdge *> edges;
@@ -122,7 +122,7 @@ public:
 
     void GetIntersection(std::vector<Vertex> &intersection, std::set<Vertex> &setA, std::set<Vertex> &setB);
     
-    ParallelGraph(IncidenceGraph *ig, const SimplexList &simplexList, IncidenceGraph::Params params, IncidenceGraph::ParallelParams parallelParams, AcyclicTest<IncidenceGraph::IntersectionFlags> *test);
+    ParallelGraph(IncidenceGraph *ig, SimplexList &simplexList, IncidenceGraph::Params params, IncidenceGraph::ParallelParams parallelParams, AcyclicTest<IncidenceGraph::IntersectionFlags> *test);
     ~ParallelGraph();
 
 private:
@@ -135,11 +135,11 @@ private:
     AcyclicTreeEdges acyclicTreeEdges;
 
     void PrepareData(SimplexList &simplexList, int packSize);
-    void DivideData(const SimplexList &simplexList, int packSize);
+    void DivideData(SimplexList &simplexList, int packSize);
     void CreateDataEdges();
     void CreateAcyclicTree();
     void CombineGraphs();
 
 };
 
-#endif // _PARALLEL_GRAPH_H_
+#endif /* PARALLELGRAPH_H */

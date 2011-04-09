@@ -1,5 +1,5 @@
-#ifndef _TESTS_H_
-#define	_TESTS_H_
+#ifndef TESTS_H
+#define	TESTS_H
 
 #include <fstream>
 #include <string>
@@ -80,5 +80,5 @@ private:
 
 };
 
-#endif	/* _TESTS_H_ */
+#endif	/* TESTS_H */
 

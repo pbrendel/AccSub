@@ -7,10 +7,11 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 
-IncidenceGraph::Node::Node(IncidenceGraph *graph, Simplex *simplex)
+IncidenceGraph::Node::Node(IncidenceGraph *graph, Simplex *simplex, int index)
 {
     this->graph = graph;
     this->simplex = simplex;
+    this->index = newIndex = index;
     this->propertiesFlags = 0;
     this->acyclicIntersectionFlags = 0;
     this->acyclicIntersectionFlagsMaximalFaces = 0;
