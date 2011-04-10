@@ -127,10 +127,10 @@ IncidenceGraph *IncidenceGraph::CreateAndCalculateAcyclicSubsetWithSpanningTree(
     return ig;
 }
 
-IncidenceGraph *IncidenceGraph::CreateAndCalculateAcyclicSubsetParallel(SimplexList& simplexList, const Params& params, const ParallelParams& parallelParams, AcyclicTest<IntersectionFlags>* test)
+IncidenceGraph *IncidenceGraph::CreateAndCalculateAcyclicSubsetParallel(SimplexList& simplexList, const Params& params, const ParallelParams& parallelParams, AcyclicTest<IntersectionFlags>* test, bool local)
 {
     IncidenceGraph *ig = new IncidenceGraph(params);
-    ParallelGraph *pg = new ParallelGraph(ig, simplexList, params, parallelParams, test);
+    ParallelGraph *pg = new ParallelGraph(ig, simplexList, params, parallelParams, test, local);
  //   delete pg;
     return ig;
 }

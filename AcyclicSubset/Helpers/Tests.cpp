@@ -142,30 +142,18 @@ void Tests::ProcessArguments(int argc, char **argv)
             inputFilename = argv[index + 1];
             index += 2;
         }
-        else if (CHECK_ARG_NEXT("-l"))
+        else if (CHECK_ARG_NEXT("-act"))
         {
             testType = 3;
-            inputFilename = argv[index + 1];
-            index += 2;
+            nodeSimplicesCount = atoi(argv[index + 1]);
+            nodesCount = atoi(argv[index + 2]);
+            index += 3;
         }
-        else if (CHECK_ARG_NEXT("-lm"))
+        else if (CHECK_ARG_NEXT("-l"))
         {
             testType = 4;
             inputFilename = argv[index + 1];
             index += 2;
-        }
-        else if (CHECK_ARG_NEXT("-lo"))
-        {
-            testType = 5;
-            inputFilename = argv[index + 1];
-            index += 2;
-        }
-        else if (CHECK_ARG_NEXT("-act"))
-        {
-            testType = 6;
-            nodeSimplicesCount = atoi(argv[index + 1]);
-            nodesCount = atoi(argv[index + 2]);
-            index += 3;
         }
         else if (CHECK_ARG_NEXT("-test")) { acyclicTestNumber = atoi(argv[index + 1]); index += 2; }
         else if (CHECK_ARG_NEXT("-dim")) { incidenceGraphParams.dim = atoi(argv[index + 1]); index += 2; }
@@ -203,6 +191,252 @@ AcyclicTest<IncidenceGraph::IntersectionFlags> *Tests::GetAcyclicTest()
 bool Tests::IsAcyclicSubsetReduction(ReductionType rt)
 {
     return (rt == RT_AcyclicSubset || rt == RT_AcyclicSubsetOnline || rt == RT_AcyclicSubsetSpanningTree || rt == RT_AcyclicSubsetParallel);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+void Tests::GenerateData(SimplexList &simplexList)
+{
+    switch (testType)
+    {
+        case 0:
+            GenerateSimplexList(simplexList, simplicesCount, vertsCount, incidenceGraphParams.dim);
+            break;
+        case 1:
+            GenerateReverseSimplexList(simplexList, simplicesCount, vertsCount,  incidenceGraphParams.dim + 1);
+            break;
+        case 2:
+            ReadSimplexList(simplexList, inputFilename.c_str(), sortVerts);
+            break;
+        case 3:
+            GenerateAcyclicTree(simplexList, nodeSimplicesCount, nodesCount);
+            break;
+        default:
+            break;
+    }
+    Timer::Update("data generated generated");
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+void Tests::Test(SimplexList &simplexList, ReductionType reductionType)
+{
+    float total = 0;
+    float t = 0;
+
+    Timer::Update();
+    clock_t timeStart = Timer::Now();
+
+    AcyclicTest<IncidenceGraph::IntersectionFlags> *test = IsAcyclicSubsetReduction(reductionType) ? GetAcyclicTest() : 0;
+    IncidenceGraph *ig = 0;
+    if (reductionType == RT_AcyclicSubset)
+    {
+        ig = IncidenceGraph::CreateAndCalculateAcyclicSubset(simplexList, incidenceGraphParams, test);
+    }
+    else if (reductionType == RT_AcyclicSubsetOnline)
+    {
+        ig = IncidenceGraph::CreateAndCalculateAcyclicSubsetOnline(simplexList, incidenceGraphParams, test);
+    }
+    else if (reductionType == RT_AcyclicSubsetSpanningTree)
+    {
+        ig = IncidenceGraph::CreateAndCalculateAcyclicSubsetWithSpanningTree(simplexList, incidenceGraphParams, test);
+    }
+    else if (reductionType == RT_AcyclicSubsetParallel)
+    {
+        ig = IncidenceGraph::CreateAndCalculateAcyclicSubsetParallel(simplexList, incidenceGraphParams, parallelParams, test, true);
+    }
+    else // (reductionType == RT_Coreduction || reductionType == RT_None)
+    {
+        ig = IncidenceGraph::Create(simplexList, incidenceGraphParams);
+    }
+    if (test)
+    {
+        delete test;
+    }
+    Timer::Update();
+    total = Timer::TimeFrom(timeStart, "total graph processing");
+    Tests::Test(ig, reductionType, total);
+    delete ig;
+}
+
+void Tests::Test(IncidenceGraph *ig, ReductionType reductionType, float totalTime)
+{ 
+    if (IsAcyclicSubsetReduction(reductionType))
+    {
+        int size = ig->GetAcyclicSubsetSize();
+        std::cout<<"acyclic subset size: "<<size<<std::endl;
+        log<<"\t\t\t<acyclic_subset_size>"<<size<<"</acyclic_subset_size>"<<std::endl;
+    }
+
+    Timer::Update();
+    OutputGraph *og = new OutputGraph(ig);
+    float t = Timer::Update("creating output");
+    log<<"\t\t\t<output_graph>"<<t<<"</output_graph>"<<std::endl;
+    totalTime += t;
+
+    totalTime += ComputeHomology(og, reductionType == RT_Coreduction);
+    std::cout<<"total: "<<totalTime<<std::endl;
+    log<<"\t\t\t<total>"<<totalTime<<"</total>"<<std::endl;
+
+    delete og;
+}
+
+void Tests::TestAndCompare(SimplexList &simplexList)
+{
+    incidenceGraphParams.dim = simplexList[0].size() - 1;
+    if (incidenceGraphParams.dim < 2) incidenceGraphParams.dim = 2;
+    if (acyclicTestNumber == 0) // jezeli tablice, to gorne ograniczenie na wymiar == 4
+    {
+        if (incidenceGraphParams.dim > 4) incidenceGraphParams.dim = 4;
+    }
+
+    std::cout<<"simplices count: "<<simplexList.size()<<std::endl;
+    std::cout<<"dim: "<<incidenceGraphParams.dim<<std::endl;
+
+    if (useAlgebraic)
+    {
+        std::cout<<std::endl<<"algebraic:"<<std::endl;
+        log<<"\t\t<algebraic>"<<std::endl<<std::endl;
+        Test(simplexList, RT_None);
+        log<<"\t\t</algebraic>"<<std::endl<<std::endl;
+        cout<<std::endl;
+    }
+    
+    if (useCoreduction)
+    {
+        std::cout<<std::endl<<"coreduction:"<<std::endl;
+        log<<"\t\t<coreduction>"<<std::endl<<std::endl;
+        Test(simplexList, RT_Coreduction);
+        log<<"\t\t</coreduction>"<<std::endl<<std::endl;
+        cout<<std::endl;
+    }
+
+    if (useAcyclicSubset)
+    {
+        std::cout<<"acyclic subset:"<<std::endl;
+        log<<"\t\t<acyclic_subset>"<<std::endl<<std::endl;
+        Test(simplexList, RT_AcyclicSubset);
+        log<<"\t\t</acyclic_subset>"<<std::endl<<std::endl;
+    }
+
+    if (useAcyclicSubsetOnline)
+    {
+        std::cout<<std::endl<<"acyclic subset online:"<<std::endl;
+        log<<"\t\t<acyclic_subset_online>"<<std::endl<<std::endl;
+        Test(simplexList, RT_AcyclicSubsetOnline);
+        log<<"\t\t</acyclic_subset_online>"<<std::endl<<std::endl;
+        cout<<std::endl<<std::endl;
+    }
+
+    if (useAcyclicSubsetSpanningTree)
+    {
+        std::cout<<std::endl<<"acyclic subset with graph:"<<std::endl;
+        log<<"\t\t<acyclic_subset_with_graph>"<<std::endl<<std::endl;
+        Test(simplexList, RT_AcyclicSubsetSpanningTree);
+        log<<"\t\t</acyclic_subset_with_graph>"<<std::endl<<std::endl;
+    }
+
+    if (useAcyclicSubsetParallel)
+    {
+        std::cout<<std::endl<<"acyclic subset parallel:"<<std::endl;
+        log<<"\t\t<acyclic_subset_parallel>"<<std::endl<<std::endl;
+        Test(simplexList, RT_AcyclicSubsetParallel);
+        log<<"\t\t</acyclic_subset_parallel>"<<std::endl<<std::endl;
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+void Tests::StandardTest()
+{
+    SimplexList simplexList;
+    Timer::Init();
+    GenerateData(simplexList);
+
+    char buff[100] = { 0 };
+    switch (testType)
+    {
+        case 0:
+            sprintf(buff, "random set of size: %d", simplexList.size());
+            break;
+        case 1:
+            sprintf(buff, "random set of size %d, randomly removed %d simplices", simplexList.size(), simplicesCount);
+            break;
+        case 2:
+            sprintf(buff, "testing %s", inputFilename.c_str());
+            break;
+        case 3:
+            sprintf(buff, "acyclic tree of %d nodes %d simplices each, total: %d", nodesCount, nodeSimplicesCount, simplexList.size());
+            break;
+        default:
+            break;
+    }
+
+    std::cout<<buff<<std::endl;
+    log<<"<input_size>"<<simplexList.size()<<"</input_size>"<<std::endl;
+    log<<std::endl<<"\t<description>"<<buff<<"</description>"<<std::endl<<std::endl;
+
+    TestAndCompare(simplexList);
+}
+
+void Tests::TestFromList()
+{
+    std::fstream input(inputFilename.c_str(), std::ios::in);
+    if (!input.is_open())
+    {
+        throw std::string("Can't open file ") + inputFilename;
+    }
+
+    testType = 2; // dane z pliku
+    while (!input.eof())
+    {
+        input>>inputFilename;
+        if (inputFilename != "")
+        {
+            StandardTest();
+        }
+        else
+        {
+            break;
+        }
+    }
+    input.close();
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+void Tests::TestFromCommandLine(int argc, char **argv)
+{
+    ProcessArguments(argc, argv);
+
+    std::cout<<"Aby uzyskac wiecej informacji uruchom z parametrem -help"<<std::endl;
+
+    log.open(logFilename.c_str());
+    log<<"<tests>"<<std::endl<<std::endl;
+    log<<"<simplices_count>"<<simplicesCount<<"</simplices_count>"<<std::endl;
+    log<<"<vertices_count>"<<vertsCount<<"</vertices_count>"<<std::endl;
+    log<<"<input>"<<inputFilename<<"</input>"<<std::endl;
+    log<<"<acyclic_test_number>"<<acyclicTestNumber<<"</acyclic_test_number>"<<std::endl;
+    log<<"<dim>"<<incidenceGraphParams.dim<<"</dim>"<<std::endl;
+    log<<"<minimalization>"<<incidenceGraphParams.minimizeSimplices<<"</minimalization>"<<std::endl;
+
+    switch (testType)
+    {
+        case 0:
+        case 1:
+        case 2:
+        case 3:
+            StandardTest();
+            break;
+        case 4:
+            TestFromList();
+            break;
+        default:
+            break;
+    }
+
+    log<<"</tests>"<<std::endl;
+    log.close();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -274,7 +508,7 @@ float Tests::ComputeHomology(OutputGraph *g, bool doCoreduction)
 //    {
 //        Log::stream<<boost::get<0>(*i)<<" "<<boost::get<1>(*i)<<" "<<boost::get<2>(*i)<<std::endl;
 //    }
-    
+
     Complex complex(3, dims, kappaMap, 1);
 
     if (doCoreduction)
@@ -299,368 +533,5 @@ float Tests::ComputeHomology(OutputGraph *g, bool doCoreduction)
     return total;
 }
 
-void Tests::Test(SimplexList &simplexList, ReductionType reductionType)
-{
-    float total = 0;
-    float t = 0;
-
-    Timer::Update();
-    clock_t timeStart = Timer::Now();
-
-    AcyclicTest<IncidenceGraph::IntersectionFlags> *test = IsAcyclicSubsetReduction(reductionType) ? GetAcyclicTest() : 0;
-    IncidenceGraph *ig = 0;
-    if (reductionType == RT_AcyclicSubset)
-    {
-        ig = IncidenceGraph::CreateAndCalculateAcyclicSubset(simplexList, incidenceGraphParams, test);
-    }
-    else if (reductionType == RT_AcyclicSubsetOnline)
-    {
-        ig = IncidenceGraph::CreateAndCalculateAcyclicSubsetOnline(simplexList, incidenceGraphParams, test);
-    }
-    else if (reductionType == RT_AcyclicSubsetSpanningTree)
-    {
-        ig = IncidenceGraph::CreateAndCalculateAcyclicSubsetWithSpanningTree(simplexList, incidenceGraphParams, test);
-    }
-    else if (reductionType == RT_AcyclicSubsetParallel)
-    {
-        ig = IncidenceGraph::CreateAndCalculateAcyclicSubsetParallel(simplexList, incidenceGraphParams, parallelParams, test);
-    }
-    else // (reductionType == RT_Coreduction || reductionType == RT_None)
-    {
-        ig = IncidenceGraph::Create(simplexList, incidenceGraphParams);
-    }
-    if (test)
-    {
-        delete test;
-    }
-    Timer::Update();
-    total = Timer::TimeFrom(timeStart, "total graph processing");
-
-    if (IsAcyclicSubsetReduction(reductionType))
-    {
-        int size = ig->GetAcyclicSubsetSize();
-        std::cout<<"acyclic subset size: "<<size<<std::endl;
-        log<<"\t\t\t<acyclic_subset_size>"<<size<<"</acyclic_subset_size>"<<std::endl;
-    }
-
-    Timer::Update();
-    OutputGraph *og = new OutputGraph(ig);
-    t = Timer::Update("creating output");
-    log<<"\t\t\t<output_graph>"<<t<<"</output_graph>"<<std::endl;
-    total += t;
-
-    total += ComputeHomology(og, reductionType == RT_Coreduction);
-    std::cout<<"total: "<<total<<std::endl;
-    log<<"\t\t\t<total>"<<total<<"</total>"<<std::endl;
-
-    delete ig;
-    delete og;
-}
-
-void Tests::TestAndCompare(SimplexList &simplexList, std::string msg)
-{
-    std::cout<<msg<<std::endl;
-    log<<std::endl<<"\t<description>"<<msg<<"</description>"<<std::endl<<std::endl;
-
-    incidenceGraphParams.dim = simplexList[0].size() - 1;
-    if (incidenceGraphParams.dim < 2) incidenceGraphParams.dim = 2;
-    if (acyclicTestNumber == 0) // jezeli tablice, to gorne ograniczenie na wymiar == 4
-    {
-        if (incidenceGraphParams.dim > 4) incidenceGraphParams.dim = 4;
-    }
-
-    std::cout<<"simplices count: "<<simplexList.size()<<std::endl;
-    std::cout<<"dim: "<<incidenceGraphParams.dim<<std::endl;
-
-    if (useAlgebraic)
-    {
-        std::cout<<std::endl<<"algebraic:"<<std::endl;
-        log<<"\t\t<algebraic>"<<std::endl<<std::endl;
-        Test(simplexList, RT_None);
-        log<<"\t\t</algebraic>"<<std::endl<<std::endl;
-        cout<<std::endl;
-    }
-    
-    if (useCoreduction)
-    {
-        std::cout<<std::endl<<"coreduction:"<<std::endl;
-        log<<"\t\t<coreduction>"<<std::endl<<std::endl;
-        Test(simplexList, RT_Coreduction);
-        log<<"\t\t</coreduction>"<<std::endl<<std::endl;
-        cout<<std::endl;
-    }
-
-    if (useAcyclicSubset)
-    {
-        std::cout<<"acyclic subset:"<<std::endl;
-        log<<"\t\t<acyclic_subset>"<<std::endl<<std::endl;
-        Test(simplexList, RT_AcyclicSubset);
-        log<<"\t\t</acyclic_subset>"<<std::endl<<std::endl;
-    }
-
-    if (useAcyclicSubsetOnline)
-    {
-        std::cout<<std::endl<<"acyclic subset online:"<<std::endl;
-        log<<"\t\t<acyclic_subset_online>"<<std::endl<<std::endl;
-        Test(simplexList, RT_AcyclicSubsetOnline);
-        log<<"\t\t</acyclic_subset_online>"<<std::endl<<std::endl;
-        cout<<std::endl<<std::endl;
-    }
-
-    if (useAcyclicSubsetSpanningTree)
-    {
-        std::cout<<std::endl<<"acyclic subset with graph:"<<std::endl;
-        log<<"\t\t<acyclic_subset_with_graph>"<<std::endl<<std::endl;
-        Test(simplexList, RT_AcyclicSubsetSpanningTree);
-        log<<"\t\t</acyclic_subset_with_graph>"<<std::endl<<std::endl;
-    }
-
-    if (useAcyclicSubsetParallel)
-    {
-        std::cout<<std::endl<<"acyclic subset parallel:"<<std::endl;
-        log<<"\t\t<acyclic_subset_parallel>"<<std::endl<<std::endl;
-        Test(simplexList, RT_AcyclicSubsetParallel);
-        log<<"\t\t</acyclic_subset_parallel>"<<std::endl<<std::endl;
-    }
-}
-
 ////////////////////////////////////////////////////////////////////////////////
-
-void Tests::TestRandom(int simplicesCount, int vertsCount, int dim)
-{
-    SimplexList simplexList;
-    Timer::Init();
-    GenerateSimplexList(simplexList, simplicesCount, vertsCount, dim);
-    Timer::Update("simplex list generated");
-    char buff[100] = { 0 };
-    sprintf(buff, "random set of size: %d", simplicesCount);
-    TestAndCompare(simplexList, std::string(buff));
-}
-
-void Tests::TestReverseRandom(int simplicesCount, int vertsCount, int dim)
-{
-    SimplexList simplexList;
-    Timer::Init();
-    int total = GenerateReverseSimplexList(simplexList, simplicesCount, vertsCount, dim);
-    Timer::Update("simplex list generated");
-    char buff[100] = { 0 };
-    sprintf(buff, "set of size %d without randomly removed %d simplices", total, simplicesCount);
-    TestAndCompare(simplexList, std::string(buff));
-}
-
-void Tests::TestAcyclicTree(int nodeSimplicesCount, int nodesCount)
-{
-    SimplexList simplexList;
-    Timer::Init();
-    GenerateAcyclicTree(simplexList, nodeSimplicesCount, nodesCount);
-    Timer::Update("simplex list generated");
-    char buff[100] = { 0 };
-    sprintf(buff, "acyclic tree of %d nodes %d simplices each, total: %d", nodesCount, nodeSimplicesCount, simplexList.size());
-    TestAndCompare(simplexList, std::string(buff));
-}
-
-void Tests::TestFromFile(const char *filename)
-{
-    SimplexList simplexList;
-    Timer::Init();
-    ReadSimplexList(simplexList, filename, sortVerts);
-    Timer::Update("simplex list read");
-    log<<"<input_size>"<<simplexList.size()<<"</input_size>"<<std::endl;
-    std::string s = "testing: " + std::string(filename);
-    TestAndCompare(simplexList, s);
-}
-
-void Tests::TestFromList(const char *filename)
-{
-    std::fstream input(filename, std::ios::in);
-    if (!input.is_open())
-    {
-        throw std::string("Can't open file ") + filename;
-    }
-
-    std::string line;
-    while (!input.eof())
-    {
-        input>>line;
-        if (line != "")
-        {
-            TestFromFile(line.c_str());
-        }
-        else
-        {
-            break;
-        }
-    }
-    input.close();
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-void Tests::TestAndCompareMinimalization(SimplexList &simplexList, std::string msg)
-{
-    cout<<msg<<std::endl;
-    log<<std::endl<<"\t<description>"<<msg<<"</description>"<<std::endl<<std::endl;
-
-    incidenceGraphParams.dim = simplexList[0].size() - 1;
-    if (incidenceGraphParams.dim < 3) incidenceGraphParams.dim = 3;
-    if (incidenceGraphParams.dim > 4) incidenceGraphParams.dim = 4;
-
-    incidenceGraphParams.minimizeSimplices = 1;
-    log<<"\t\t<minimalization_on>"<<std::endl<<std::endl;
-    Test(simplexList, RT_AcyclicSubset);
-    log<<"\t\t</minimalization_on>"<<std::endl<<std::endl;
-    cout<<std::endl;
-    incidenceGraphParams.minimizeSimplices = 0;
-    log<<"\t\t<minimalization_off>"<<std::endl<<std::endl;
-    Test(simplexList, RT_AcyclicSubset);
-    log<<"\t\t</minimalization_off>"<<std::endl<<std::endl;
-    cout<<std::endl<<std::endl;
-}
-
-void Tests::TestMinimalization(const char *filename)
-{
-    std::fstream input(filename, std::ios::in);
-    if (!input.is_open())
-    {
-        throw std::string("Can't open file ") + filename;
-    }
-
-    SimplexList simplexList;
-    std::string line;
-    while (!input.eof())
-    {
-        input>>line;
-        if (line != "")
-        {
-            ReadSimplexList(simplexList, line.c_str(), sortVerts);
-            Timer::Update("simplex list read");
-            log<<"<input_size>"<<simplexList.size()<<"</input_size>"<<std::endl;
-            std::string s = "testing: " + line;
-            TestAndCompareMinimalization(simplexList, s);
-        }
-        else
-        {
-            break;
-        }
-    }
-    input.close();
-}
-
-void Tests::TestAndCompareOutputCreation(SimplexList &simplexList, std::string msg)
-{
-    cout<<msg<<std::endl;
-    log<<std::endl<<"\t<description>"<<msg<<"</description>"<<std::endl<<std::endl;
-
-    incidenceGraphParams.dim = simplexList[0].size() - 1;
-    if (incidenceGraphParams.dim < 3) incidenceGraphParams.dim = 3;
-    if (incidenceGraphParams.dim > 4) incidenceGraphParams.dim = 4;
-
-    log<<"\t\t<brute_force>"<<std::endl<<std::endl;
-    Timer::Update();
-    OutputGraph *og = new OutputGraph(simplexList);
-    float t = Timer::Update("brute force - output created");
-    log<<"\t\t\t<output>"<<t<<"</output>"<<std::endl;
-    ComputeHomology(og, true);
-    delete og;
-    log<<"\t\t</brute_force>"<<std::endl<<std::endl;
-
-    cout<<std::endl;
-    
-    log<<"\t\t<with_incidence_graph>"<<std::endl<<std::endl;
-    float total = 0;
-    Timer::Update();
-    IncidenceGraph *ig = IncidenceGraph::Create(simplexList, incidenceGraphParams);
-    t = Timer::Update("incidence graph created");
-    total = t;
-    log<<"\t\t\t<incidence_graph>"<<t<<"</incidence_graph>"<<std::endl;
-    Timer::Update();
-    og = new OutputGraph(ig);
-    t = Timer::Update("using graph - output created");
-    total += t;
-    log<<"\t\t\t<output>"<<t<<"</output>"<<std::endl;
-    log<<"\t\t\t<total>"<<total<<"</total>"<<std::endl;
-    log<<"\t\t</with_incidence_graph>"<<std::endl<<std::endl;
-    ComputeHomology(og, true);
-    delete og;
-    delete ig;
-    cout<<std::endl<<std::endl;
-}
-
-void Tests::TestOutputCreation(const char *filename)
-{
-    std::fstream input(filename, std::ios::in);
-    if (!input.is_open())
-    {
-        throw std::string("Can't open file ") + filename;
-    }
-
-    SimplexList simplexList;
-    std::string line;
-    while (!input.eof())
-    {
-        input>>line;
-        if (line != "")
-        {
-            ReadSimplexList(simplexList, line.c_str(), sortVerts);
-            Timer::Update("simplex list read");
-            log<<"<input_size>"<<simplexList.size()<<"</input_size>"<<std::endl;
-            std::string s = "testing: " + line;
-            TestAndCompareOutputCreation(simplexList, s);
-        }
-        else
-        {
-            break;
-        }
-    }
-    input.close();
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-void Tests::TestFromCommandLine(int argc, char **argv)
-{
-    ProcessArguments(argc, argv);
-
-    std::cout<<"Aby uzyskac wiecej informacji uruchom z parametrem -help"<<std::endl;
-
-    log.open(logFilename.c_str());
-    log<<"<tests>"<<std::endl<<std::endl;
-    log<<"<simplices_count>"<<simplicesCount<<"</simplices_count>"<<std::endl;
-    log<<"<vertices_count>"<<vertsCount<<"</vertices_count>"<<std::endl;
-    log<<"<input>"<<inputFilename<<"</input>"<<std::endl;
-    log<<"<acyclic_test_number>"<<acyclicTestNumber<<"</acyclic_test_number>"<<std::endl;
-    log<<"<dim>"<<incidenceGraphParams.dim<<"</dim>"<<std::endl;
-    log<<"<minimalization>"<<incidenceGraphParams.minimizeSimplices<<"</minimalization>"<<std::endl;
-
-    switch (testType)
-    {
-        case 0:
-            TestRandom(simplicesCount, vertsCount, incidenceGraphParams.dim);
-            break;
-        case 1:
-            TestReverseRandom(simplicesCount, vertsCount, incidenceGraphParams.dim + 1);
-            break;
-        case 2:
-            TestFromFile(inputFilename.c_str());
-            break;
-        case 3:
-            TestFromList(inputFilename.c_str());
-            break;
-        case 4:
-            TestMinimalization(inputFilename.c_str());
-            break;
-        case 5:
-            TestOutputCreation(inputFilename.c_str());
-            break;
-        case 6:
-            TestAcyclicTree(nodeSimplicesCount, nodesCount);
-            break;
-        default:
-            break;
-    }
-
-    log<<"</tests>"<<std::endl;
-    log.close();
-}
-
-////////////////////////////////////////////////////////////////////////////////
+// eof

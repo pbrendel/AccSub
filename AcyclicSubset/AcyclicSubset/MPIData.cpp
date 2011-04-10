@@ -13,7 +13,7 @@ SimplexData::SimplexData(int* buffer, int size)
     this->size = size;
 }
 
-SimplexData::SimplexData(const SimplexPtrList& simplexPtrList, const std::set<Vertex>& borderVerts, int dim, int simplexSize)
+SimplexData::SimplexData(const SimplexPtrList& simplexPtrList, const std::set<Vertex>& borderVerts, int dim, int acyclicTestNumber, int simplexSize)
 {
     int size = CalcBufferSize(simplexPtrList, borderVerts.size(), simplexSize);
     buffer = new int[size];
@@ -28,6 +28,8 @@ SimplexData::SimplexData(const SimplexPtrList& simplexPtrList, const std::set<Ve
     buffer[index++] = simplexPtrList.size();
     // wymiar
     buffer[index++] = dim;
+    // numer testu acyklicznosc
+    buffer[index++] = acyclicTestNumber;
     // dane sympleksow
     if (simplexSize == 0)
     {
@@ -76,20 +78,22 @@ int SimplexData::CalcBufferSize(const SimplexPtrList& simplexPtrList, int border
     {
         size = simplexSize * simplexPtrList.size();
     }
-    // dodatkowe 4 inty to:
-    // wartosc simplexSize
-    // rozmiar simplexList
-    // wymiar
-    // rozmiar borderVerts
-    return size + borderVertsCount + 4;
+    // dodatkowe inty to:
+    // - wartosc simplexSize
+    // - rozmiar simplexList
+    // - wymiar
+    // - numer testu acyklicznosci
+    // - rozmiar borderVerts
+    return size + borderVertsCount + 5;
 }
 
-void SimplexData::GetSimplexListAndBorderVerts(SimplexList& simplexList, std::set<Vertex>& borderVerts, int &dim)
+void SimplexData::GetSimplexData(SimplexList& simplexList, std::set<Vertex>& borderVerts, int &dim, int &acyclicTestNumber)
 {
     int index = 0;
-    int simplexSize = buffer[index]++;
-    int simplexCount = buffer[index]++;
+    int simplexSize = buffer[index++];
+    int simplexCount = buffer[index++];
     dim = buffer[index++];
+    acyclicTestNumber = buffer[index++];
     if (simplexSize == 0)
     {
         for (int i = 0; i < simplexCount; i++)

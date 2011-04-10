@@ -11,12 +11,42 @@
 #include <list>
 #include <cstdlib>
 
+#ifdef USE_MPI
+#include <mpi.h>
+#include "MPIData.h"
+#endif
+
 ////////////////////////////////////////////////////////////////////////////////
 
-void ParallelGraph::DataNode::CreateIncidenceGraph(const IncidenceGraph::Params &params, AcyclicTest<IncidenceGraph::IntersectionFlags> *test)
+void ParallelGraph::DataNode::CreateIncidenceGraphLocally(const IncidenceGraph::Params &params, AcyclicTest<IncidenceGraph::IntersectionFlags> *test)
 {
-//    ig = IncidenceGraph::CreateWithBorderVerts(simplexPtrList, borderVerts, params);
-//    ig->CalculateAcyclicSubsetWithSpanningTree(test);
+    for (SimplexPtrList::iterator i = simplexPtrList.begin(); i != simplexPtrList.end(); i++)
+    {
+        localSimplexList.push_back(*(*i));
+    }
+    ig = IncidenceGraph::CreateWithBorderVerts(localSimplexList, borderVerts, params);
+    ig->CalculateAcyclicSubsetWithSpanningTree(test);
+}
+
+void ParallelGraph::DataNode::SendMPIData(const IncidenceGraph::Params &params, int processRank)
+{
+#ifdef USE_MPI
+    this->processRank = processRank;
+    MPIData::SimplexData *data = new MPIData::SimplexData(simplexPtrList, borderVerts, params.dim, 0, params.dim + 1);
+    int dataSize = data->GetSize();
+    MPI_Send(&dataSize, 1, MPI_INT, processRank, MPI_MY_DATASIZE_TAG, MPI_COMM_WORLD);
+    MPI_Send(data->GetBuffer(), dataSize, MPI_INT, processRank, MPI_MY_WORK_TAG, MPI_COMM_WORLD);
+    delete data;
+#endif
+}
+
+void ParallelGraph::DataNode::SetMPIIncidenceGraphData(int* buffer, int size)
+{
+#ifdef USE_MPI
+    MPIData::IncidenceGraphData *data = new MPIData::IncidenceGraphData(buffer, size);
+    this->ig = data->GetIncidenceGraph(simplexPtrList);
+    delete data;
+#endif
 }
 
 void ParallelGraph::DataNode::CreateIntNodesMapWithBorderNodes()
@@ -230,15 +260,17 @@ void ParallelGraph::AcyclicTreeEdge::UpdateAcyclicConnections()
 
 ////////////////////////////////////////////////////////////////////////////////
 
-ParallelGraph::ParallelGraph(IncidenceGraph *ig, SimplexList &simplexList, IncidenceGraph::Params params, IncidenceGraph::ParallelParams parallelParams, AcyclicTest<IncidenceGraph::IntersectionFlags> *test)
+ParallelGraph::ParallelGraph(IncidenceGraph *ig, SimplexList &simplexList, IncidenceGraph::Params params, IncidenceGraph::ParallelParams parallelParams, AcyclicTest<IncidenceGraph::IntersectionFlags> *test, bool local)
 {
     incidenceGraph = ig;
+#ifdef USE_MPI
+    this->local = local;
+#else
+    this->local = true;
+#endif
     DivideData(simplexList, parallelParams.packSize);
     CreateDataEdges();
-    for (DataNodes::iterator i = dataNodes.begin(); i != dataNodes.end(); i++)
-    {
-        (*i)->CreateIncidenceGraph(params, test);
-    }
+    CalculateIncidenceGraphs(params, test);
     CreateAcyclicTree();
     CombineGraphs();
 }
@@ -388,6 +420,80 @@ void ParallelGraph::CreateDataEdges()
 //        DataNode *node = *i;
 //        std::cout<<"node size "<<node->simplexList.size()<<" border verts: "<<node->borderVerts.size()<<" verts size: "<<node->verts.size()<<std::endl;
 //    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+ParallelGraph::DataNode *ParallelGraph::GetNodeWithProcessRank(int processRank)
+{
+    for (DataNodes::iterator i = dataNodes.begin(); i != dataNodes.end(); i++)
+    {
+        if ((*i)->processRank == processRank)
+        {
+            return (*i);
+        }
+    }
+    return 0;
+}
+
+void ParallelGraph::CalculateIncidenceGraphs(const IncidenceGraph::Params &params, AcyclicTest<IncidenceGraph::IntersectionFlags> *test)
+{
+    if (local)
+    {
+        for (DataNodes::iterator i = dataNodes.begin(); i != dataNodes.end(); i++)
+        {
+            (*i)->CreateIncidenceGraphLocally(params, test);
+        }
+    }
+#ifdef USE_MPI
+    else
+    {
+        int nodesCount = dataNodes.size();
+        int currentNode;
+        int tasksCount;
+        int dataSize;
+        MPI_Status status;
+
+        MPI_Comm_size(MPI_COMM_WORLD, &tasksCount);
+        int size = (tasksCount < nodesCount) ? tasksCount : nodesCount;
+        // dopoki starczy nam node'ow wysylamy paczki
+        for (int rank = 1; rank < size; rank++)
+        {
+            dataNodes[currentNode]->SendMPIData(params, rank);
+            currentNode++;
+        }
+
+        // potem czekamy na dane i wysylamy kolejne
+        while (currentNode < nodesCount)
+        {
+            // najpierw pobieramy rozmiar danych
+            MPI_Recv(&dataSize, 1, MPI_INT, MPI_ANY_SOURCE, MPI_MY_DATASIZE_TAG, MPI_COMM_WORLD, &status);
+            int *buffer = new int[dataSize];
+            // teraz dane od node'a od ktorego dostalismy info o rozmiarze danych
+            MPI_Recv(buffer, dataSize, MPI_INT, status.MPI_SOURCE, MPI_MY_DATA_TAG, MPI_COMM_WORLD, &status);
+            GetNodeWithProcessRank(status.MPI_SOURCE)->SetMPIIncidenceGraphData(buffer, size);
+
+            dataNodes[currentNode++]->SendMPIData(params, status.MPI_SOURCE);
+        }
+
+        // na koncu odbieramy to co jeszcze jest liczone
+        for (int rank = 1; rank < size; ++rank)
+        {
+            // najpierw pobieramy rozmiar danych
+            MPI_Recv(&dataSize, 1, MPI_INT, MPI_ANY_SOURCE, MPI_MY_DATASIZE_TAG, MPI_COMM_WORLD, &status);
+            int *buffer = new int[dataSize];
+            // teraz dane od node'a od ktorego dostalismy info o rozmiarze danych
+            MPI_Recv(buffer, dataSize, MPI_INT, status.MPI_SOURCE, MPI_MY_DATA_TAG, MPI_COMM_WORLD, &status);
+            GetNodeWithProcessRank(status.MPI_SOURCE)->SetMPIIncidenceGraphData(buffer, size);
+        }
+
+        // na koncu wysylamy informacje do node'ow o zakonczeniu pracy
+        for (int rank = 1; rank < size; ++rank)
+        {
+            MPI_Send(0, 0, MPI_INT, rank, MPI_MY_DIE_TAG, MPI_COMM_WORLD);
+        }
+    }
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////////////

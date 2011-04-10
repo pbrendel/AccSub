@@ -3,6 +3,12 @@
 
 #include "IncidenceGraph.h"
 
+#define USE_MPI
+#define MPI_MY_WORK_TAG        1
+#define MPI_MY_DIE_TAG         2
+#define MPI_MY_DATASIZE_TAG    3
+#define MPI_MY_DATA_TAG        4
+
 class ParallelGraph
 {
 public:
@@ -24,12 +30,15 @@ public:
     struct DataNode
     {
         SimplexPtrList simplexPtrList;
+        SimplexList localSimplexList;
         std::set<Vertex> verts;
         std::set<Vertex> borderVerts;
         std::vector<DataEdge *> edges;
 
         IncidenceGraph *ig;
         IncidenceGraph::IntNodesMap H;
+
+        int processRank;
 
         DataNode()
         {
@@ -52,7 +61,9 @@ public:
             borderVerts.insert(verts.begin(), verts.end());
         }
 
-        void CreateIncidenceGraph(const IncidenceGraph::Params &params, AcyclicTest<IncidenceGraph::IntersectionFlags> *test);
+        void CreateIncidenceGraphLocally(const IncidenceGraph::Params &params, AcyclicTest<IncidenceGraph::IntersectionFlags> *test);
+        void SendMPIData(const IncidenceGraph::Params &params, int processRank);
+        void SetMPIIncidenceGraphData(int *buffer, int size);
         void CreateIntNodesMapWithBorderNodes();
     };
 
@@ -122,12 +133,13 @@ public:
 
     void GetIntersection(std::vector<Vertex> &intersection, std::set<Vertex> &setA, std::set<Vertex> &setB);
     
-    ParallelGraph(IncidenceGraph *ig, SimplexList &simplexList, IncidenceGraph::Params params, IncidenceGraph::ParallelParams parallelParams, AcyclicTest<IncidenceGraph::IntersectionFlags> *test);
+    ParallelGraph(IncidenceGraph *ig, SimplexList &simplexList, IncidenceGraph::Params params, IncidenceGraph::ParallelParams parallelParams, AcyclicTest<IncidenceGraph::IntersectionFlags> *test, bool local);
     ~ParallelGraph();
 
 private:
 
     IncidenceGraph *incidenceGraph;
+    bool local;
 
     DataNodes dataNodes;
     DataEdges dataEdges;
@@ -137,6 +149,8 @@ private:
     void PrepareData(SimplexList &simplexList, int packSize);
     void DivideData(SimplexList &simplexList, int packSize);
     void CreateDataEdges();
+    DataNode *GetNodeWithProcessRank(int processRank);
+    void CalculateIncidenceGraphs(const IncidenceGraph::Params &params, AcyclicTest<IncidenceGraph::IntersectionFlags> *test);
     void CreateAcyclicTree();
     void CombineGraphs();
 

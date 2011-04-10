@@ -28,37 +28,32 @@ public:
     static void PrintHelp();
     static void ProcessArguments(int, char **);
 
-    static int GetBetti(SimplexList &, int);
+    static AcyclicTest<IncidenceGraph::IntersectionFlags> *GetAcyclicTest();
+    
+    static void GenerateData(SimplexList &);
 
-    static void TestRandom(int, int, int);
-    static void TestReverseRandom(int, int, int);
-    static void TestAcyclicTree(int, int);
-    static void TestFromFile(const char *);
-    static void TestFromList(const char *);
+    static void Test(SimplexList &, ReductionType);
+    static void Test(IncidenceGraph *, ReductionType, float);
+    static void TestAndCompare(SimplexList &);
+
+    static void StandardTest();
+    static void TestFromList();
+
     static void TestFromCommandLine(int, char **);
 
-private:
-
-    static void TestAndCompareMinimalization(SimplexList &, std::string);
-    static void TestMinimalization(const char *);
-    static void TestAndCompareOutputCreation(SimplexList &, std::string);
-    static void TestOutputCreation(const char *);
-    
-    static AcyclicTest<IncidenceGraph::IntersectionFlags> *GetAcyclicTest();
-    static bool IsAcyclicSubsetReduction(ReductionType);
-
+    static int GetBetti(SimplexList &, int);
     static float ComputeHomology(OutputGraph *, bool);
-    static void Test(SimplexList &, ReductionType);
-    static void TestAndCompare(SimplexList &, std::string);
+
+private:
+    
+    static bool IsAcyclicSubsetReduction(ReductionType);
 
     // testType:
     // 0 - random
     // 1 - "reverse" random
-    // 2 - single
-    // 3 = list
-    // 4 - minimalization
-    // 5 - output generation
-    // 6 - acyclic tree
+    // 2 - single file
+    // 3 - acyclic tree
+    // 4 - list
     static int              testType; 
     static std::string      inputFilename;
     static int              acyclicTestNumber;
@@ -78,6 +73,7 @@ private:
     static IncidenceGraph::Params           incidenceGraphParams;
     static IncidenceGraph::ParallelParams   parallelParams;
 
+    friend class MPITest;
 };
 
 #endif	/* TESTS_H */
