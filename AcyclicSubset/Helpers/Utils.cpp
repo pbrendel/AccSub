@@ -92,19 +92,17 @@ void Debug::PrintAcyclicSet(std::ostream &str, IncidenceGraph::Nodes &nodes)
 
 void Debug::PrintGraph(std::ostream &str, IncidenceGraph::Nodes &nodes)
 {
-#ifdef DEBUG
-    for (IncidenceGraph::Nodes::iterator i = nodes.begin(); i != nodes.end(); i++)
-    {
-        IncidenceGraph::Node *n = (*i);
-        str<<"vertex: "<<n->index<<":"<<std::endl;
-        str<<"neighbours: ";
-        for (IncidenceGraph::Edges::iterator j = n->edges.begin(); j != n->edges.end(); j++)
-        {
-            str<<j->node->index<<", ";
-        }        
-       str<<std::endl;
-    }
-#endif
+//    for (IncidenceGraph::Nodes::iterator i = nodes.begin(); i != nodes.end(); i++)
+//    {
+//        IncidenceGraph::Node *n = (*i);
+//        str<<"vertex: "<<n->index<<":"<<std::endl;
+//        str<<"neighbours: ";
+//        for (IncidenceGraph::Edges::iterator j = n->edges.begin(); j != n->edges.end(); j++)
+//        {
+//            str<<j->node->index<<", ";
+//        }
+//       str<<std::endl;
+//    }
 }
 
 void Debug::Print(std::ostream &str, std::map<Simplex, IncidenceGraph::IntersectionFlags> &flags)

@@ -13,7 +13,7 @@ class MPITest
 {
 
     static void Master(int argc, char **argv);
-    static void Slave();
+    static void Slave(int processRank);
 
 public:
 

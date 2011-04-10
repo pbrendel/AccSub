@@ -1,5 +1,6 @@
 #include "Helpers/Utils.h"
 #include "Helpers/Tests.h"
+#include "Helpers/MPITest.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 // co mozna zrobic szybciej?
@@ -14,7 +15,8 @@ int main(int argc, char *argv[])
         Log::Init("log.txt");
 #endif
 
-    Tests::TestFromCommandLine(argc, argv);
+    MPITest::Test(argc, argv);
+//    Tests::TestFromCommandLine(argc, argv);
 
 #ifdef USE_LOG
         Log::Close();

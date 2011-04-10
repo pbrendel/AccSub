@@ -214,7 +214,7 @@ void Tests::GenerateData(SimplexList &simplexList)
         default:
             break;
     }
-    Timer::Update("data generated generated");
+    Timer::Update("data generated");
 }
 
 ////////////////////////////////////////////////////////////////////////////////

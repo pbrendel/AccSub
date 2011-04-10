@@ -62,6 +62,7 @@ public:
         }
 
         void CreateIncidenceGraphLocally(const IncidenceGraph::Params &params, AcyclicTest<IncidenceGraph::IntersectionFlags> *test);
+        int GetConstantSimplexSize();
         void SendMPIData(const IncidenceGraph::Params &params, int processRank);
         void SetMPIIncidenceGraphData(int *buffer, int size);
         void CreateIntNodesMapWithBorderNodes();

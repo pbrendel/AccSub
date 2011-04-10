@@ -15,7 +15,7 @@ SimplexData::SimplexData(int* buffer, int size)
 
 SimplexData::SimplexData(const SimplexPtrList& simplexPtrList, const std::set<Vertex>& borderVerts, int dim, int acyclicTestNumber, int simplexSize)
 {
-    int size = CalcBufferSize(simplexPtrList, borderVerts.size(), simplexSize);
+    size = CalcBufferSize(simplexPtrList, borderVerts.size(), simplexSize);
     buffer = new int[size];
 
     int index = 0;
@@ -138,6 +138,7 @@ IncidenceGraphData::IncidenceGraphData(const IncidenceGraph* ig)
 {
     size = CalcBufferSize(ig);
     std::vector<int> simplicesOnBorder;
+    std::vector<int> simplicesInAcyclicSubset;
     buffer = new int[size];
     int index = 0;
     // wymiar
@@ -150,6 +151,10 @@ IncidenceGraphData::IncidenceGraphData(const IncidenceGraph* ig)
         {
             simplicesOnBorder.push_back((*node)->newIndex);
         }
+        if ((*node)->IsAcyclic())
+        {
+            simplicesInAcyclicSubset.push_back((*node)->newIndex);
+        }
         buffer[index++] = (*node)->index;
         buffer[index++] = (*node)->newIndex;
         buffer[index++] = (*node)->GetAcyclicIntersectionFlags();
@@ -161,6 +166,11 @@ IncidenceGraphData::IncidenceGraphData(const IncidenceGraph* ig)
     }
     buffer[index++] = simplicesOnBorder.size();
     for (std::vector<int>::iterator i = simplicesOnBorder.begin(); i != simplicesOnBorder.end(); i++)
+    {
+        buffer[index++] = (*i);
+    }
+    buffer[index++] = simplicesInAcyclicSubset.size();
+    for (std::vector<int>::iterator i = simplicesInAcyclicSubset.begin(); i != simplicesInAcyclicSubset.end(); i++)
     {
         buffer[index++] = (*i);
     }
@@ -200,6 +210,11 @@ int IncidenceGraphData::CalcBufferSize(const IncidenceGraph* ig)
         {
             size++;
         }
+        // podobnie ma sie sprawa z sympleksami w zbiorze acyklicznym
+        if ((*node)->IsAcyclic())
+        {
+            size++;
+        }
         // 4 inty to:
         // - index
         // - newIndex
@@ -217,11 +232,12 @@ int IncidenceGraphData::CalcBufferSize(const IncidenceGraph* ig)
     // - wymiar
     // - ilosc wierzcholkow grafu
     // - ilosc sympleksow na brzegu
+    // - ilosc sympleksow w zbiorze acyklicznym
     // - ilosc skladowych spojnych
     // connectedComponentsCount mnozymy razy 2 bo bedziemy zapisywali
     // dla kazdej skladowej indeks jej reprezentanta i rozmiar podzbioru
     // acyklicznego
-    return size + connectedComponentsCount * 2 + 4;
+    return size + connectedComponentsCount * 2 + 5;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -270,7 +286,12 @@ IncidenceGraph *IncidenceGraphData::GetIncidenceGraph(const SimplexPtrList &simp
     {
         ig->nodes.at(buffer[index++])->IsOnBorder(true);
     }
-
+    // i sympleksy w zbiorze acyklicznym
+    int simplicesInAcyclicSubsetCount = buffer[index++];
+    for (int i = 0; i < simplicesInAcyclicSubsetCount; i++)
+    {
+        ig->nodes.at(buffer[index++])->IsAcyclic(true);
+    }
     // dane poszczegolnych skladowych spojnych
     int connectedComponentsCount = buffer[index++];
     // reprezentanci
