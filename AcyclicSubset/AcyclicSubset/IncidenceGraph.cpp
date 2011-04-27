@@ -149,9 +149,6 @@ void IncidenceGraph::CreateGraph(bool minimizeSimplices)
         }        
     }
 
-    Log::stream<<"border verts: "<<std::endl;
-    Debug::Print(Log::stream, borderVerts);
-
     std::set<Vertex> connectedComponentBorder;
     Simplex minimalSimplex;
     std::queue<Node *> L;    
@@ -230,10 +227,10 @@ void IncidenceGraph::CreateGraph(bool minimizeSimplices)
         }
         connectedComponentsBorders.push_back(connectedComponentBorder);
         connectedComponentBorder.clear();
-//        if (borderVerts.size() > 0)
-//        {
-//            std::cout<<"number of simplices in border: "<<nodesOnBorder<<" with total simplices count: "<<totalNodes<<std::endl;
-//        }
+        if (borderVerts.size() > 0)
+        {
+            std::cout<<"number of simplices in border: "<<nodesOnBorder<<" with total simplices count: "<<totalNodes<<std::endl;
+        }
     }
 
     #ifdef USE_LOG
@@ -451,7 +448,7 @@ void IncidenceGraph::CalculateAcyclicSubsetWithSpanningTree(AcyclicTest<Intersec
        }
 
         connectedComponentsAcyclicSubsetSize.push_back(size);
-        std::cout<<"number of acyclic subsets in "<<index++<<"-th connected component: "<<firstNodes.size()<<" path size: "<<paths.size()<<std::endl;
+        std::cout<<"number of acyclic subsets in "<<index++<<"-th connected component: "<<firstNodes.size()<<std::endl;
 
         // jezeli wiecej niz jeden podzbior acykliczny, to tworzymy graf
         if (firstNodes.size() > 1)

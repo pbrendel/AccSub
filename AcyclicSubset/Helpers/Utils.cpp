@@ -3,6 +3,10 @@
 #include <iostream>
 #include <algorithm>
 
+#ifdef USE_MPI
+#include <mpi.h>
+#endif
+
 ////////////////////////////////////////////////////////////////////////////////
 // Debug
 
@@ -163,7 +167,7 @@ void Log::Close()
 ////////////////////////////////////////////////////////////////////////////////
 // Timer
 
-clock_t Timer::now = 0;
+Timer::Time Timer::now = 0;
 
 void Timer::Init()
 {
@@ -172,8 +176,13 @@ void Timer::Init()
 
 float Timer::Update(const char *msg)
 {
+#ifdef USE_MPI
+    double t = MPI_Wtime();
+    float s = float(t - now);
+#else
     clock_t t = clock();
     float s = float(t - now)/ CLOCKS_PER_SEC;
+#endif
     std::cout<<msg<<" : "<<s<<std::endl;
     now = t;
     return s;
@@ -181,27 +190,40 @@ float Timer::Update(const char *msg)
 
 float Timer::Update()
 {
+#ifdef USE_MPI
+    double t = MPI_Wtime();
+    float s = float(t - now);
+#else
     clock_t t = clock();
     float s = float(t - now)/ CLOCKS_PER_SEC;
+#endif
     now = t;
     return s;
 }
 
-clock_t Timer::Now()
+Timer::Time Timer::Now()
 {
     return now;
 }
 
-float Timer::TimeFrom(clock_t t, const char *msg)
+float Timer::TimeFrom(Timer::Time t, const char *msg)
 {
+#ifdef USE_MPI
+    float s = float(MPI_Wtime() - t);
+#else
     float s = float(clock() - t)/ CLOCKS_PER_SEC;
+#endif
     std::cout<<msg<<" : "<<s<<std::endl;
     return s;
 }
 
-float Timer::TimeFrom(clock_t t)
+float Timer::TimeFrom(Timer::Time t)
 {
+#ifdef USE_MPI
+    float s = float(MPI_Wtime() - t);
+#else
     float s = float(clock() - t)/ CLOCKS_PER_SEC;
+#endif
     return s;
 }
 

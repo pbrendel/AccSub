@@ -3,7 +3,6 @@
 
 #include "IncidenceGraph.h"
 
-#define USE_MPI
 #define MPI_MY_WORK_TAG        1
 #define MPI_MY_DIE_TAG         2
 #define MPI_MY_DATASIZE_TAG    3
@@ -14,6 +13,7 @@ class ParallelGraph
 public:
 
     struct DataNode;
+    struct AcyclicTreeNode;
     
     struct DataEdge
     {
@@ -34,6 +34,8 @@ public:
         std::set<Vertex> verts;
         std::set<Vertex> borderVerts;
         std::vector<DataEdge *> edges;
+
+        std::vector<AcyclicTreeNode *> acyclicTreeNodes;
 
         IncidenceGraph *ig;
         IncidenceGraph::IntNodesMap H;
@@ -71,8 +73,6 @@ public:
     typedef std::vector<DataNode *> DataNodes;
     typedef std::vector<DataEdge *> DataEdges;
 
-    struct AcyclicTreeNode;
-
     struct AcyclicTreeEdge
     {
         AcyclicTreeNode *nodeA;
@@ -96,6 +96,7 @@ public:
 
     struct AcyclicTreeNode
     {
+        DataNode *parent;
         int acyclicID;
         std::set<Vertex> borderVerts;
         int acyclicSubsetSize;
@@ -104,8 +105,9 @@ public:
         std::vector<Vertex> singleBorderVerts;
         bool isConnectedToAcyclicSubset;
 
-        AcyclicTreeNode(int id, IncidenceGraph::ConnectedComponent connectedComponent, std::set<Vertex> &borderVerts, int acyclicSubsetSize)
+        AcyclicTreeNode(DataNode *parent, int id, IncidenceGraph::ConnectedComponent connectedComponent, std::set<Vertex> &borderVerts, int acyclicSubsetSize)
         {
+            this->parent = parent;
             this->acyclicID = id;
             this->connectedComponent = connectedComponent;
             this->borderVerts = borderVerts;
@@ -154,6 +156,10 @@ private:
     void CalculateIncidenceGraphs(const IncidenceGraph::Params &params, AcyclicTest<IncidenceGraph::IntersectionFlags> *test);
     void CreateAcyclicTree();
     void CombineGraphs();
+
+public:
+    
+    static void MPISlave(int processRank);
 
 };
 

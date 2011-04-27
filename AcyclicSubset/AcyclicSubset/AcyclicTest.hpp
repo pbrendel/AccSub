@@ -20,6 +20,8 @@ public:
     virtual bool IsAcyclic(Simplex &simplex, SimplexList &intersection) = 0;
     virtual bool IsAcyclic(Simplex &simplex, FlagsType intersectionFlags, FlagsType intersectionFlagsMaximalFaces) = 0;
 
+    static AcyclicTest *Create(int acyclicTestNumber, int dim);
+
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -255,6 +257,16 @@ public:
         return false;
     }
 };
+
+
+////////////////////////////////////////////////////////////////////////////////
+
+template <class FlagsType>
+AcyclicTest<FlagsType> *AcyclicTest<FlagsType>::Create(int acyclicTestNumber, int dim)
+{
+    if (acyclicTestNumber == 1) return new AcyclicTestCodim1<FlagsType>(dim);
+    return new AcyclicTestTabs<FlagsType>(dim); // default
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 

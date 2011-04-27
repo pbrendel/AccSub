@@ -10,6 +10,10 @@
 #include "../AcyclicSubset/IncidenceGraph.h"
 #include "../AcyclicSubset/OutputGraph.h"
 
+#ifdef USE_MPI
+#include <mpi.h>
+#endif
+
 ////////////////////////////////////////////////////////////////////////////////
 // Debug
 
@@ -53,16 +57,26 @@ public:
 class Timer
 {
 
-    static clock_t now;
+public:
+
+#ifdef USE_MPI
+    typedef double Time;
+#else
+    typedef clock_t Time;
+#endif
+
+private:
+    
+    static Time now;
 
 public:
 
     static void Init();
     static float Update(const char *);
     static float Update();
-    static clock_t Now();
-    static float TimeFrom(clock_t);
-    static float TimeFrom(clock_t, const char *);
+    static Time Now();
+    static float TimeFrom(Time);
+    static float TimeFrom(Time, const char *);
     
 };
 

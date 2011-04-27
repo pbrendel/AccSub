@@ -10,6 +10,7 @@
 #include <map>
 #include <list>
 #include <cstdlib>
+#include <cmath> // ceil()
 
 #ifdef USE_MPI
 #include <mpi.h>
@@ -282,9 +283,23 @@ ParallelGraph::ParallelGraph(IncidenceGraph *ig, SimplexList &simplexList, Incid
 #else
     this->local = true;
 #endif
-    DivideData(simplexList, parallelParams.packSize);
+    int packSize = parallelParams.packSize;
+    if (parallelParams.packsCount != -1)
+    {
+        packSize = (int)ceil(float(simplexList.size()) / parallelParams.packsCount);
+    }
+    std::cout<<"pack size: "<<packSize<<std::endl;
+    if (parallelParams.prepareData)
+    {
+        PrepareData(simplexList, packSize);
+        Timer::Update("preparing data");
+    }
+    DivideData(simplexList, packSize);
+    Timer::Update("dividing data");
     CreateDataEdges();
+    Timer::Update("creating data connections");
     CalculateIncidenceGraphs(params, test);
+    Timer::Update("creating incidence graphs");
     CreateAcyclicTree();
     CombineGraphs();
 }
@@ -383,10 +398,10 @@ void ParallelGraph::PrepareData(SimplexList &simplexList, int packSize)
 
 void ParallelGraph::DivideData(SimplexList& simplexList, int packSize)
 {
-    // PrepareData(simplexList, packSize);
     DataNode *currentNode =  new DataNode();
     int simplicesLeft = packSize;
     SimplexList::iterator it = simplexList.begin();
+    int testIndex = 0;
     while (it != simplexList.end())
     {
         currentNode->simplexPtrList.push_back(&(*it));
@@ -402,6 +417,7 @@ void ParallelGraph::DivideData(SimplexList& simplexList, int packSize)
             simplicesLeft = packSize;
         }
         it++;
+        testIndex++;
     }
     if (currentNode->simplexPtrList.size() > 0)
     {
@@ -428,12 +444,12 @@ void ParallelGraph::CreateDataEdges()
             }
         }
     }
-//
-//    for (DataNodes::iterator i = dataNodes.begin(); i != dataNodes.end(); i++)
-//    {
-//        DataNode *node = *i;
-//        std::cout<<"node size "<<node->simplexList.size()<<" border verts: "<<node->borderVerts.size()<<" verts size: "<<node->verts.size()<<std::endl;
-//    }
+
+    for (DataNodes::iterator i = dataNodes.begin(); i != dataNodes.end(); i++)
+    {
+        DataNode *node = *i;
+        std::cout<<"border verts: "<<node->borderVerts.size()<<" verts size: "<<node->verts.size()<<std::endl;
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -531,28 +547,46 @@ void ParallelGraph::CreateAcyclicTree()
         std::vector<int>::iterator ccass = ig->connectedComponentsAcyclicSubsetSize.begin();
         for (IncidenceGraph::ConnectedComponents::iterator cc = ig->connectedComponents.begin(); cc != ig->connectedComponents.end(); cc++)
         {
-            acyclicTreeNodes.push_back(new AcyclicTreeNode(currentID++, *cc, *ccb, *ccass));
+            AcyclicTreeNode *newNode = new AcyclicTreeNode(*i, currentID++, *cc, *ccb, *ccass);
+            (*i)->acyclicTreeNodes.push_back(newNode);
+            acyclicTreeNodes.push_back(newNode);
             ccb++;
             ccass++;
         }
     }
 
+    Timer::Update("creating acyclic tree nodes");
+
     // tworzymy krawedzie w grafie
-    for (AcyclicTreeNodes::iterator i = acyclicTreeNodes.begin(); i != acyclicTreeNodes.end(); i++)
+    for (AcyclicTreeNodes::iterator node = acyclicTreeNodes.begin(); node != acyclicTreeNodes.end(); node++)
     {
-        for (AcyclicTreeNodes::iterator j = i + 1; j != acyclicTreeNodes.end(); j++)
+        DataNode *parent = (*node)->parent;
+        std::vector<AcyclicTreeNode *> potentialNeighbours;
+        potentialNeighbours.insert(potentialNeighbours.end(), parent->acyclicTreeNodes.begin(), parent->acyclicTreeNodes.end());
+        for (DataEdges::iterator edge = parent->edges.begin(); edge != parent->edges.end(); edge++)
         {
+            DataNode *neighbour = ((*edge)->nodeA == parent) ? (*edge)->nodeB : (*edge)->nodeA;
+            potentialNeighbours.insert(potentialNeighbours.end(), neighbour->acyclicTreeNodes.begin(), neighbour->acyclicTreeNodes.end());
+        }
+        for (AcyclicTreeNodes::iterator neighbour = potentialNeighbours.begin(); neighbour != potentialNeighbours.end(); neighbour++)
+        {
+            if ((*neighbour)->acyclicID <= (*node)->acyclicID)
+            {
+                continue;
+            }
             Simplex intersection;
-            GetSortedIntersectionOfUnsortedSets(intersection, (*i)->borderVerts, (*j)->borderVerts);
+            GetSortedIntersectionOfUnsortedSets(intersection, (*node)->borderVerts, (*neighbour)->borderVerts);
             if (intersection.size() > 0)
             {
-                AcyclicTreeEdge *edge = new AcyclicTreeEdge(*i, *j, intersection.front());
+                AcyclicTreeEdge *edge = new AcyclicTreeEdge(*node, *neighbour, intersection.front());
                 acyclicTreeEdges.push_back(edge);
-                (*i)->AddEdge(edge);
-                (*j)->AddEdge(edge);
+                (*node)->AddEdge(edge);
+                (*neighbour)->AddEdge(edge);
             }
         }
     }
+
+    Timer::Update("creating acyclic tree edges");
 
     // i na koncu drzewo rozpinajace
     for (AcyclicTreeEdges::iterator edge = acyclicTreeEdges.begin(); edge != acyclicTreeEdges.end(); edge++)
@@ -572,6 +606,8 @@ void ParallelGraph::CreateAcyclicTree()
             }
         }
     }
+
+    Timer::Update("creating spanning tree");
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -587,12 +623,22 @@ void ParallelGraph::CombineGraphs()
         if ((*i)->isAcyclic) (*i)->FindAcyclicConnections();
     }
 
+    Timer::Update("searching paths from acyclic subsets to border");
+    Timer::Time timeStart = Timer::Now();
+
+    float creatingMapsTime = 0;
+    float connectingSimplicesTime = 0;
+    int neighboursCount = 0;
+    int nodesCount = 0;
+
     // laczymy sympleksy
     for (DataEdges::iterator edge = dataEdges.begin(); edge != dataEdges.end(); edge++)
     {
         IncidenceGraph::Nodes nodesA = (*edge)->nodeA->ig->nodes;
         (*edge)->nodeB->CreateIntNodesMapWithBorderNodes();
         IncidenceGraph::IntNodesMap HB = (*edge)->nodeB->H;
+
+        creatingMapsTime += Timer::Update();
 
         for (IncidenceGraph::Nodes::iterator node = nodesA.begin(); node != nodesA.end(); node++)
         {
@@ -607,8 +653,10 @@ void ParallelGraph::CombineGraphs()
                 {
                     continue;
                 }
+                neighboursCount += neighbours.size();
+                nodesCount++;
                 for (IncidenceGraph::Nodes::iterator neighbour = neighbours.begin(); neighbour != neighbours.end(); neighbour++)
-                {
+                {                    
                     if (!(*node)->HasNeighbour(*neighbour))
                     {
                         (*node)->AddNeighbour(*neighbour);
@@ -617,7 +665,17 @@ void ParallelGraph::CombineGraphs()
                 }
             }
         }
+        connectingSimplicesTime += Timer::Update();
     }
+
+    Timer::TimeFrom(timeStart, "connecting simplices on border");
+    std::cout<<"creating maps: "<<creatingMapsTime<<std::endl;
+    std::cout<<"connecting simplices: "<<connectingSimplicesTime<<std::endl;
+    if (nodesCount > 0)
+    {
+        std::cout<<"avg neighbours count: "<<neighboursCount / nodesCount<<std::endl;
+    }
+    Timer::Update();
 
     // przenosimy wszystkie sympleksy do jednego grafu
     for (DataNodes::iterator i = dataNodes.begin(); i != dataNodes.end(); i++)
@@ -626,11 +684,73 @@ void ParallelGraph::CombineGraphs()
         (*i)->ig->nodes.clear();
     }
 
+    Timer::Update("moving simplices to single incidence graph");
+
     // aktualizujemy zbior acykliczny o polaczenia pomiedzy podgrafami
     for (AcyclicTreeEdges::iterator i = acyclicTreeEdges.begin(); i != acyclicTreeEdges.end(); i++)
     {
         if ((*i)->isAcyclic) (*i)->UpdateAcyclicConnections();
     }
+
+    Timer::Update("adding paths to acyclic subset");
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+void ParallelGraph::MPISlave(int processRank)
+{
+#ifdef USE_MPI
+
+    MPI_Status status;
+    int dataSize;
+
+    while (1)
+    {
+
+        // pobieramy pierwszy komunikat
+        MPI_Recv(&dataSize, 1, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+
+        // jezeli polecenie zakonczenia pracy to konczymy
+        if (status.MPI_TAG == MPI_MY_DIE_TAG)
+        {
+            return;
+        }
+
+        // wpp. musi to byc MPI_MY_DATASIZE_TAG
+        assert(status.MPI_TAG == MPI_MY_DATASIZE_TAG);
+
+        // pobieramy bufor z danymi
+        int *buffer = new int[dataSize];
+        MPI_Recv(buffer, dataSize, MPI_INT, 0, MPI_MY_WORK_TAG, MPI_COMM_WORLD, &status);
+
+        // z pobranego bufora budujemy dane wejsciowe
+        MPIData::SimplexData *data = new MPIData::SimplexData(buffer, dataSize);
+        SimplexList simplexList;
+        std::set<Vertex> borderVerts;
+        IncidenceGraph::Params params;
+        data->GetSimplexData(simplexList, borderVerts, params.dim, params.acyclicTestNumber);
+        AcyclicTest<IncidenceGraph::IntersectionFlags> *test = AcyclicTest<IncidenceGraph::IntersectionFlags>::Create(params.acyclicTestNumber, params.dim);
+
+        // tworzymy graf incydencji z policzonym podzbiorem acyklicznym
+        IncidenceGraph *ig = IncidenceGraph::CreateWithBorderVerts(simplexList, borderVerts, params);
+        ig->CalculateAcyclicSubsetWithSpanningTree(test);
+
+        delete data;
+        delete test;
+
+        // zamieniamy na bufor danych
+        MPIData::IncidenceGraphData *igData = new MPIData::IncidenceGraphData(ig);
+        dataSize = igData->GetSize();
+
+        // i odsylamy do mastera
+        MPI_Send(&dataSize, 1, MPI_INT, 0, MPI_MY_DATASIZE_TAG, MPI_COMM_WORLD);
+        MPI_Send(igData->GetBuffer(), dataSize, MPI_INT,0, MPI_MY_DATA_TAG, MPI_COMM_WORLD);
+
+        delete igData;
+        delete ig;
+    }
+
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////////////

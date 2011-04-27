@@ -25,43 +25,34 @@ public:
     struct Params
     {
         int dim;
+        int acyclicTestNumber;
         bool minimizeSimplices;
         bool sortNodes;
 
     public:
 
-        Params(int dim)
+        Params(int dim = 3, int acyclicTestNumber = 0, bool minimizeSimplices = false, bool sortNodes = false)
         {
             this->dim = dim;
-            this->minimizeSimplices = false;
-            this->sortNodes = true;
-        }
-
-        Params(int dim, bool minimizeSimplices)
-        {
-            this->dim = dim;
-            this->minimizeSimplices = minimizeSimplices;
-            this->sortNodes = true;
-        }
-
-        Params(int dim, bool minimizeSimplices, bool sortNodes)
-        {
-            this->dim = dim;
+            this->acyclicTestNumber = acyclicTestNumber;
             this->minimizeSimplices = minimizeSimplices;
             this->sortNodes = sortNodes;
         }
-
     };
 
     struct ParallelParams
     {
         int packSize;
+        int packsCount;
+        bool prepareData;
         
     public:
         
-        ParallelParams(int packSize)
+        ParallelParams(int packSize, int packsCount = -1, bool prepareData = false)
         {
             this->packSize = packSize;
+            this->packsCount = packsCount;
+            this->prepareData = prepareData;
         }
     };
 

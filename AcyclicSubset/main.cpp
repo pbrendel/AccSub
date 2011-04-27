@@ -15,8 +15,11 @@ int main(int argc, char *argv[])
         Log::Init("log.txt");
 #endif
 
+#ifdef USE_MPI
     MPITest::Test(argc, argv);
-//    Tests::TestFromCommandLine(argc, argv);
+#else
+    Tests::TestFromCommandLine(argc, argv);
+#endif
 
 #ifdef USE_LOG
         Log::Close();

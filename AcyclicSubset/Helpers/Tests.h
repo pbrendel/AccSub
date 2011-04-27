@@ -27,8 +27,6 @@ public:
 
     static void PrintHelp();
     static void ProcessArguments(int, char **);
-
-    static AcyclicTest<IncidenceGraph::IntersectionFlags> *GetAcyclicTest();
     
     static void GenerateData(SimplexList &);
 
@@ -56,7 +54,6 @@ private:
     // 4 - list
     static int              testType; 
     static std::string      inputFilename;
-    static int              acyclicTestNumber;
     static int              simplicesCount;
     static int              vertsCount;
     static int              nodeSimplicesCount;
