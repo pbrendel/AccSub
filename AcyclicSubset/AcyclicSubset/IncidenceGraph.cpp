@@ -532,6 +532,13 @@ void IncidenceGraph::CreateAcyclicSpanningTree(std::vector<IncidenceGraph::Path>
 
 void IncidenceGraph::RemoveAcyclicSubset()
 {
+    for (ConnectedComponents::iterator i = connectedComponents.begin(); i != connectedComponents.end(); i++)
+    {
+        if ((*i)->IsAcyclic())
+        {
+            *i = FindNode(*i, FindNotAcyclicNode());
+        }
+    }
     for (Nodes::iterator i = nodes.begin(); i != nodes.end(); i++)
     {
         if ((*i)->IsAcyclic())

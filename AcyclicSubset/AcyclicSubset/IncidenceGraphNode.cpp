@@ -74,6 +74,22 @@ bool IncidenceGraph::Node::HasAcyclicIntersection(AcyclicTest<IntersectionFlags>
     test->IsAcyclic(*simplex, acyclicIntersectionFlags, acyclicIntersectionFlagsMaximalFaces);
 }
 
+Vertex IncidenceGraph::Node::FindAcyclicVertex()
+{
+    if (this->acyclicIntersectionFlags == 0)
+    {
+        return -1;
+    }
+    for (Simplex::iterator v = simplex->begin(); v != simplex->end(); v++)
+    {
+        if (acyclicIntersectionFlags & (1 << NormalizeVertex(*v)))
+        {
+            return *v;
+        }
+    }
+    return -1;
+}
+
 void IncidenceGraph::Node::UpdateAcyclicIntersectionWithVertex(Vertex v)
 {
     Simplex s(1);

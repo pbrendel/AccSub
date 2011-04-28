@@ -16,6 +16,16 @@ public:
     }
 };
 
+class FindNotAcyclicNode
+{
+public:
+
+    bool FoundNode(IncidenceGraph::Node *node)
+    {
+        return !node->IsAcyclic();
+    }
+};
+
 class FindNodeWithVertex
 {
     Vertex vertex;
@@ -108,6 +118,15 @@ public:
     bool FoundNode(IncidenceGraph::Node *n)
     {
         return n->IsAcyclic();
+    }
+};
+
+class FindPathToNodeWithAcyclicIntersection : public FindPathBase
+{
+public:
+    bool FoundNode(IncidenceGraph::Node *n)
+    {
+        return (n->GetAcyclicIntersectionFlags() != 0);
     }
 };
 

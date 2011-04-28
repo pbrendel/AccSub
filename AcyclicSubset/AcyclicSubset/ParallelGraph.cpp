@@ -27,6 +27,7 @@ void ParallelGraph::DataNode::CreateIncidenceGraphLocally(const IncidenceGraph::
     }
     ig = IncidenceGraph::CreateWithBorderVerts(localSimplexList, borderVerts, params);
     ig->CalculateAcyclicSubsetWithSpanningTree(test);
+    ig->RemoveAcyclicSubset();
 }
 
 int ParallelGraph::DataNode::GetConstantSimplexSize()
@@ -90,7 +91,7 @@ void ParallelGraph::AcyclicTreeNode::FindAcyclicSubsetToBorderConnection(Vertex 
     if (acyclicSubsetSize > 0)
     {
         // szukanie sciezki od wierzcholka w brzegu do najbliszego acyklicznego sempleksu
-        path = FindPath(FindNode(connectedComponent, FindNodeWithVertex(borderVertex)), connectedComponent, FindPathToAcyclicNode());
+        path = FindPath(FindNode(connectedComponent, FindNodeWithVertex(borderVertex)), connectedComponent, FindPathToNodeWithAcyclicIntersection());
         assert(path.size() > 0);
     }
     else
@@ -150,6 +151,7 @@ void ParallelGraph::AcyclicTreeNode::UpdatePathFromBorderToAcyclicSubset(Vertex 
         if ((*i)->GetAcyclicIntersectionFlags() & (1 << (*i)->NormalizeVertex(vertex)))
         {
             prevNode->UpdateAcyclicIntersectionWithEdge(lastVertex, vertex);
+            prevNode = 0;
             break;
         }
         else
@@ -157,8 +159,17 @@ void ParallelGraph::AcyclicTreeNode::UpdatePathFromBorderToAcyclicSubset(Vertex 
             prevNode->UpdateAcyclicIntersectionWithEdge(lastVertex, vertex);
             prevNode = (*i);
             lastVertex = vertex;
+            vertex = prevNode->FindAcyclicVertex();
+            if (vertex != -1)
+            {
+                prevNode->UpdateAcyclicIntersectionWithEdge(lastVertex, vertex);
+                prevNode = 0;
+                break;
+            }
         }
+        assert(!(*i)->GetAcyclicIntersectionFlags());
     }
+    assert(prevNode == 0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -172,16 +183,14 @@ void ParallelGraph::AcyclicTreeNode::UpdatePathFromBorderToAcyclicSubset(Vertex 
 void ParallelGraph::AcyclicTreeNode::UpdatePathFromAcyclicSubsetToBorder(Vertex borderVertex, IncidenceGraph::Path &path)
 {
     path.reverse();
-    // pierwszy node jest ze zbioru acyklicznego
-    IncidenceGraph::Node *prevNode = path.front();
     IncidenceGraph::Path::iterator i = path.begin();
+    // pierwszy node sasiaduje ze zbiorem acyklicznym
+    IncidenceGraph::Node *prevNode = *i;
     i++;
-    // ten wierzcholek MUSI byc w zbiorze acyklicznym, skoro otrzymalismy
-    // go z przeciecia acyklicznego wierzcholka z innym
-    Vertex lastVertex = GetVertexFromIntersection(prevNode->simplex, (*i)->simplex);
-    assert((*i)->GetAcyclicIntersectionFlags() & (1 << (*i)->NormalizeVertex(lastVertex)));
-    prevNode = *i;
-    i++;
+    // pierwszy node musi zawierac wierzcholek znajdujacy sie w zbiorze
+    // acyklicznym, bo takie byly warunki szukania sciezki
+    Vertex lastVertex = prevNode->FindAcyclicVertex();
+    assert(lastVertex != -1);
     for (; i != path.end(); i++)
     {
         Vertex vertex = GetVertexFromIntersection(prevNode->simplex, (*i)->simplex);
@@ -734,6 +743,7 @@ void ParallelGraph::MPISlave(int processRank)
         // tworzymy graf incydencji z policzonym podzbiorem acyklicznym
         IncidenceGraph *ig = IncidenceGraph::CreateWithBorderVerts(simplexList, borderVerts, params);
         ig->CalculateAcyclicSubsetWithSpanningTree(test);
+        ig->RemoveAcyclicSubset();
 
         delete data;
         delete test;

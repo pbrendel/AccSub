@@ -112,6 +112,7 @@ public:
         void RemoveNeighbour(Node *neighbour);
         void SetIntersection(Node *neighbour, const Simplex &intersection);
         bool HasAcyclicIntersection(AcyclicTest<IntersectionFlags> *test);
+        Vertex FindAcyclicVertex();
         void UpdateAcyclicIntersectionWithVertex(Vertex v);
         void UpdateAcyclicIntersectionWithEdge(Vertex v1, Vertex v2);
         void UpdateNeighboursAcyclicIntersection();
@@ -181,6 +182,8 @@ public:
 
     void CalculateAcyclicSubset(AcyclicTest<IntersectionFlags> *test);
     void CalculateAcyclicSubsetWithSpanningTree(AcyclicTest<IntersectionFlags> *test);
+
+    void RemoveAcyclicSubset();
     
     void GetAcyclicSubset(SimplexList &simplexList);
     int GetAcyclicSubsetSize();
@@ -205,7 +208,6 @@ private:
 
     void CreateAcyclicSpanningTree(std::vector<Path> &paths, int maxAcyclicSubsetID);
 
-    void RemoveAcyclicSubset();
     void AssignNewIndices();
 
     friend class MPIData::IncidenceGraphData;
