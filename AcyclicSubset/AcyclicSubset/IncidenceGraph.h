@@ -21,6 +21,7 @@ public:
 
     typedef unsigned int IntersectionFlags;
     // typedef IntersectionFlagsBitSet<4> IntersectionFlags;
+    typedef std::set<Vertex> VertsSet;
     
     struct Params
     {
@@ -113,6 +114,8 @@ public:
         void SetIntersection(Node *neighbour, const Simplex &intersection);
         bool HasAcyclicIntersection(AcyclicTest<IntersectionFlags> *test);
         Vertex FindAcyclicVertex();
+        Vertex FindAcyclicVertexNotEqual(Vertex vertex);
+        Vertex FindAcyclicVertexNotIn(const IncidenceGraph::VertsSet &vertsSet);
         void UpdateAcyclicIntersectionWithVertex(Vertex v);
         void UpdateAcyclicIntersectionWithEdge(Vertex v1, Vertex v2);
         void UpdateNeighboursAcyclicIntersection();
@@ -166,7 +169,6 @@ public:
     typedef Node *ConnectedComponent;
     typedef std::vector<ConnectedComponent> ConnectedComponents;
     typedef std::map<int, Nodes> IntNodesMap;
-    typedef std::set<Vertex> VertsSet;
 
     std::map<Simplex, IntersectionFlags> configurationsFlags;
     std::map<Simplex, IntersectionFlags> subconfigurationsFlags;

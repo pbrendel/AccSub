@@ -205,7 +205,7 @@ int IncidenceGraphData::CalcBufferSize(const IncidenceGraph* ig)
     int size = 0;
     for (IncidenceGraph::Nodes::const_iterator node = ig->nodes.begin(); node != ig->nodes.end(); node++)
     {
-        // jezeli jest na brzegu to bedziemy zapisywalie jego indeks
+        // jezeli jest na brzegu to bedziemy zapisywali jego indeks
         if ((*node)->IsOnBorder())
         {
             size++;

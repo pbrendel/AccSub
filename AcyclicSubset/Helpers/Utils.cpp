@@ -51,6 +51,20 @@ void Debug::Print(std::ostream &str, SimplexList &simplexList)
     }
 }
 
+void Debug::Print(std::ostream &str, SimplexPtrList &simplexPtrList)
+{
+    int index = 0;
+    for (SimplexPtrList::iterator i = simplexPtrList.begin(); i != simplexPtrList.end(); i++)
+    {
+        str<<index++<<" : ";
+        for (Simplex::iterator j = (*i)->begin(); j < (*i)->end(); j++)
+        {
+            str<<(*j)<<" ";
+        }
+        str<<std::endl;
+    }
+}
+
 void Debug::Print(std::ostream &str, IncidenceGraph::Nodes &nodes)
 {
     for (IncidenceGraph::Nodes::iterator i = nodes.begin(); i != nodes.end(); i++)

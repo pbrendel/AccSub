@@ -17,6 +17,10 @@
 #include "MPIData.h"
 #endif
 
+
+// test!!!
+#include "../Helpers/Tests.h"
+
 ////////////////////////////////////////////////////////////////////////////////
 
 void ParallelGraph::DataNode::CreateIncidenceGraphLocally(const IncidenceGraph::Params &params, AcyclicTest<IncidenceGraph::IntersectionFlags> *test)
@@ -108,16 +112,19 @@ void ParallelGraph::AcyclicTreeNode::UpdateAcyclicSubsetToBorderConnection(Verte
     {
         if (isConnectedToAcyclicSubset)
         {
+            std::cout<<"is connected to acyclic subset"<<std::endl;
             UpdatePathFromBorderToAcyclicSubset(borderVertex, path);
         }
         else
         {
+            std::cout<<"connecting to acyclic subset"<<std::endl;
             UpdatePathFromAcyclicSubsetToBorder(borderVertex, path);
             isConnectedToAcyclicSubset = true;
         }
     }
     else
     {
+        std::cout<<"updating border verts: "<<singleBorderVerts.size()<<std::endl;
         UpdateBorderVerts();
         singleBorderVerts.clear(); // zeby nie wykonalo sie drugi raz
     }
@@ -142,26 +149,36 @@ void ParallelGraph::AcyclicTreeNode::UpdatePathFromBorderToAcyclicSubset(Vertex 
     // zostal do niego dolaczony)
     if (prevNode->GetAcyclicIntersectionFlags() & (1 << prevNode->NormalizeVertex(borderVertex)))
     {
+        std::cout<<"vertex "<<borderVertex<<" is in acyclic subset -> finishing"<<std::endl;
         return;
     }
     Vertex lastVertex = borderVertex;
     for (; i != path.end(); i++)
     {
         Vertex vertex = GetVertexFromIntersection(prevNode->simplex, (*i)->simplex);
-        if ((*i)->GetAcyclicIntersectionFlags() & (1 << (*i)->NormalizeVertex(vertex)))
+        if ((*i)->GetAcyclicIntersectionFlags() & (1 << (*i)->NormalizeVertex(vertex)))     
         {
+            std::cout<<"adding acyclic edge "<<lastVertex<<" " <<vertex<<" -> finishing"<<std::endl;
             prevNode->UpdateAcyclicIntersectionWithEdge(lastVertex, vertex);
             prevNode = 0;
             break;
         }
         else
         {
-            prevNode->UpdateAcyclicIntersectionWithEdge(lastVertex, vertex);
+            // moze sie zdazyc, ze w pierwsze dwa sympleksy beda sasiadowaly
+            // wlasnie na wierzcholku w brzegu, dlatego sprawdzamy, czy nie
+            // dodajemy zdegenerowanej krawedzi
+            if (lastVertex != vertex)
+            {
+                prevNode->UpdateAcyclicIntersectionWithEdge(lastVertex, vertex);
+                std::cout<<"adding acyclic edge "<<lastVertex<<" " <<vertex<<std::endl;
+            }
             prevNode = (*i);
             lastVertex = vertex;
-            vertex = prevNode->FindAcyclicVertex();
+            vertex = prevNode->FindAcyclicVertexNotEqual(lastVertex);
             if (vertex != -1)
             {
+                std::cout<<"adding acyclic edge "<<lastVertex<<" " <<vertex<<" -> finishing"<<std::endl;
                 prevNode->UpdateAcyclicIntersectionWithEdge(lastVertex, vertex);
                 prevNode = 0;
                 break;
@@ -169,7 +186,8 @@ void ParallelGraph::AcyclicTreeNode::UpdatePathFromBorderToAcyclicSubset(Vertex 
         }
         assert(!(*i)->GetAcyclicIntersectionFlags());
     }
-    assert(prevNode == 0);
+    // test!!!
+    //assert(prevNode == 0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -189,19 +207,22 @@ void ParallelGraph::AcyclicTreeNode::UpdatePathFromAcyclicSubsetToBorder(Vertex 
     i++;
     // pierwszy node musi zawierac wierzcholek znajdujacy sie w zbiorze
     // acyklicznym, bo takie byly warunki szukania sciezki
-    Vertex lastVertex = prevNode->FindAcyclicVertex();
+    Vertex lastVertex = prevNode->FindAcyclicVertexNotIn(borderVerts);
+    std::cout<<"vertex "<<lastVertex<<" is acyclic"<<std::endl;
     assert(lastVertex != -1);
     for (; i != path.end(); i++)
     {
         Vertex vertex = GetVertexFromIntersection(prevNode->simplex, (*i)->simplex);
         if ((*i)->GetAcyclicIntersectionFlags() & (1 << (*i)->NormalizeVertex(vertex)))
         {
+            std::cout<<"adding acyclic edge "<<lastVertex<<" " <<vertex<<" -> finishing"<<std::endl;
             prevNode->UpdateAcyclicIntersectionWithEdge(lastVertex, vertex);
             prevNode = 0;
             break;
         }
         else
         {
+            std::cout<<"adding acyclic edge "<<lastVertex<<" " <<vertex<<std::endl;
             prevNode->UpdateAcyclicIntersectionWithEdge(lastVertex, vertex);
             prevNode = (*i);
             lastVertex = vertex;
@@ -212,6 +233,7 @@ void ParallelGraph::AcyclicTreeNode::UpdatePathFromAcyclicSubsetToBorder(Vertex 
     // dwoch osatnich node'ow polaczyc z wierzcholkiem na brzegu
     if (prevNode != 0)
     {
+        std::cout<<"adding acyclic edge "<<lastVertex<<" " <<borderVertex<<" -> finishing"<<std::endl;
         prevNode->UpdateAcyclicIntersectionWithEdge(lastVertex, borderVertex);
     }
 }
@@ -228,10 +250,12 @@ void ParallelGraph::AcyclicTreeNode::UpdateBorderVerts()
     // nie laczy zadnych zbiorow acyklicznych wiec mozna ja zignorowac
     if (singleBorderVerts.size() < 2)
     {
+        std::cout<<"less than 2 -> finishing"<<std::endl;
         return;
     }
     std::vector<Vertex>::iterator vertex = singleBorderVerts.begin();
     Vertex firstVertex = *vertex;
+    std::cout<<"first vertex: "<<firstVertex<<std::endl;
     vertex++;
     for (; vertex != singleBorderVerts.end(); vertex++)
     {
@@ -240,6 +264,7 @@ void ParallelGraph::AcyclicTreeNode::UpdateBorderVerts()
         assert(path.size() > 0);
         IncidenceGraph::Node *prevNode = path.back();
         Vertex lastVertex = *vertex;
+        std::cout<<"vertex: "<<lastVertex<<std::endl;
         IncidenceGraph::Path::reverse_iterator i = path.rbegin();
         i++;
         for (; i != path.rend(); i++)
@@ -247,12 +272,14 @@ void ParallelGraph::AcyclicTreeNode::UpdateBorderVerts()
             Vertex vertex = GetVertexFromIntersection(prevNode->simplex, (*i)->simplex);
             if ((*i)->GetAcyclicIntersectionFlags() & (1 << (*i)->NormalizeVertex(vertex)))
             {
+                std::cout<<"adding acyclic edge "<<lastVertex<<" " <<vertex<<" -> finishing"<<std::endl;
                 prevNode->UpdateAcyclicIntersectionWithEdge(lastVertex, vertex);
                 prevNode = 0;
                 break;
             }
             else
             {
+                std::cout<<"adding acyclic edge "<<lastVertex<<" " <<vertex<<std::endl;
                 prevNode->UpdateAcyclicIntersectionWithEdge(lastVertex, vertex);
                 prevNode = (*i);
                 lastVertex = vertex;
@@ -263,6 +290,7 @@ void ParallelGraph::AcyclicTreeNode::UpdateBorderVerts()
         // wierzcholkiem
         if (prevNode != 0)
         {
+            std::cout<<"adding acyclic edge "<<lastVertex<<" " <<firstVertex<<" -> finishing"<<std::endl;
             prevNode->UpdateAcyclicIntersectionWithEdge(lastVertex, firstVertex);
         }
     }
@@ -278,8 +306,28 @@ void ParallelGraph::AcyclicTreeEdge::FindAcyclicConnections()
 
 void ParallelGraph::AcyclicTreeEdge::UpdateAcyclicConnections()
 {
-    nodeA->UpdateAcyclicSubsetToBorderConnection(intersectionVertex, pathToA);
-    nodeB->UpdateAcyclicSubsetToBorderConnection(intersectionVertex, pathToB);
+    std::cout<<"intersection vertex: "<<intersectionVertex<<std::endl;
+
+    // najpierw uaktualnbiamy sciezke zbioru, ktory juz jest
+    // dolaczony do drzewa
+    // mamy wtedy pewnosc, ze jezeli pierwszy wierzcholek jest zaznaczony
+    // jako acykliczny, to znaczy, ze zostal dodany do zbioru acyklicznego
+    // juz wczesniej i mozna pod niego podpiac nowo dodawana czesc zbioru ac.
+
+    if (nodeA->isConnectedToAcyclicSubset)
+    {
+        Debug::Print(std::cout, pathToA);
+        nodeA->UpdateAcyclicSubsetToBorderConnection(intersectionVertex, pathToA);
+        Debug::Print(std::cout, pathToB);
+        nodeB->UpdateAcyclicSubsetToBorderConnection(intersectionVertex, pathToB);
+    }
+    else
+    {
+        Debug::Print(std::cout, pathToB);
+        nodeB->UpdateAcyclicSubsetToBorderConnection(intersectionVertex, pathToB);
+        Debug::Print(std::cout, pathToA);
+        nodeA->UpdateAcyclicSubsetToBorderConnection(intersectionVertex, pathToA);
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -407,12 +455,20 @@ void ParallelGraph::PrepareData(SimplexList &simplexList, int packSize)
 
 void ParallelGraph::DivideData(SimplexList& simplexList, int packSize)
 {
+    // test!!!
+    SimplexList tempSimplexList;
+
     DataNode *currentNode =  new DataNode();
     int simplicesLeft = packSize;
     SimplexList::iterator it = simplexList.begin();
-    int testIndex = 0;
+
+    // test!!!
+    int ttt = 0;
+
     while (it != simplexList.end())
     {
+        tempSimplexList.push_back(*it);
+
         currentNode->simplexPtrList.push_back(&(*it));
         for (Simplex::const_iterator i = it->begin(); i != it->end(); i++)
         {
@@ -422,16 +478,27 @@ void ParallelGraph::DivideData(SimplexList& simplexList, int packSize)
         if (simplicesLeft == 0)
         {
             dataNodes.push_back(currentNode);
+            ttt += currentNode->simplexPtrList.size();
             currentNode = new DataNode();
             simplicesLeft = packSize;
         }
         it++;
-        testIndex++;
+
+        // test!!!
+    //    if (tempSimplexList.size() > 3050) break;
     }
     if (currentNode->simplexPtrList.size() > 0)
     {
+        ttt += currentNode->simplexPtrList.size();
         dataNodes.push_back(currentNode);
+  //      std::cout<<"last pack: "<<std::endl;
+  //      Debug::Print(std::cout, currentNode->simplexPtrList);
     }
+
+    std::cout<<"simplex divided: "<<ttt<<std::endl;
+    std::cout<<"temp simplex list ("<<tempSimplexList.size()<<") homology:"<<std::endl;
+    //IncidenceGraph *ig = IncidenceGraph::CreateAndCalculateAcyclicSubsetOnline(simplexList, IncidenceGraph::Params(3), AcyclicTest<IncidenceGraph::IntersectionFlags>::Create(0, 3));
+    Tests::Test(tempSimplexList, RT_Coreduction);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -571,7 +638,6 @@ void ParallelGraph::CreateAcyclicTree()
     {
         DataNode *parent = (*node)->parent;
         std::vector<AcyclicTreeNode *> potentialNeighbours;
-        potentialNeighbours.insert(potentialNeighbours.end(), parent->acyclicTreeNodes.begin(), parent->acyclicTreeNodes.end());
         for (DataEdges::iterator edge = parent->edges.begin(); edge != parent->edges.end(); edge++)
         {
             DataNode *neighbour = ((*edge)->nodeA == parent) ? (*edge)->nodeB : (*edge)->nodeA;
@@ -689,16 +755,63 @@ void ParallelGraph::CombineGraphs()
     // przenosimy wszystkie sympleksy do jednego grafu
     for (DataNodes::iterator i = dataNodes.begin(); i != dataNodes.end(); i++)
     {
-         incidenceGraph->nodes.insert(incidenceGraph->nodes.begin(), (*i)->ig->nodes.begin(), (*i)->ig->nodes.end());
+         incidenceGraph->nodes.insert(incidenceGraph->nodes.end(), (*i)->ig->nodes.begin(), (*i)->ig->nodes.end());
         (*i)->ig->nodes.clear();
+    }
+
+    std::cout<<"nodes size: "<<incidenceGraph->nodes.size()<<std::endl;
+
+    // sprawdzamy czy mamy jedna skladowa spojna
+    Log::stream<<"first component nodes:"<<std::endl;
+    std::queue<IncidenceGraph::Node *> L;
+    L.push(incidenceGraph->nodes[0]);
+    incidenceGraph->nodes[0]->IsHelperFlag3(true);
+    while (!L.empty())
+    {
+        IncidenceGraph::Node *node = L.front();
+        L.pop();
+        Debug::Print(Log::stream, node->simplex);
+        Log::stream<<node->IsAcyclic()<<std::endl;
+        for (IncidenceGraph::Edges::iterator edge = node->edges.begin(); edge != node->edges.end(); edge++)
+        {
+            IncidenceGraph::Node *neighbour = (*edge).node;
+            if (neighbour->IsHelperFlag3())
+            {
+                continue;
+            }
+            neighbour->IsHelperFlag3(true);
+            L.push(neighbour);
+        }
+    }
+
+    Log::stream<<"not the same component nodes:"<<std::endl;
+    for (IncidenceGraph::Nodes::iterator node = incidenceGraph->nodes.begin(); node != incidenceGraph->nodes.end(); node++)
+    {
+        if ((*node)->IsHelperFlag3())
+        {
+            continue;
+        }
+        Debug::Print(Log::stream, (*node)->simplex);
+        Log::stream<<(*node)->IsAcyclic()<<std::endl;
     }
 
     Timer::Update("moving simplices to single incidence graph");
 
+
+    //test!!!
+    int ttt = 0;
+
     // aktualizujemy zbior acykliczny o polaczenia pomiedzy podgrafami
     for (AcyclicTreeEdges::iterator i = acyclicTreeEdges.begin(); i != acyclicTreeEdges.end(); i++)
     {
+        if ((*i)->isAcyclic)
+        {
+            std::cout<<"updating "<<++ttt<<std::endl;
+        }
+
+   //     if (ttt != 4 && ttt != 5)
         if ((*i)->isAcyclic) (*i)->UpdateAcyclicConnections();
+   //     if (ttt > 2) break;
     }
 
     Timer::Update("adding paths to acyclic subset");

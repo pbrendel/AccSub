@@ -131,6 +131,7 @@ IncidenceGraph *IncidenceGraph::CreateAndCalculateAcyclicSubsetParallel(SimplexL
 {
     IncidenceGraph *ig = new IncidenceGraph(params);
     ParallelGraph *pg = new ParallelGraph(ig, simplexList, params, parallelParams, test, local);
+    // test!!! (usuwanie pg)
  //   delete pg;
     return ig;
 }
@@ -171,6 +172,7 @@ void IncidenceGraph::CreateGraph(bool minimizeSimplices)
         L.push(*i);
         while (!L.empty())
         {
+
             totalNodes++;
             Node *currentNode = L.front();
             L.pop();
@@ -181,10 +183,13 @@ void IncidenceGraph::CreateGraph(bool minimizeSimplices)
             // sprawdzamy wszytkie punkty nalezace do sympleksu w tym wierzcholku
             for (Simplex::iterator vertex = currentNode->simplex->begin(); vertex != currentNode->simplex->end(); vertex++)
             {
-                if (borderVerts.size() > 0 && !currentNode->IsOnBorder() && find(borderVerts.begin(), borderVerts.end(), *vertex) != borderVerts.end())
+                if (borderVerts.size() > 0 && find(borderVerts.begin(), borderVerts.end(), *vertex) != borderVerts.end())
                 {
-                    nodesOnBorder++;
-                    currentNode->IsOnBorder(true);
+                    if (!currentNode->IsOnBorder())
+                    {
+                        nodesOnBorder++;
+                        currentNode->IsOnBorder(true);
+                    }
                     connectedComponentBorder.insert(*vertex);
                 }
                 // dla kazdego punktu pobieramy liste wierzcholkow do ktorej nalezy
@@ -532,12 +537,31 @@ void IncidenceGraph::CreateAcyclicSpanningTree(std::vector<IncidenceGraph::Path>
 
 void IncidenceGraph::RemoveAcyclicSubset()
 {
-    for (ConnectedComponents::iterator i = connectedComponents.begin(); i != connectedComponents.end(); i++)
+    ConnectedComponents::iterator cc = connectedComponents.begin();
+    std::vector<std::set<Vertex> >::iterator ccb = connectedComponentsBorders.begin();
+    std::vector<int>::iterator ccass = connectedComponentsAcyclicSubsetSize.begin();
+    while (cc != connectedComponents.end())
     {
-        if ((*i)->IsAcyclic())
+        if ((*cc)->IsAcyclic())
         {
-            *i = FindNode(*i, FindNotAcyclicNode());
+            Node *node = FindNode(*cc, FindNotAcyclicNode());
+            // jezeli nie ma zadnego sympleksu nieacyklicznego, to usuwamy
+            // informacje o spojnej skladowej
+            if (node == 0)
+            {
+                cc = connectedComponents.erase(cc);
+                ccb = connectedComponentsBorders.erase(ccb);
+                ccass = connectedComponentsAcyclicSubsetSize.erase(ccass);
+                continue;
+            }
+            else
+            {
+                *cc = node;
+            }
         }
+        cc++;
+        ccb++;
+        ccass++;
     }
     for (Nodes::iterator i = nodes.begin(); i != nodes.end(); i++)
     {
@@ -546,11 +570,16 @@ void IncidenceGraph::RemoveAcyclicSubset()
             RemoveNodeFromGraph(*i);
         }
     }
-    for (Nodes::iterator i = nodes.begin(); i != nodes.end(); i++)
+    Nodes::iterator i = nodes.begin();
+    while (i != nodes.end())
     {
         if ((*i)->IsAcyclic())
         {
             i = nodes.erase(i);
+        }
+        else
+        {
+            i++;
         }
     }
 }

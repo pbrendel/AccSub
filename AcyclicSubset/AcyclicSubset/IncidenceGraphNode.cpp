@@ -90,6 +90,46 @@ Vertex IncidenceGraph::Node::FindAcyclicVertex()
     return -1;
 }
 
+Vertex IncidenceGraph::Node::FindAcyclicVertexNotEqual(int vertex)
+{
+    if (this->acyclicIntersectionFlags == 0)
+    {
+        return -1;
+    }
+    for (Simplex::iterator v = simplex->begin(); v != simplex->end(); v++)
+    {
+        if (*v == vertex)
+        {
+            continue;
+        }
+        if (acyclicIntersectionFlags & (1 << NormalizeVertex(*v)))
+        {
+            return *v;
+        }
+    }
+    return -1;
+}
+
+Vertex IncidenceGraph::Node::FindAcyclicVertexNotIn(const IncidenceGraph::VertsSet &vertsSet)
+{
+    if (this->acyclicIntersectionFlags == 0)
+    {
+        return -1;
+    }
+    for (Simplex::iterator v = simplex->begin(); v != simplex->end(); v++)
+    {
+        if (std::find(vertsSet.begin(), vertsSet.end(), *v) != vertsSet.end())
+        {
+            continue;
+        }
+        if (acyclicIntersectionFlags & (1 << NormalizeVertex(*v)))
+        {
+            return *v;
+        }
+    }
+    return -1;
+}
+
 void IncidenceGraph::Node::UpdateAcyclicIntersectionWithVertex(Vertex v)
 {
     Simplex s(1);
@@ -115,6 +155,13 @@ void IncidenceGraph::Node::UpdateAcyclicIntersectionWithVertex(Vertex v)
 
 void IncidenceGraph::Node::UpdateAcyclicIntersectionWithEdge(Vertex v1, Vertex v2)
 {
+    if (v1 == v2)
+    {
+        // test!!! nie moze byc takiego przypadku
+        assert(false);
+        return;
+    }
+
     Simplex s(2);
     if (v1 < v2)
     {
