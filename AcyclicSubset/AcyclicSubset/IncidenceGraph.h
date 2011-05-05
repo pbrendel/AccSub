@@ -160,6 +160,7 @@ public:
 
     IncidenceGraph(const Params &params);
     IncidenceGraph(SimplexList &simplexList, const Params &params);
+    IncidenceGraph(SimplexPtrList &simplexPtrList, const Params &params);
 
 public:
 
@@ -174,6 +175,7 @@ public:
 
     static IncidenceGraph *Create(SimplexList &simplexList, const Params &params);
     static IncidenceGraph *CreateWithBorderVerts(SimplexList &simplexList, const VertsSet &borderVerts, const Params &params);
+    static IncidenceGraph *CreateWithBorderVerts(SimplexPtrList &simplexPtrList, const VertsSet &borderVerts, const Params &params);
     static IncidenceGraph *CreateAndCalculateAcyclicSubset(SimplexList &simplexList, const Params &params, AcyclicTest<IntersectionFlags> *test);
     static IncidenceGraph *CreateAndCalculateAcyclicSubsetOnline(SimplexList &simplexList, const Params &params, AcyclicTest<IntersectionFlags> *test);
     static IncidenceGraph *CreateAndCalculateAcyclicSubsetWithSpanningTree(SimplexList &simplexList, const Params &params, AcyclicTest<IntersectionFlags> *test);

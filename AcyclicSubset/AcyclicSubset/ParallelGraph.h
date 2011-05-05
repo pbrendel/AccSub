@@ -13,7 +13,7 @@ class ParallelGraph
 public:
 
     struct DataNode;
-    struct AcyclicTreeNode;
+    struct SpanningTreeNode;
     
     struct DataEdge
     {
@@ -30,12 +30,11 @@ public:
     struct DataNode
     {
         SimplexPtrList simplexPtrList;
-        SimplexList localSimplexList;
         std::set<Vertex> verts;
         std::set<Vertex> borderVerts;
         std::vector<DataEdge *> edges;
 
-        std::vector<AcyclicTreeNode *> acyclicTreeNodes;
+        std::vector<SpanningTreeNode *> spanningTreeNodes;
 
         IncidenceGraph *ig;
         IncidenceGraph::IntNodesMap H;
@@ -49,7 +48,7 @@ public:
 
         ~DataNode()
         {
-            delete ig;
+         //   delete ig;
         }
 
         void AddEdge(DataEdge *edge, Simplex &edgeVerts)
@@ -68,58 +67,59 @@ public:
         void SendMPIData(const IncidenceGraph::Params &params, int processRank);
         void SetMPIIncidenceGraphData(int *buffer, int size);
         void CreateIntNodesMapWithBorderNodes();
+        void RemoveChildAndCopySimplexPtrList(SpanningTreeNode *node, SimplexPtrList &simplexPtrList);
     };
 
     typedef std::vector<DataNode *> DataNodes;
     typedef std::vector<DataEdge *> DataEdges;
 
-    struct AcyclicTreeEdge
+    struct SpanningTreeEdge
     {
-        AcyclicTreeNode *nodeA;
-        AcyclicTreeNode *nodeB;
+        SpanningTreeNode *nodeA;
+        SpanningTreeNode *nodeB;
         IncidenceGraph::Path pathToA;
         IncidenceGraph::Path pathToB;
         Vertex intersectionVertex;
-        bool isAcyclic;
+        bool isInSpanningTree;
 
-        AcyclicTreeEdge(AcyclicTreeNode *na, AcyclicTreeNode *nb, Vertex intersectionVertex)
+        SpanningTreeEdge(SpanningTreeNode *na, SpanningTreeNode *nb, Vertex intersectionVertex)
         {
             nodeA = na;
             nodeB = nb;
             this->intersectionVertex = intersectionVertex;
-            isAcyclic = false;
+            isInSpanningTree = false;
         }
 
         void FindAcyclicConnections();
         void UpdateAcyclicConnections();
     };
 
-    struct AcyclicTreeNode
+    struct SpanningTreeNode
     {
         DataNode *parent;
-        int acyclicID;
+        int subtreeID;
         std::set<Vertex> borderVerts;
         int acyclicSubsetSize;
-        std::vector<AcyclicTreeEdge *> edges;
+        std::vector<SpanningTreeEdge *> edges;
         IncidenceGraph::ConnectedComponent connectedComponent;
         std::vector<Vertex> singleBorderVerts;
         bool isConnectedToAcyclicSubset;
 
-        AcyclicTreeNode(DataNode *parent, int id, IncidenceGraph::ConnectedComponent connectedComponent, std::set<Vertex> &borderVerts, int acyclicSubsetSize)
+        SpanningTreeNode(DataNode *parent, int id, IncidenceGraph::ConnectedComponent connectedComponent, std::set<Vertex> &borderVerts, int acyclicSubsetSize)
         {
             this->parent = parent;
-            this->acyclicID = id;
+            this->subtreeID = id;
             this->connectedComponent = connectedComponent;
             this->borderVerts = borderVerts;
             this->acyclicSubsetSize = acyclicSubsetSize;
             this->isConnectedToAcyclicSubset = false;
         }
 
-        ~AcyclicTreeNode()
+        ~SpanningTreeNode()
         {
         }
 
-        void AddEdge(AcyclicTreeEdge *edge)
+        void AddEdge(SpanningTreeEdge *edge)
         {
             edges.push_back(edge);
         }
@@ -131,8 +131,8 @@ public:
         void UpdatePathFromAcyclicSubsetToBorder(Vertex borderVertex, IncidenceGraph::Path &path);
     };
 
-    typedef std::vector<AcyclicTreeNode *> AcyclicTreeNodes;
-    typedef std::vector<AcyclicTreeEdge *> AcyclicTreeEdges;
+    typedef std::vector<SpanningTreeNode *> SpanningTreeNodes;
+    typedef std::vector<SpanningTreeEdge *> SpanningTreeEdges;
 
     void GetIntersection(std::vector<Vertex> &intersection, std::set<Vertex> &setA, std::set<Vertex> &setB);
     
@@ -146,15 +146,16 @@ private:
 
     DataNodes dataNodes;
     DataEdges dataEdges;
-    AcyclicTreeNodes acyclicTreeNodes;
-    AcyclicTreeEdges acyclicTreeEdges;
+    DataNodes secondPhaseDataNodes;
+    SpanningTreeNodes spanningTreeNodes;
+    SpanningTreeEdges spanningTreeEdges;
 
     void PrepareData(SimplexList &simplexList, int packSize);
     void DivideData(SimplexList &simplexList, int packSize);
     void CreateDataEdges();
-    DataNode *GetNodeWithProcessRank(int processRank);
-    void CalculateIncidenceGraphs(const IncidenceGraph::Params &params, AcyclicTest<IncidenceGraph::IntersectionFlags> *test);
-    void CreateAcyclicTree();
+    DataNode *GetNodeWithProcessRank(DataNodes &sourceNodes, int processRank);
+    void CalculateIncidenceGraphs(DataNodes &sourceNodes, const IncidenceGraph::Params &params, AcyclicTest<IncidenceGraph::IntersectionFlags> *test);
+    void CreateSpanningTree();
     void CombineGraphs();
 
 public:

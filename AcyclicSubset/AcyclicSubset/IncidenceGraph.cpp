@@ -25,11 +25,29 @@ IncidenceGraph::IncidenceGraph(SimplexList &simplexList, const Params &p) : para
 {
     // najpierw tworzymy wszystkie node'y
     int index = 0;
-    for (SimplexList::const_iterator i = simplexList.begin(); i != simplexList.end(); i++)
+    for (SimplexList::iterator i = simplexList.begin(); i != simplexList.end(); i++)
     {
-        nodes.push_back(new Node(this, const_cast<Simplex*>(&(*i)), index++));
+        nodes.push_back(new Node(this, &(*i), index++));
     }
     
+    // jezeli trzeba, sortujemy (zeby zaczac przegladanie od najwiekszych sympleksow)
+    if (params.sortNodes)
+    {
+        std::sort(nodes.begin(), nodes.end(), Node::Sorter);
+    }
+
+    CreateConfigurationsFlags(params.dim, configurationsFlags, subconfigurationsFlags);
+}
+
+IncidenceGraph::IncidenceGraph(SimplexPtrList &simplexPtrList, const Params &p) : params(p)
+{
+    // najpierw tworzymy wszystkie node'y
+    int index = 0;
+    for (SimplexPtrList::iterator i = simplexPtrList.begin(); i != simplexPtrList.end(); i++)
+    {
+        nodes.push_back(new Node(this, (*i), index++));
+    }
+
     // jezeli trzeba, sortujemy (zeby zaczac przegladanie od najwiekszych sympleksow)
     if (params.sortNodes)
     {
@@ -69,6 +87,21 @@ IncidenceGraph *IncidenceGraph::CreateWithBorderVerts(SimplexList& simplexList, 
 #ifdef USE_HELPERS
     Timer::Update();
     IncidenceGraph *ig = new IncidenceGraph(simplexList, params);
+    ig->borderVerts = borderVerts;
+    ig->CreateGraph(false);
+    Timer::Update("incidence graph created");
+#else
+    IncidenceGraph *ig = new IncidenceGraph(simplexList, params);
+    ig->CreateGraph(false);
+#endif
+    return ig;
+}
+
+IncidenceGraph *IncidenceGraph::CreateWithBorderVerts(SimplexPtrList& simplexPtrList, const VertsSet& borderVerts, const Params& params)
+{
+#ifdef USE_HELPERS
+    Timer::Update();
+    IncidenceGraph *ig = new IncidenceGraph(simplexPtrList, params);
     ig->borderVerts = borderVerts;
     ig->CreateGraph(false);
     Timer::Update("incidence graph created");
@@ -131,8 +164,7 @@ IncidenceGraph *IncidenceGraph::CreateAndCalculateAcyclicSubsetParallel(SimplexL
 {
     IncidenceGraph *ig = new IncidenceGraph(params);
     ParallelGraph *pg = new ParallelGraph(ig, simplexList, params, parallelParams, test, local);
-    // test!!! (usuwanie pg)
- //   delete pg;
+    delete pg;
     return ig;
 }
 
@@ -630,6 +662,8 @@ void IncidenceGraph::CalculateNodesIntersection(Node *a, Node *b, Edge &edgeAtoB
     }
     else
     {
+        Debug::Print(std::cout, a->simplex);
+        Debug::Print(std::cout, b->simplex);
         assert(false);
     }
 }

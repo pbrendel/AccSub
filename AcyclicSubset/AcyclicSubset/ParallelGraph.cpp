@@ -25,11 +25,7 @@
 
 void ParallelGraph::DataNode::CreateIncidenceGraphLocally(const IncidenceGraph::Params &params, AcyclicTest<IncidenceGraph::IntersectionFlags> *test)
 {
-    for (SimplexPtrList::iterator i = simplexPtrList.begin(); i != simplexPtrList.end(); i++)
-    {
-        localSimplexList.push_back(*(*i));
-    }
-    ig = IncidenceGraph::CreateWithBorderVerts(localSimplexList, borderVerts, params);
+    ig = IncidenceGraph::CreateWithBorderVerts(simplexPtrList, borderVerts, params);
     ig->CalculateAcyclicSubsetWithSpanningTree(test);
     ig->RemoveAcyclicSubset();
 }
@@ -90,7 +86,53 @@ void ParallelGraph::DataNode::CreateIntNodesMapWithBorderNodes()
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void ParallelGraph::AcyclicTreeNode::FindAcyclicSubsetToBorderConnection(Vertex borderVertex, IncidenceGraph::Path &path)
+void ParallelGraph::DataNode::RemoveChildAndCopySimplexPtrList(SpanningTreeNode* node, SimplexPtrList& simplexPtrList)
+{
+    // usuwamy node z listy dzieci
+    std::vector<SpanningTreeNode *>::iterator it = std::find(spanningTreeNodes.begin(), spanningTreeNodes.end(), node);
+    assert(it != spanningTreeNodes.end());
+    spanningTreeNodes.erase(it);
+
+    // przelatujemy cala spojna skladowa i zaznaczamy elementy do niej nalezace
+    // dodatkowo dodajemy do listy sympleksy z tej spojnej skladowej
+    std::queue<IncidenceGraph::Node *> L;
+    L.push(node->connectedComponent);
+    node->connectedComponent->IsHelperFlag2(true);
+    simplexPtrList.push_back(node->connectedComponent->simplex);
+    while (!L.empty())
+    {
+        IncidenceGraph::Node *n = L.front();
+        L.pop();
+        for (IncidenceGraph::Edges::iterator edge = n->edges.begin(); edge != n->edges.end(); edge++)
+        {
+            if (edge->node->IsHelperFlag2())
+            {
+                continue;
+            }
+            edge->node->IsHelperFlag2(true);
+            L.push(edge->node);
+            simplexPtrList.push_back(edge->node->simplex);
+        }
+    }
+
+    // na koncu wszystkie zaznaczone node'y usuwamy z grafu
+    IncidenceGraph::Nodes::iterator i = ig->nodes.begin();
+    while (i != ig->nodes.end())
+    {
+        if ((*i)->IsHelperFlag2())
+        {
+            i = ig->nodes.erase(i);
+        }
+        else
+        {
+            i++;
+        }
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+void ParallelGraph::SpanningTreeNode::FindAcyclicSubsetToBorderConnection(Vertex borderVertex, IncidenceGraph::Path &path)
 {
     if (acyclicSubsetSize > 0)
     {
@@ -106,7 +148,7 @@ void ParallelGraph::AcyclicTreeNode::FindAcyclicSubsetToBorderConnection(Vertex 
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void ParallelGraph::AcyclicTreeNode::UpdateAcyclicSubsetToBorderConnection(Vertex borderVertex, IncidenceGraph::Path &path)
+void ParallelGraph::SpanningTreeNode::UpdateAcyclicSubsetToBorderConnection(Vertex borderVertex, IncidenceGraph::Path &path)
 {
     if (acyclicSubsetSize > 0)
     {
@@ -138,7 +180,7 @@ void ParallelGraph::AcyclicTreeNode::UpdateAcyclicSubsetToBorderConnection(Verte
 // wczesniej natrafimy na inny kawalek podzbioru acyklicznego
 // zakladamy, ze jestesmy w "kawalku" kompleksu, ktory ma juz polaczenie
 // ze zbiorem acyklicznym
-void ParallelGraph::AcyclicTreeNode::UpdatePathFromBorderToAcyclicSubset(Vertex borderVertex, IncidenceGraph::Path &path)
+void ParallelGraph::SpanningTreeNode::UpdatePathFromBorderToAcyclicSubset(Vertex borderVertex, IncidenceGraph::Path &path)
 {
     IncidenceGraph::Node *prevNode = path.front();
     IncidenceGraph::Path::iterator i = path.begin();
@@ -208,7 +250,7 @@ void ParallelGraph::AcyclicTreeNode::UpdatePathFromBorderToAcyclicSubset(Vertex 
 // albo trafilismy na wierzcholek w brzegu, ktorego podlaczenie gwarantuje
 // poprzednia funkcja albo trafilismy na inny podzbior acykliczny znajdujacy
 // sie w brzegu => tez ok
-void ParallelGraph::AcyclicTreeNode::UpdatePathFromAcyclicSubsetToBorder(Vertex borderVertex, IncidenceGraph::Path &path)
+void ParallelGraph::SpanningTreeNode::UpdatePathFromAcyclicSubsetToBorder(Vertex borderVertex, IncidenceGraph::Path &path)
 {
     path.reverse();
     IncidenceGraph::Path::iterator i = path.begin();
@@ -254,7 +296,7 @@ void ParallelGraph::AcyclicTreeNode::UpdatePathFromAcyclicSubsetToBorder(Vertex 
 // jezeli w trakcie dodawania sciezki od nowego liscia do drzewa trafimy ma
 // zbior acykliczny to konczymy dodawanie sciezki => "podlaczylismy" nowy
 // pozdbior acykliczny do juz utworzonego
-void ParallelGraph::AcyclicTreeNode::UpdateBorderVerts()
+void ParallelGraph::SpanningTreeNode::UpdateBorderVerts()
 {
     // jezeli sa mniej niz dwa wierzcholki, to znaczy, ze ta czesc kompleksu
     // nie laczy zadnych zbiorow acyklicznych wiec mozna ja zignorowac
@@ -312,13 +354,13 @@ void ParallelGraph::AcyclicTreeNode::UpdateBorderVerts()
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void ParallelGraph::AcyclicTreeEdge::FindAcyclicConnections()
+void ParallelGraph::SpanningTreeEdge::FindAcyclicConnections()
 {
     nodeA->FindAcyclicSubsetToBorderConnection(intersectionVertex, pathToA);
     nodeB->FindAcyclicSubsetToBorderConnection(intersectionVertex, pathToB);
 }
 
-void ParallelGraph::AcyclicTreeEdge::UpdateAcyclicConnections()
+void ParallelGraph::SpanningTreeEdge::UpdateAcyclicConnections()
 {
     // najpierw uaktualnbiamy sciezke zbioru, ktory juz jest
     // dolaczony do drzewa
@@ -368,9 +410,11 @@ ParallelGraph::ParallelGraph(IncidenceGraph *ig, SimplexList &simplexList, Incid
     Timer::Update("dividing data");
     CreateDataEdges();
     Timer::Update("creating data connections");
-    CalculateIncidenceGraphs(params, test);
+    CalculateIncidenceGraphs(dataNodes, params, test);
     Timer::Update("creating incidence graphs");
-    CreateAcyclicTree();
+    CreateSpanningTree();
+    CalculateIncidenceGraphs(secondPhaseDataNodes, params, test);
+    Timer::Update("creating second phase incidence graphs");
     CombineGraphs();
 }
 
@@ -386,11 +430,15 @@ ParallelGraph::~ParallelGraph()
     {
         delete (*i);
     }
-    for (AcyclicTreeNodes::iterator i = acyclicTreeNodes.begin(); i != acyclicTreeNodes.end(); i++)
+    for (DataNodes::iterator i = secondPhaseDataNodes.begin(); i != secondPhaseDataNodes.end(); i++)
     {
         delete (*i);
     }
-    for (AcyclicTreeEdges::iterator i = acyclicTreeEdges.begin(); i != acyclicTreeEdges.end(); i++)
+    for (SpanningTreeNodes::iterator i = spanningTreeNodes.begin(); i != spanningTreeNodes.end(); i++)
+    {
+        delete (*i);
+    }
+    for (SpanningTreeEdges::iterator i = spanningTreeEdges.begin(); i != spanningTreeEdges.end(); i++)
     {
         delete (*i);
     }
@@ -494,17 +542,15 @@ void ParallelGraph::DivideData(SimplexList& simplexList, int packSize)
         it++;
 
         // test!!!
-    //    if (tempSimplexList.size() > 3000) break;
+        // if (tempSimplexList.size() > 7500) break;
     }
     if (currentNode->simplexPtrList.size() > 0)
     {
         dataNodes.push_back(currentNode);
-  //      std::cout<<"last pack: "<<std::endl;
-  //      Debug::Print(std::cout, currentNode->simplexPtrList);
     }
 
-    // std::cout<<"temp simplex list ("<<tempSimplexList.size()<<") homology:"<<std::endl;
-    // Tests::Test(tempSimplexList, RT_Coreduction);
+     // std::cout<<"temp simplex list ("<<tempSimplexList.size()<<") homology:"<<std::endl;
+     // Tests::Test(tempSimplexList, RT_Coreduction);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -536,9 +582,9 @@ void ParallelGraph::CreateDataEdges()
 
 ////////////////////////////////////////////////////////////////////////////////
 
-ParallelGraph::DataNode *ParallelGraph::GetNodeWithProcessRank(int processRank)
+ParallelGraph::DataNode *ParallelGraph::GetNodeWithProcessRank(DataNodes &sourceNodes, int processRank)
 {
-    for (DataNodes::iterator i = dataNodes.begin(); i != dataNodes.end(); i++)
+    for (DataNodes::iterator i = sourceNodes.begin(); i != sourceNodes.end(); i++)
     {
         if ((*i)->processRank == processRank)
         {
@@ -548,11 +594,11 @@ ParallelGraph::DataNode *ParallelGraph::GetNodeWithProcessRank(int processRank)
     return 0;
 }
 
-void ParallelGraph::CalculateIncidenceGraphs(const IncidenceGraph::Params &params, AcyclicTest<IncidenceGraph::IntersectionFlags> *test)
+void ParallelGraph::CalculateIncidenceGraphs(DataNodes &sourceNodes, const IncidenceGraph::Params &params, AcyclicTest<IncidenceGraph::IntersectionFlags> *test)
 {
     if (local)
     {
-        for (DataNodes::iterator i = dataNodes.begin(); i != dataNodes.end(); i++)
+        for (DataNodes::iterator i = sourceNodes.begin(); i != sourceNodes.end(); i++)
         {
             (*i)->CreateIncidenceGraphLocally(params, test);
         }
@@ -560,7 +606,7 @@ void ParallelGraph::CalculateIncidenceGraphs(const IncidenceGraph::Params &param
 #ifdef USE_MPI
     else
     {
-        int nodesCount = dataNodes.size();
+        int nodesCount = sourceNodes.size();
         int currentNode = 0;
         int tasksCount;
         int dataSize;
@@ -574,7 +620,7 @@ void ParallelGraph::CalculateIncidenceGraphs(const IncidenceGraph::Params &param
         for (int rank = 1; rank < size; rank++)
         {
             std::cout<<"sending node "<<currentNode<<" to process: "<<rank<<std::endl;
-            dataNodes[currentNode++]->SendMPIData(params, rank);
+            sourceNodes[currentNode++]->SendMPIData(params, rank);
         }
 
         // potem czekamy na dane i wysylamy kolejne
@@ -585,9 +631,9 @@ void ParallelGraph::CalculateIncidenceGraphs(const IncidenceGraph::Params &param
             int *buffer = new int[dataSize];
             // teraz dane od node'a od ktorego dostalismy info o rozmiarze danych
             MPI_Recv(buffer, dataSize, MPI_INT, status.MPI_SOURCE, MPI_MY_DATA_TAG, MPI_COMM_WORLD, &status);
-            GetNodeWithProcessRank(status.MPI_SOURCE)->SetMPIIncidenceGraphData(buffer, size);
+            GetNodeWithProcessRank(sourceNodes, status.MPI_SOURCE)->SetMPIIncidenceGraphData(buffer, size);
             std::cout<<"sending node "<<currentNode<<" to process: "<<status.MPI_SOURCE<<std::endl;
-            dataNodes[currentNode++]->SendMPIData(params, status.MPI_SOURCE);
+            sourceNodes[currentNode++]->SendMPIData(params, status.MPI_SOURCE);
         }
 
         // na koncu odbieramy to co jeszcze jest liczone
@@ -598,25 +644,29 @@ void ParallelGraph::CalculateIncidenceGraphs(const IncidenceGraph::Params &param
             int *buffer = new int[dataSize];
             // teraz dane od node'a od ktorego dostalismy info o rozmiarze danych
             MPI_Recv(buffer, dataSize, MPI_INT, status.MPI_SOURCE, MPI_MY_DATA_TAG, MPI_COMM_WORLD, &status);
-            GetNodeWithProcessRank(status.MPI_SOURCE)->SetMPIIncidenceGraphData(buffer, size);
+            GetNodeWithProcessRank(sourceNodes, status.MPI_SOURCE)->SetMPIIncidenceGraphData(buffer, size);
         }
 
-        std::cout<<"terminating jobs"<<std::endl;
-
-        // na koncu wysylamy informacje do node'ow o zakonczeniu pracy
-        for (int rank = 1; rank < tasksCount; ++rank)
+        // konczymy prace procesow, tylko jezeli pracowalismy na secondPhaseDataNodes
+        if (sourceNodes == secondPhaseDataNodes)
         {
-            MPI_Send(0, 0, MPI_INT, rank, MPI_MY_DIE_TAG, MPI_COMM_WORLD);
-        }
+            std::cout<<"terminating jobs"<<std::endl;
 
-        std::cout<<"parallel computing done"<<std::endl;
+            // wysylamy informacje do node'ow o zakonczeniu pracy
+            for (int rank = 1; rank < tasksCount; ++rank)
+            {
+                MPI_Send(0, 0, MPI_INT, rank, MPI_MY_DIE_TAG, MPI_COMM_WORLD);
+            }
+
+            std::cout<<"parallel computing done"<<std::endl;
+        }
     }
 #endif
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void ParallelGraph::CreateAcyclicTree()
+void ParallelGraph::CreateSpanningTree()
 {
     // budujemy graf, w ktorym wierzcholkami beda podzbiory acykliczne
     // (czyli de facto skladowe spojne poszczegolnych paczek), ktore potem
@@ -629,9 +679,9 @@ void ParallelGraph::CreateAcyclicTree()
         std::vector<int>::iterator ccass = ig->connectedComponentsAcyclicSubsetSize.begin();
         for (IncidenceGraph::ConnectedComponents::iterator cc = ig->connectedComponents.begin(); cc != ig->connectedComponents.end(); cc++)
         {
-            AcyclicTreeNode *newNode = new AcyclicTreeNode(*i, currentID++, *cc, *ccb, *ccass);
-            (*i)->acyclicTreeNodes.push_back(newNode);
-            acyclicTreeNodes.push_back(newNode);
+            SpanningTreeNode *newNode = new SpanningTreeNode(*i, currentID++, *cc, *ccb, *ccass);
+            (*i)->spanningTreeNodes.push_back(newNode);
+            spanningTreeNodes.push_back(newNode);
             ccb++;
             ccass++;
         }
@@ -640,18 +690,18 @@ void ParallelGraph::CreateAcyclicTree()
     Timer::Update("creating acyclic tree nodes");
 
     // tworzymy krawedzie w grafie
-    for (AcyclicTreeNodes::iterator node = acyclicTreeNodes.begin(); node != acyclicTreeNodes.end(); node++)
+    for (SpanningTreeNodes::iterator node = spanningTreeNodes.begin(); node != spanningTreeNodes.end(); node++)
     {
         DataNode *parent = (*node)->parent;
-        std::vector<AcyclicTreeNode *> potentialNeighbours;
+        std::vector<SpanningTreeNode *> potentialNeighbours;
         for (DataEdges::iterator edge = parent->edges.begin(); edge != parent->edges.end(); edge++)
         {
             DataNode *neighbour = ((*edge)->nodeA == parent) ? (*edge)->nodeB : (*edge)->nodeA;
-            potentialNeighbours.insert(potentialNeighbours.end(), neighbour->acyclicTreeNodes.begin(), neighbour->acyclicTreeNodes.end());
+            potentialNeighbours.insert(potentialNeighbours.end(), neighbour->spanningTreeNodes.begin(), neighbour->spanningTreeNodes.end());
         }
-        for (AcyclicTreeNodes::iterator neighbour = potentialNeighbours.begin(); neighbour != potentialNeighbours.end(); neighbour++)
+        for (SpanningTreeNodes::iterator neighbour = potentialNeighbours.begin(); neighbour != potentialNeighbours.end(); neighbour++)
         {
-            if ((*neighbour)->acyclicID <= (*node)->acyclicID)
+            if ((*neighbour)->subtreeID <= (*node)->subtreeID)
             {
                 continue;
             }
@@ -659,8 +709,8 @@ void ParallelGraph::CreateAcyclicTree()
             GetSortedIntersectionOfUnsortedSets(intersection, (*node)->borderVerts, (*neighbour)->borderVerts);
             if (intersection.size() > 0)
             {
-                AcyclicTreeEdge *edge = new AcyclicTreeEdge(*node, *neighbour, intersection.front());
-                acyclicTreeEdges.push_back(edge);
+                SpanningTreeEdge *edge = new SpanningTreeEdge(*node, *neighbour, intersection.front());
+                spanningTreeEdges.push_back(edge);
                 (*node)->AddEdge(edge);
                 (*neighbour)->AddEdge(edge);
             }
@@ -669,26 +719,66 @@ void ParallelGraph::CreateAcyclicTree()
 
     Timer::Update("creating acyclic tree edges");
 
-    // i na koncu drzewo rozpinajace
-    for (AcyclicTreeEdges::iterator edge = acyclicTreeEdges.begin(); edge != acyclicTreeEdges.end(); edge++)
+    // tworzymy hasha, w ktorym dla kazdego ID poddrzewa bedziemy przechowywali
+    // rozmiar podzbioru acyklicznego w nim zawartego (w poddrzewie)
+    std::map<int, int> spanningTreeAcyclicSubsetSize;
+    for (SpanningTreeNodes::iterator node = spanningTreeNodes.begin(); node != spanningTreeNodes.end(); node++)
     {
-        if ((*edge)->nodeA->acyclicID == (*edge)->nodeB->acyclicID)
+        spanningTreeAcyclicSubsetSize[(*node)->subtreeID] = (*node)->acyclicSubsetSize;
+    }
+
+    // i na koncu drzewo rozpinajace
+    for (SpanningTreeEdges::iterator edge = spanningTreeEdges.begin(); edge != spanningTreeEdges.end(); edge++)
+    {
+        if ((*edge)->nodeA->subtreeID == (*edge)->nodeB->subtreeID)
         {
             continue;
         }
-        (*edge)->isAcyclic = true;
-        int newID = (*edge)->nodeA->acyclicID;
-        int oldID = (*edge)->nodeB->acyclicID;
-        for (AcyclicTreeNodes::iterator node = acyclicTreeNodes.begin(); node != acyclicTreeNodes.end(); node++)
+        (*edge)->isInSpanningTree = true;
+        int newID = (*edge)->nodeA->subtreeID;
+        int oldID = (*edge)->nodeB->subtreeID;
+        // przy laczeniu poddrzew sumujemy rozmiary podzbiorow acyklicznych
+        // w nich zawartych
+        spanningTreeAcyclicSubsetSize[newID] = spanningTreeAcyclicSubsetSize[newID] + spanningTreeAcyclicSubsetSize[oldID];
+        for (SpanningTreeNodes::iterator node = spanningTreeNodes.begin(); node != spanningTreeNodes.end(); node++)
         {
-            if ((*node)->acyclicID == oldID)
+            if ((*node)->subtreeID == oldID)
             {
-                (*node)->acyclicID = newID;
+                (*node)->subtreeID = newID;
             }
         }
     }
 
     Timer::Update("creating spanning tree");
+
+    // jezeli zostalo jakies poddrzewo, ktore nie zawiera podzbioru acyklicznego
+    // to usuwamy wszystkie sympleksy z utworzonego grafu, dodajemy do wspolnej
+    // listy, a nastepnie traktujemy jako jedna spojna skladowa i jeszcze raz
+    // wysylamy do obliczen, ale tym razem nie laczymy juz brzegow, tylko po
+    // prostu "przenosimy" nowo utworzony graf jako osobna spojna skladowa
+    // duzego grafu
+    std::map<int, SimplexPtrList> simplexPtrLists;
+    for (SpanningTreeNodes::iterator node = spanningTreeNodes.begin(); node != spanningTreeNodes.end(); node++)
+    {
+        if (spanningTreeAcyclicSubsetSize[(*node)->subtreeID] == 0)
+        {
+            (*node)->parent->RemoveChildAndCopySimplexPtrList(*node, simplexPtrLists[(*node)->subtreeID]);
+        }
+    }
+
+    // dla kazdej listy sympleksow, ktora otrzymalismy w poprzednim kroku
+    // tworzymy osobny data node (nie interesuje nas zupelnie jego brzeg,
+    // poniewaz wiemy, ze jest to oddzielna spojna skladowa i nie sasiaduje
+    // z innymi sympleksami)
+    for (std::map<int, SimplexPtrList>::iterator i = simplexPtrLists.begin(); i != simplexPtrLists.end(); i++)
+    {
+        std::cout<<"creating second phase data node with "<<i->second.size()<<" simplices"<<std::endl;
+        DataNode *newNode = new DataNode();
+        newNode->simplexPtrList = i->second;
+        secondPhaseDataNodes.push_back(newNode);
+    }
+
+    Timer::Update("finding second phase data nodes");
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -699,9 +789,9 @@ void ParallelGraph::CombineGraphs()
     // szukamny polaczen acyklicznych zbiorow, ale na razie ich nie laczymy
     // bedziemy robic to po polaczeniu wszystkich sympleksow, zeby dobrze
     // zaktualizowac podzbior acykliczny
-    for (AcyclicTreeEdges::iterator i = acyclicTreeEdges.begin(); i != acyclicTreeEdges.end(); i++)
+    for (SpanningTreeEdges::iterator i = spanningTreeEdges.begin(); i != spanningTreeEdges.end(); i++)
     {
-        if ((*i)->isAcyclic) (*i)->FindAcyclicConnections();
+        if ((*i)->isInSpanningTree) (*i)->FindAcyclicConnections();
     }
 
     Timer::Update("searching paths from acyclic subsets to border");
@@ -765,48 +855,21 @@ void ParallelGraph::CombineGraphs()
         (*i)->ig->nodes.clear();
     }
 
+    // to samo ze spojnymi skladowymi z drugiej fazy obliczen
+    for (DataNodes::iterator i = secondPhaseDataNodes.begin(); i != secondPhaseDataNodes.end(); i++)
+    {
+         incidenceGraph->nodes.insert(incidenceGraph->nodes.end(), (*i)->ig->nodes.begin(), (*i)->ig->nodes.end());
+        (*i)->ig->nodes.clear();
+    }
+
     std::cout<<"total simplices after connecting graphs: "<<incidenceGraph->nodes.size()<<std::endl;
-
-    // sprawdzamy czy mamy jedna skladowa spojna
-    Log::stream<<"first component nodes:"<<std::endl;
-    std::queue<IncidenceGraph::Node *> L;
-    L.push(incidenceGraph->nodes[0]);
-    incidenceGraph->nodes[0]->IsHelperFlag3(true);
-    while (!L.empty())
-    {
-        IncidenceGraph::Node *node = L.front();
-        L.pop();
-        Debug::Print(Log::stream, node->simplex);
-        Log::stream<<node->IsAcyclic()<<std::endl;
-        for (IncidenceGraph::Edges::iterator edge = node->edges.begin(); edge != node->edges.end(); edge++)
-        {
-            IncidenceGraph::Node *neighbour = (*edge).node;
-            if (neighbour->IsHelperFlag3())
-            {
-                continue;
-            }
-            neighbour->IsHelperFlag3(true);
-            L.push(neighbour);
-        }
-    }
-
-    Log::stream<<"not the same component nodes:"<<std::endl;
-    for (IncidenceGraph::Nodes::iterator node = incidenceGraph->nodes.begin(); node != incidenceGraph->nodes.end(); node++)
-    {
-        if ((*node)->IsHelperFlag3())
-        {
-            continue;
-        }
-        Debug::Print(Log::stream, (*node)->simplex);
-        Log::stream<<(*node)->IsAcyclic()<<std::endl;
-    }
 
     Timer::Update("moving simplices to single incidence graph");
 
     // aktualizujemy zbior acykliczny o polaczenia pomiedzy podgrafami
-    for (AcyclicTreeEdges::iterator i = acyclicTreeEdges.begin(); i != acyclicTreeEdges.end(); i++)
+    for (SpanningTreeEdges::iterator i = spanningTreeEdges.begin(); i != spanningTreeEdges.end(); i++)
     {
-        if ((*i)->isAcyclic) (*i)->UpdateAcyclicConnections();
+        if ((*i)->isInSpanningTree) (*i)->UpdateAcyclicConnections();
     }
 
     Timer::Update("adding paths to acyclic subset");
