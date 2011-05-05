@@ -110,7 +110,7 @@ Vertex IncidenceGraph::Node::FindAcyclicVertexNotEqual(int vertex)
     return -1;
 }
 
-Vertex IncidenceGraph::Node::FindAcyclicVertexNotIn(const IncidenceGraph::VertsSet &vertsSet)
+Vertex IncidenceGraph::Node::FindAcyclicVertexNotIn(const VertsSet &vertsSet)
 {
     if (this->acyclicIntersectionFlags == 0)
     {
@@ -155,12 +155,7 @@ void IncidenceGraph::Node::UpdateAcyclicIntersectionWithVertex(Vertex v)
 
 void IncidenceGraph::Node::UpdateAcyclicIntersectionWithEdge(Vertex v1, Vertex v2)
 {
-    if (v1 == v2)
-    {
-        // test!!! nie moze byc takiego przypadku
-        assert(false);
-        return;
-    }
+    assert (v1 != v2);
 
     Simplex s(2);
     if (v1 < v2)

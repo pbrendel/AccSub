@@ -21,7 +21,6 @@ public:
 
     typedef unsigned int IntersectionFlags;
     // typedef IntersectionFlagsBitSet<4> IntersectionFlags;
-    typedef std::set<Vertex> VertsSet;
     
     struct Params
     {
@@ -115,7 +114,7 @@ public:
         bool HasAcyclicIntersection(AcyclicTest<IntersectionFlags> *test);
         Vertex FindAcyclicVertex();
         Vertex FindAcyclicVertexNotEqual(Vertex vertex);
-        Vertex FindAcyclicVertexNotIn(const IncidenceGraph::VertsSet &vertsSet);
+        Vertex FindAcyclicVertexNotIn(const VertsSet &vertsSet);
         void UpdateAcyclicIntersectionWithVertex(Vertex v);
         void UpdateAcyclicIntersectionWithEdge(Vertex v1, Vertex v2);
         void UpdateNeighboursAcyclicIntersection();

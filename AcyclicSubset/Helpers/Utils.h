@@ -24,7 +24,7 @@ public:
 
     static void Print(std::ostream &str, Simplex &simplex);
     static void Print(std::ostream &str, Simplex *simplex);
-    static void Print(std::ostream &str, IncidenceGraph::VertsSet vertsSet);
+    static void Print(std::ostream &str, VertsSet &vertsSet);
     static void Print(std::ostream &str, SimplexList &simplexList);
     static void Print(std::ostream &str, SimplexPtrList &simplexPtrList);
     static void Print(std::ostream &str, IncidenceGraph::Nodes &nodes);

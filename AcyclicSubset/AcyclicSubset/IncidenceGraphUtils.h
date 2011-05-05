@@ -36,7 +36,7 @@ public:
 
     bool FoundNode(IncidenceGraph::Node *node)
     {
-        return (find(node->simplex->begin(), node->simplex->end(), vertex) != node->simplex->end());
+        return (std::find(node->simplex->begin(), node->simplex->end(), vertex) != node->simplex->end());
     }
 };
 
@@ -109,6 +109,23 @@ public:
     bool FoundNode(IncidenceGraph::Node *n)
     {
         return (node == n);
+    }
+};
+
+class FindPathToVertex : public FindPathBase
+{
+    Vertex vertex;
+
+public:
+
+    FindPathToVertex(Vertex v)
+    {
+        vertex = v;
+    }
+
+    bool FoundNode(IncidenceGraph::Node *n)
+    {
+        return (std::find(n->simplex->begin(), n->simplex->end(), vertex) != n->simplex->end());
     }
 };
 

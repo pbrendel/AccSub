@@ -179,10 +179,10 @@ IncidenceGraphData::IncidenceGraphData(const IncidenceGraph* ig)
     {
         buffer[index++] = (*i)->newIndex;
     }
-    for (std::vector<IncidenceGraph::VertsSet>::const_iterator i = ig->connectedComponentsBorders.begin(); i != ig->connectedComponentsBorders.end(); i++)
+    for (std::vector<VertsSet>::const_iterator i = ig->connectedComponentsBorders.begin(); i != ig->connectedComponentsBorders.end(); i++)
     {
         buffer[index++] = i->size();
-        for (IncidenceGraph::VertsSet::const_iterator v = i->begin(); v != i->end(); v++)
+        for (VertsSet::const_iterator v = i->begin(); v != i->end(); v++)
         {
             buffer[index++] = (*v);
         }
@@ -220,10 +220,10 @@ int IncidenceGraphData::CalcBufferSize(const IncidenceGraph* ig)
         // - newIndex
         // - acyclicIntersectionFlags
         // - edges.size()
-        size += (*node)->edges.size() + 4;
+        size += ((*node)->edges.size() + 4);
     }
     int connectedComponentsCount = ig->connectedComponents.size();
-    for (std::vector<IncidenceGraph::VertsSet>::const_iterator i = ig->connectedComponentsBorders.begin(); i != ig->connectedComponentsBorders.end(); i++)
+    for (std::vector<VertsSet>::const_iterator i = ig->connectedComponentsBorders.begin(); i != ig->connectedComponentsBorders.end(); i++)
     {
         // ilosc wierzcholkow + same wierzcholki
         size += (i->size() + 1);
@@ -303,7 +303,7 @@ IncidenceGraph *IncidenceGraphData::GetIncidenceGraph(const SimplexPtrList &simp
     for (int i = 0; i < connectedComponentsCount; i++)
     {
         int size = buffer[index++];
-        IncidenceGraph::VertsSet vs;
+        VertsSet vs;
         for (int j = 0; j < size; j++)
         {
             vs.insert(buffer[index++]);

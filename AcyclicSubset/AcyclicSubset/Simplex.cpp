@@ -278,6 +278,48 @@ Vertex GetVertexFromIntersection(Simplex *a, Simplex *b)
     return -1;
 }
 
+Vertex GetVertexFromIntersectionNotEqual(Simplex *a, Simplex *b, Vertex vertex)
+{
+    Simplex::iterator i = a->begin();
+    Simplex::iterator j = b->begin();
+    while (i != a->end() && j != b->end())
+    {
+        if ((*i) < (*j)) i++;
+        else if ((*i) > (*j)) j++;
+        else if ((*i) == vertex)
+        {
+            i++;
+            j++;
+        }
+        else
+        {
+            return (*i);
+        }
+    }
+    return -1;
+}
+
+Vertex GetVertexFromIntersectionNotIn(Simplex *a, Simplex *b, const VertsSet &vertsSet)
+{
+    Simplex::iterator i = a->begin();
+    Simplex::iterator j = b->begin();
+    while (i != a->end() && j != b->end())
+    {
+        if ((*i) < (*j)) i++;
+        else if ((*i) > (*j)) j++;
+        else if (std::find(vertsSet.begin(), vertsSet.end(), *i) != vertsSet.end())
+        {
+            i++;
+            j++;
+        }
+        else
+        {
+            return (*i);
+        }
+    }
+    return -1;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // ContainsVertex
 

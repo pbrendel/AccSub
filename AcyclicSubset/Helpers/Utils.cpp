@@ -28,9 +28,9 @@ void Debug::Print(std::ostream &str, Simplex *simplex)
     str<<std::endl;
 }
 
-void Debug::Print(std::ostream &str, IncidenceGraph::VertsSet vertsSet)
+void Debug::Print(std::ostream &str, VertsSet &vertsSet)
 {
-    for (IncidenceGraph::VertsSet::iterator i = vertsSet.begin(); i != vertsSet.end(); i++)
+    for (VertsSet::iterator i = vertsSet.begin(); i != vertsSet.end(); i++)
     {
         str<<(*i)<<" ";
     }
