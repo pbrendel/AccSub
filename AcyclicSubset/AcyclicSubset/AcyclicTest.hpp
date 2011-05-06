@@ -8,10 +8,18 @@
 #include <cstdio>
 #include <iostream>
 
+#ifdef DEBUG_MEMORY
+#include "../Helpers/DebugMemory.h"
+#endif
+
 ////////////////////////////////////////////////////////////////////////////////
 
 template <class FlagsType>
+#ifdef DEBUG_MEMORY
+class AcyclicTest : public DebugMemory<AcyclicTest<FlagsType> >
+#else
 class AcyclicTest
+#endif
 {
 
 public:

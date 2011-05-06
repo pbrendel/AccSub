@@ -7,6 +7,38 @@
 // - hash vertex -> index
 ////////////////////////////////////////////////////////////////////////////////
 
+#ifdef DEBUG_MEMORY_OPERATORS
+
+void UpdateAllocatedMemory(int sz)
+{
+    const int infoInterval = 10 * 1024 * 1024;
+    static int nextInfo = infoInterval;
+    static int currentAllocation = 0;
+
+    currentAllocation += sz;
+    if (currentAllocation > nextInfo)
+    {
+        nextInfo += infoInterval;
+        std::cout<<"allocated: "<<(currentAllocation / infoInterval)<<"0 megabytes"<<std::endl;
+    }
+}
+
+void* operator new(size_t sz)
+{
+    UpdateAllocatedMemory(sz);
+    void* m = malloc(sz);
+    return m;
+}
+
+void operator delete(void* m)
+{
+    free(m);
+}
+
+#endif
+
+////////////////////////////////////////////////////////////////////////////////
+
 int main(int argc, char *argv[])
 {               
     try

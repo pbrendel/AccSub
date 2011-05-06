@@ -10,11 +10,19 @@
 #include <queue>
 #include <set>
 
+#ifdef DEBUG_MEMORY
+#include "../Helpers/DebugMemory.h"
+#endif
+
 class IncidenceGraph;
 
 ////////////////////////////////////////////////////////////////////////////////
 
+#ifdef DEBUG_MEMORY
+class IncidenceGraph : public DebugMemory<IncidenceGraph>
+#else
 class IncidenceGraph
+#endif
 {
     
 public:
@@ -58,7 +66,11 @@ public:
 
     struct Node;
 
+#ifdef DEBUG_MEMORY
+    struct Edge : public DebugMemory<Edge>
+#else
     struct Edge
+#endif
     {
         Node                *node;
         Simplex             intersection;
@@ -80,7 +92,11 @@ public:
     // listy dzialaja szybciej dla algorytmu online
     // typedef std::list<Edge> Edges;
 
+#ifdef DEBUG_MEMORY
+    struct Node : public DebugMemory<Node>
+#else
     struct Node
+#endif
     {
         typedef unsigned short int Flags;
 
@@ -121,7 +137,7 @@ public:
         void UpdateAcyclicIntersectionFlags(IntersectionFlags flags, IntersectionFlags flagsMaximalFaces);
 
         Simplex Normalize(const Simplex &simplex);
-        int NormalizeVertex(int v);
+        int NormalizeVertex(Vertex v);
         bool operator==(const Node &node);
         static bool Sorter(const Node *a, const Node *b);
 
@@ -152,7 +168,7 @@ public:
         IntersectionFlags   acyclicIntersectionFlags;
         IntersectionFlags   acyclicIntersectionFlagsMaximalFaces;
         int                 acyclicSubsetID;
-        std::map<int, int>  v2i;    // vertex to index map
+        std::map<Vertex, int>  v2i;    // vertex to index map
 
     };
 
@@ -168,7 +184,7 @@ public:
     typedef std::list<Node *> Path;
     typedef Node *ConnectedComponent;
     typedef std::vector<ConnectedComponent> ConnectedComponents;
-    typedef std::map<int, Nodes> IntNodesMap;
+    typedef std::map<Vertex, Nodes> VertexNodesMap;
 
     std::map<Simplex, IntersectionFlags> configurationsFlags;
     std::map<Simplex, IntersectionFlags> subconfigurationsFlags;
@@ -205,8 +221,8 @@ private:
     void CreateGraph(bool minimizeSimplices);
     
     void CreateGraphAndCalculateAcyclicSubset(AcyclicTest<IntersectionFlags> *test);
-    void AddNeighboursToListAndUpdateAcyclicIntersection(Node *node, IntNodesMap &H, std::queue<Node *> &L);
-    void AddNodeToGraphAndNeighboursToList(Node *node, IntNodesMap &H, std::queue<Node *> &L);
+    void AddNeighboursToListAndUpdateAcyclicIntersection(Node *node, VertexNodesMap &H, std::queue<Node *> &L);
+    void AddNodeToGraphAndNeighboursToList(Node *node, VertexNodesMap &H, std::queue<Node *> &L);
     void RemoveNodeFromGraph(Node *node);
 
     void CreateAcyclicSpanningTree(std::vector<Path> &paths, int maxAcyclicSubsetID);

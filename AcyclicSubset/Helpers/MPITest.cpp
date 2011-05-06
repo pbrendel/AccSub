@@ -15,6 +15,8 @@
 
 #include <assert.h>
 
+int MPITest::rank = 0;
+
 ////////////////////////////////////////////////////////////////////////////////
 
 void MPITest::Master(int argc, char **argv)
@@ -53,8 +55,6 @@ void MPITest::Slave(int processRank)
 void MPITest::Test(int argc, char **argv)
 {
 #ifdef USE_MPI
-
-    int rank;
 
     MPI_Init(&argc, &argv);
     

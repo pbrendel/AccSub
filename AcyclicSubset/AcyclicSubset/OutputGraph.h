@@ -4,13 +4,26 @@
 #include "Simplex.h"
 #include "IncidenceGraph.h"
 
+#ifdef DEBUG_MEMORY
+#include "../Helpers/DebugMemory.h"
+#endif
+
 class IncidenceGraph;
 
+#ifdef DEBUG_MEMORY
+class OutputGraph : public DebugMemory<OutputGraph>
+#else
 class OutputGraph
+#endif
 {
+
 public:
 
+#ifdef DEBUG_MEMORY
+    struct Node : public DebugMemory<Node>
+#else
     struct Node
+#endif
     {        
         int                 index;
         Simplex             simplex;
@@ -31,7 +44,7 @@ public:
     typedef std::vector<Node *> Nodes;
     Nodes nodes;
 
-   OutputGraph(IncidenceGraph *ig);
+    OutputGraph(IncidenceGraph *ig);
     OutputGraph(const SimplexList &simplexList);
     ~OutputGraph();
 

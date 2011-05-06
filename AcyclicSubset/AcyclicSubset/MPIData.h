@@ -7,11 +7,20 @@
 
 class IncidenceGraph;
 
+#ifdef DEBUG_MEMORY
+#include "../Helpers/DebugMemory.h"
+#endif
+
 namespace MPIData
 {
 
+#ifdef DEBUG_MEMORY
+class SimplexData : public DebugMemory<SimplexData>
+#else
 class SimplexData
+#endif
 {
+    
     int *buffer;
     int size;
 
@@ -29,8 +38,12 @@ public:
     void GetSimplexData(SimplexList &simplexList, std::set<Vertex> &borderVerts, int &dim, int &acyclicTestNumber);
 
 };
-    
+
+#ifdef DEBUG_MEMORY
+class IncidenceGraphData : public DebugMemory<IncidenceGraphData>
+#else
 class IncidenceGraphData
+#endif
 {
     int *buffer;
     int size;

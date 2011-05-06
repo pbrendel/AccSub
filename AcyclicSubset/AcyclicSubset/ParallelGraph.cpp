@@ -91,6 +91,7 @@ void ParallelGraph::DataNode::RemoveChildAndCopySimplexPtrList(SpanningTreeNode*
     // usuwamy node z listy dzieci
     std::vector<SpanningTreeNode *>::iterator it = std::find(spanningTreeNodes.begin(), spanningTreeNodes.end(), node);
     assert(it != spanningTreeNodes.end());
+    delete *it;
     spanningTreeNodes.erase(it);
 
     // przelatujemy cala spojna skladowa i zaznaczamy elementy do niej nalezace
@@ -121,6 +122,7 @@ void ParallelGraph::DataNode::RemoveChildAndCopySimplexPtrList(SpanningTreeNode*
     {
         if ((*i)->IsHelperFlag2())
         {
+            delete *i;
             i = ig->nodes.erase(i);
         }
         else
@@ -137,7 +139,8 @@ void ParallelGraph::SpanningTreeNode::FindAcyclicSubsetToBorderConnection(Vertex
     if (acyclicSubsetSize > 0)
     {
         // szukanie sciezki od wierzcholka w brzegu do najbliszego acyklicznego sempleksu
-        path = FindPath(FindNode(connectedComponent, FindNodeWithVertex(borderVertex)), connectedComponent, FindPathToNodeWithAcyclicIntersection());
+        
+        path = FindPath(FindNode(parent->ig->nodes, FindNodeWithVertex(borderVertex)), FindPathToNodeWithAcyclicIntersection());
         assert(path.size() > 0);
     }
     else
@@ -229,7 +232,6 @@ void ParallelGraph::SpanningTreeNode::UpdatePathFromBorderToAcyclicSubset(Vertex
                 break;
             }
         }
-        assert(!(*i)->GetAcyclicIntersectionFlags());
     }
     // jezeli na liscie byl tylko jeden node
     if (prevNode != 0)
@@ -285,8 +287,14 @@ void ParallelGraph::SpanningTreeNode::UpdatePathFromAcyclicSubsetToBorder(Vertex
     // dwoch osatnich node'ow polaczyc z wierzcholkiem na brzegu
     if (prevNode != 0)
     {
-        // std::cout<<"adding acyclic edge "<<lastVertex<<" " <<borderVertex<<" -> finishing 2"<<std::endl;
-        prevNode->UpdateAcyclicIntersectionWithEdge(lastVertex, borderVertex);
+        // moze sie zdazyc, ze w ostatnie dwa sympleksy beda sasiadowaly
+        // wlasnie na wierzcholku w brzegu, dlatego sprawdzamy, czy nie
+        // dodajemy zdegenerowanej krawedzi
+        if (lastVertex != borderVertex)
+        {
+            // std::cout<<"adding acyclic edge "<<lastVertex<<" " <<borderVertex<<" -> finishing 2"<<std::endl;
+            prevNode->UpdateAcyclicIntersectionWithEdge(lastVertex, borderVertex);
+        }
     }
 }
 
@@ -316,7 +324,7 @@ void ParallelGraph::SpanningTreeNode::UpdateBorderVerts()
     for (; vertex != singleBorderVerts.end(); vertex++)
     {
         // szukanie sciezki pomiedzy wierzcholkami
-        IncidenceGraph::Path path = FindPath(firstNode, connectedComponent, FindPathToVertex(*vertex));
+        IncidenceGraph::Path path = FindPath(firstNode, FindPathToVertex(*vertex));
         assert(path.size() > 0);
         IncidenceGraph::Node *prevNode = path.back();
         Vertex lastVertex = *vertex;
@@ -629,6 +637,9 @@ void ParallelGraph::CalculateIncidenceGraphs(DataNodes &sourceNodes, const Incid
             // najpierw pobieramy rozmiar danych
             MPI_Recv(&dataSize, 1, MPI_INT, MPI_ANY_SOURCE, MPI_MY_DATASIZE_TAG, MPI_COMM_WORLD, &status);
             int *buffer = new int[dataSize];
+#ifdef DEBUG_MEMORY
+            MemoryInfo::Alloc(dataSize);
+#endif
             // teraz dane od node'a od ktorego dostalismy info o rozmiarze danych
             MPI_Recv(buffer, dataSize, MPI_INT, status.MPI_SOURCE, MPI_MY_DATA_TAG, MPI_COMM_WORLD, &status);
             GetNodeWithProcessRank(sourceNodes, status.MPI_SOURCE)->SetMPIIncidenceGraphData(buffer, size);
@@ -642,6 +653,9 @@ void ParallelGraph::CalculateIncidenceGraphs(DataNodes &sourceNodes, const Incid
             // najpierw pobieramy rozmiar danych
             MPI_Recv(&dataSize, 1, MPI_INT, MPI_ANY_SOURCE, MPI_MY_DATASIZE_TAG, MPI_COMM_WORLD, &status);
             int *buffer = new int[dataSize];
+#ifdef DEBUG_MEMORY
+            MemoryInfo::Alloc(dataSize);
+#endif
             // teraz dane od node'a od ktorego dostalismy info o rozmiarze danych
             MPI_Recv(buffer, dataSize, MPI_INT, status.MPI_SOURCE, MPI_MY_DATA_TAG, MPI_COMM_WORLD, &status);
             GetNodeWithProcessRank(sourceNodes, status.MPI_SOURCE)->SetMPIIncidenceGraphData(buffer, size);
@@ -807,7 +821,7 @@ void ParallelGraph::CombineGraphs()
     {
         IncidenceGraph::Nodes nodesA = (*edge)->nodeA->ig->nodes;
         (*edge)->nodeB->CreateIntNodesMapWithBorderNodes();
-        IncidenceGraph::IntNodesMap HB = (*edge)->nodeB->H;
+        IncidenceGraph::VertexNodesMap HB = (*edge)->nodeB->H;
 
         creatingMapsTime += Timer::Update();
 
@@ -901,6 +915,9 @@ void ParallelGraph::MPISlave(int processRank)
 
         // pobieramy bufor z danymi
         int *buffer = new int[dataSize];
+#ifdef DEBUG_MEMORY
+        MemoryInfo::Alloc(dataSize);
+#endif
         MPI_Recv(buffer, dataSize, MPI_INT, 0, MPI_MY_WORK_TAG, MPI_COMM_WORLD, &status);
 
         // z pobranego bufora budujemy dane wejsciowe

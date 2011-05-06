@@ -3,19 +3,31 @@
 
 #include "IncidenceGraph.h"
 
+#ifdef DEBUG_MEMORY
+#include "../Helpers/DebugMemory.h"
+#endif
+
 #define MPI_MY_WORK_TAG        1
 #define MPI_MY_DIE_TAG         2
 #define MPI_MY_DATASIZE_TAG    3
 #define MPI_MY_DATA_TAG        4
 
+#ifdef DEBUG_MEMORY
+class ParallelGraph : public DebugMemory<ParallelGraph>
+#else
 class ParallelGraph
+#endif
 {
 public:
 
     struct DataNode;
     struct SpanningTreeNode;
-    
+
+#ifdef DEBUG_MEMORY
+    struct DataEdge : public DebugMemory<DataEdge>
+#else
     struct DataEdge
+#endif
     {
         DataNode *nodeA;
         DataNode *nodeB;
@@ -27,7 +39,11 @@ public:
         }
     };
 
+#ifdef DEBUG_MEMORY
+    struct DataNode : public DebugMemory<DataNode>
+#else
     struct DataNode
+#endif
     {
         SimplexPtrList simplexPtrList;
         std::set<Vertex> verts;
@@ -37,7 +53,7 @@ public:
         std::vector<SpanningTreeNode *> spanningTreeNodes;
 
         IncidenceGraph *ig;
-        IncidenceGraph::IntNodesMap H;
+        IncidenceGraph::VertexNodesMap H;
 
         int processRank;
 
@@ -73,7 +89,11 @@ public:
     typedef std::vector<DataNode *> DataNodes;
     typedef std::vector<DataEdge *> DataEdges;
 
+#ifdef DEBUG_MEMORY
+    struct SpanningTreeEdge : public DebugMemory<SpanningTreeEdge>
+#else
     struct SpanningTreeEdge
+#endif
     {
         SpanningTreeNode *nodeA;
         SpanningTreeNode *nodeB;
@@ -94,7 +114,11 @@ public:
         void UpdateAcyclicConnections();
     };
 
+#ifdef DEBUG_MEMORY
+    struct SpanningTreeNode : public DebugMemory<SpanningTreeNode>
+#else
     struct SpanningTreeNode
+#endif
     {
         DataNode *parent;
         int subtreeID;

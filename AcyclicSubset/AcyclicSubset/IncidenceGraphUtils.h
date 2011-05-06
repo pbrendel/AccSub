@@ -81,6 +81,21 @@ IncidenceGraph::Node *FindNode(IncidenceGraph::ConnectedComponent connectedCompo
 
 ////////////////////////////////////////////////////////////////////////////////
 
+template <typename FindOptions>
+IncidenceGraph::Node *FindNode(IncidenceGraph::Nodes &nodes, FindOptions findOptions)
+{
+    for (IncidenceGraph::Nodes::iterator node = nodes.begin(); node != nodes.end(); node++)
+    {
+        if (findOptions.FoundNode(*node))
+        {
+            return *node;
+        }
+    }
+    return 0;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 class FindPathBase
 {
 public:
@@ -169,7 +184,7 @@ public:
 ////////////////////////////////////////////////////////////////////////////////
 
 template <typename FindOptions>
-IncidenceGraph::Path FindPath(IncidenceGraph::Node *firstNode, IncidenceGraph::ConnectedComponent connectedComponent, FindOptions findOptions)
+IncidenceGraph::Path FindPath(IncidenceGraph::Node *firstNode, FindOptions findOptions)
 {
     std::queue<IncidenceGraph::Node *> L;
     IncidenceGraph::Nodes tmp;

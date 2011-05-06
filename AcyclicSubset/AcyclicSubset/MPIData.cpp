@@ -17,6 +17,9 @@ SimplexData::SimplexData(const SimplexPtrList& simplexPtrList, const std::set<Ve
 {
     size = CalcBufferSize(simplexPtrList, borderVerts.size(), simplexSize);
     buffer = new int[size];
+#ifdef DEBUG_MEMORY
+    MemoryInfo::Alloc(size);
+#endif
 
     int index = 0;
 
@@ -38,7 +41,11 @@ SimplexData::SimplexData(const SimplexPtrList& simplexPtrList, const std::set<Ve
             buffer[index++] = (*i)->size();
             for (Simplex::const_iterator v = (*i)->begin(); v != (*i)->end(); v++)
             {
+#ifdef DEBUG_MEMORY_VERTEX
+                buffer[index++] = *((int *)&(*v));
+#else
                 buffer[index++] = (*v);
+#endif
             }
         }
     }
@@ -48,19 +55,30 @@ SimplexData::SimplexData(const SimplexPtrList& simplexPtrList, const std::set<Ve
         {
             for (Simplex::const_iterator v = (*i)->begin(); v != (*i)->end(); v++)
             {
+#ifdef DEBUG_MEMORY_VERTEX
+                buffer[index++] = *((int *)&(*v));
+#else
                 buffer[index++] = (*v);
+#endif
             }
         }
     }
     buffer[index++] = borderVerts.size();
     for (std::set<Vertex>::const_iterator v = borderVerts.begin(); v != borderVerts.end(); v++)
     {
+#ifdef DEBUG_MEMORY_VERTEX
+        buffer[index++] = *((int *)&(*v));
+#else
         buffer[index++] = (*v);
+#endif
     }
 }
 
 SimplexData::~SimplexData()
 {
+#ifdef DEBUG_MEMORY
+    MemoryInfo::Dealloc(size);
+#endif
     delete [] buffer;
 }
 
@@ -140,6 +158,9 @@ IncidenceGraphData::IncidenceGraphData(const IncidenceGraph* ig)
     std::vector<int> simplicesOnBorder;
     std::vector<int> simplicesInAcyclicSubset;
     buffer = new int[size];
+#ifdef DEBUG_MEMORY
+    MemoryInfo::Alloc(size);
+#endif
     int index = 0;
     // wymiar
     buffer[index++] = ig->params.dim;
@@ -184,7 +205,11 @@ IncidenceGraphData::IncidenceGraphData(const IncidenceGraph* ig)
         buffer[index++] = i->size();
         for (VertsSet::const_iterator v = i->begin(); v != i->end(); v++)
         {
+#ifdef DEBUG_MEMORY_VERTEX
+            buffer[index++] = *((int *)&(*v));
+#else
             buffer[index++] = (*v);
+#endif
         }
     }
     for (std::vector<int>::const_iterator i = ig->connectedComponentsAcyclicSubsetSize.begin(); i != ig->connectedComponentsAcyclicSubsetSize.end(); i++)
@@ -195,6 +220,9 @@ IncidenceGraphData::IncidenceGraphData(const IncidenceGraph* ig)
 
 IncidenceGraphData::~IncidenceGraphData()
 {
+#ifdef DEBUG_MEMORY
+    MemoryInfo::Dealloc(size);
+#endif
     delete [] buffer;
 }
 

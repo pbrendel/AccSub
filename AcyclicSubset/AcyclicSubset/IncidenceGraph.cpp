@@ -172,7 +172,7 @@ IncidenceGraph *IncidenceGraph::CreateAndCalculateAcyclicSubsetParallel(SimplexL
 
 void IncidenceGraph::CreateGraph(bool minimizeSimplices)
 {
-    IntNodesMap H; // hash<numer_wierzcholka, lista_wskaznikow_do_nodow_zawierajacych wierzcholek>
+    VertexNodesMap H; // hash<numer_wierzcholka, lista_wskaznikow_do_nodow_zawierajacych wierzcholek>
     for (Nodes::iterator i = nodes.begin(); i != nodes.end(); i++)
     {
         Simplex *s = (*i)->simplex;
@@ -280,7 +280,7 @@ void IncidenceGraph::CreateGraph(bool minimizeSimplices)
 
 void IncidenceGraph::CreateGraphAndCalculateAcyclicSubset(AcyclicTest<IntersectionFlags> *test)
 {
-    IntNodesMap H; // hash<numer_wierzcholka, lista_wskaznikow_do_nodow_zawierajacych wierzcholek>
+    VertexNodesMap H; // hash<numer_wierzcholka, lista_wskaznikow_do_nodow_zawierajacych wierzcholek>
     for (Nodes::iterator i = nodes.begin(); i != nodes.end(); i++)
     {
         Simplex *s = (*i)->simplex;
@@ -329,7 +329,7 @@ void IncidenceGraph::CreateGraphAndCalculateAcyclicSubset(AcyclicTest<Intersecti
     }
 }
 
-void IncidenceGraph::AddNeighboursToListAndUpdateAcyclicIntersection(Node* node, IntNodesMap &H, std::queue<Node*> &L)
+void IncidenceGraph::AddNeighboursToListAndUpdateAcyclicIntersection(Node* node, VertexNodesMap &H, std::queue<Node*> &L)
 {
     Simplex intersection;
     // sprawdzamy wszytkie punkty nalezace do sympleksu w tym wierzcholku
@@ -356,7 +356,7 @@ void IncidenceGraph::AddNeighboursToListAndUpdateAcyclicIntersection(Node* node,
     }
 }
 
-void IncidenceGraph::AddNodeToGraphAndNeighboursToList(Node* node, IntNodesMap &H, std::queue<Node*> &L)
+void IncidenceGraph::AddNodeToGraphAndNeighboursToList(Node* node, VertexNodesMap &H, std::queue<Node*> &L)
 {
     node->IsAddedToGraph(true);
     // sprawdzamy wszytkie punkty nalezace do sympleksu w tym wierzcholku
@@ -472,7 +472,7 @@ void IncidenceGraph::CalculateAcyclicSubsetWithSpanningTree(AcyclicTest<Intersec
                     }
                 }
             }
-            Path path = FindPath(first, *i, FindPathToNodeNotInAcyclicSubsetNorOnBorder());
+            Path path = FindPath(first, FindPathToNodeNotInAcyclicSubsetNorOnBorder());
             if (path.size() > 0)
             {
                 first = path.back();
@@ -532,7 +532,7 @@ void IncidenceGraph::CreateAcyclicSpanningTree(std::vector<IncidenceGraph::Path>
         Path::reverse_iterator current = path.rbegin();
         Path::reverse_iterator next = current;
         next++;
-        int lastVertex = GetVertexFromIntersection((*current)->simplex, (*next)->simplex);
+        Vertex lastVertex = GetVertexFromIntersection((*current)->simplex, (*next)->simplex);
         current = next;
         next++;
         while (next != path.rend())
@@ -540,7 +540,7 @@ void IncidenceGraph::CreateAcyclicSpanningTree(std::vector<IncidenceGraph::Path>
             Node *n = *next;
 
             // sprawdzamy przeciecie z nastepnym sympleksem
-            int vertex = GetVertexFromIntersection((*current)->simplex, n->simplex);
+            Vertex vertex = GetVertexFromIntersection((*current)->simplex, n->simplex);
 
             // jezeli wierzcholek jest w zbiorze acyklicznym -> konczymy
             // przy sprawdzaniu warunku korzystamy z faktu, ze flaga podsciany
@@ -607,6 +607,7 @@ void IncidenceGraph::RemoveAcyclicSubset()
     {
         if ((*i)->IsAcyclic())
         {
+            delete *i;
             i = nodes.erase(i);
         }
         else
@@ -614,6 +615,8 @@ void IncidenceGraph::RemoveAcyclicSubset()
             i++;
         }
     }
+
+    AssignNewIndices();
 }
 
 void IncidenceGraph::AssignNewIndices()

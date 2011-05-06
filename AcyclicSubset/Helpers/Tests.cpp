@@ -49,6 +49,7 @@ typedef int Id;
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "Utils.h"
+#include "DebugMemory.h"
 #include "../AcyclicSubset/Simplex.h"
 #include "../AcyclicSubset/IncidenceGraph.h"
 
@@ -65,10 +66,10 @@ int Tests::sortVerts = 1;
 std::string Tests::logFilename = "tests_log.xml";
 std::ofstream Tests::log;
 int Tests::useAlgebraic = 0;
-int Tests::useCoreduction = 1;
-int Tests::useAcyclicSubset = 1;
+int Tests::useCoreduction = 0;
+int Tests::useAcyclicSubset = 0;
 int Tests::useAcyclicSubsetSpanningTree = 1;
-int Tests::useAcyclicSubsetOnline = 1;
+int Tests::useAcyclicSubsetOnline = 0;
 int Tests::useAcyclicSubsetParallel = 0;
 IncidenceGraph::Params Tests::incidenceGraphParams(4, 0, true, false);
 IncidenceGraph::ParallelParams Tests::parallelParams(1000);
@@ -216,6 +217,7 @@ void Tests::GenerateData(SimplexList &simplexList)
             break;
     }
     Timer::Update("data generated");
+    MemoryInfo::PrintInfo();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -254,6 +256,7 @@ void Tests::Test(SimplexList &simplexList, ReductionType reductionType)
     {
         delete test;
     }
+    MemoryInfo::PrintInfo();
     Timer::Update();
     total = Timer::TimeFrom(timeStart, "total graph processing");
     Tests::Test(ig, reductionType, total);
@@ -271,6 +274,7 @@ void Tests::Test(IncidenceGraph *ig, ReductionType reductionType, float totalTim
 
     Timer::Update();
     OutputGraph *og = new OutputGraph(ig);
+    MemoryInfo::PrintInfo();
     float t = Timer::Update("creating output");
     log<<"\t\t\t<output_graph>"<<t<<"</output_graph>"<<std::endl;
     totalTime += t;
@@ -278,7 +282,8 @@ void Tests::Test(IncidenceGraph *ig, ReductionType reductionType, float totalTim
     totalTime += ComputeHomology(og, reductionType == RT_Coreduction);
     std::cout<<"total: "<<totalTime<<std::endl;
     log<<"\t\t\t<total>"<<totalTime<<"</total>"<<std::endl;
-
+    MemoryInfo::PrintInfo();
+    
     delete og;
 }
 
@@ -302,7 +307,7 @@ void Tests::TestAndCompare(SimplexList &simplexList)
         log<<"\t\t</algebraic>"<<std::endl<<std::endl;
         cout<<std::endl;
     }
-    
+
     if (useCoreduction)
     {
         std::cout<<std::endl<<"coreduction:"<<std::endl;
@@ -331,10 +336,10 @@ void Tests::TestAndCompare(SimplexList &simplexList)
 
     if (useAcyclicSubsetSpanningTree)
     {
-        std::cout<<std::endl<<"acyclic subset with graph:"<<std::endl;
-        log<<"\t\t<acyclic_subset_with_graph>"<<std::endl<<std::endl;
+        std::cout<<std::endl<<"acyclic subset with spanning tree:"<<std::endl;
+        log<<"\t\t<acyclic_subset_with_spanning_tree>"<<std::endl<<std::endl;
         Test(simplexList, RT_AcyclicSubsetSpanningTree);
-        log<<"\t\t</acyclic_subset_with_graph>"<<std::endl<<std::endl;
+        log<<"\t\t</acyclic_subset_with_spanning_tree>"<<std::endl<<std::endl;
     }
 
     if (useAcyclicSubsetParallel)
@@ -438,6 +443,7 @@ void Tests::TestFromCommandLine(int argc, char **argv)
 
     log<<"</tests>"<<std::endl;
     log.close();
+    MemoryInfo::PrintInfo(true);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -519,6 +525,7 @@ float Tests::ComputeHomology(OutputGraph *g, bool doCoreduction)
         t = Timer::Update("coreduction");
         log<<"\t\t\t<coreduction>"<<t<<"</coreduction>"<<std::endl;
         total += t;
+        MemoryInfo::PrintInfo();
     }
 
     Timer::Update();
@@ -527,7 +534,8 @@ float Tests::ComputeHomology(OutputGraph *g, bool doCoreduction)
     t = Timer::Update("computing homology");
     log<<"\t\t\t<homology>"<<t<<"</homology>"<<std::endl;
     total += t;
-
+    MemoryInfo::PrintInfo();
+    
 //    testsLog<<homSignCR();
     std::cout<<homSignCR();
 

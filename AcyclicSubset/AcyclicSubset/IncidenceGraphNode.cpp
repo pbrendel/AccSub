@@ -90,7 +90,7 @@ Vertex IncidenceGraph::Node::FindAcyclicVertex()
     return -1;
 }
 
-Vertex IncidenceGraph::Node::FindAcyclicVertexNotEqual(int vertex)
+Vertex IncidenceGraph::Node::FindAcyclicVertexNotEqual(Vertex vertex)
 {
     if (this->acyclicIntersectionFlags == 0)
     {
@@ -236,7 +236,7 @@ Simplex IncidenceGraph::Node::Normalize(const Simplex &simplex)
     return s;
 }
 
-int IncidenceGraph::Node::NormalizeVertex(int v)
+int IncidenceGraph::Node::NormalizeVertex(Vertex v)
 {
     return v2i[v];
 }

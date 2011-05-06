@@ -11,6 +11,7 @@
 
 class MPITest
 {
+    static int rank;
 
     static void Master(int argc, char **argv);
     static void Slave(int processRank);
@@ -18,6 +19,8 @@ class MPITest
 public:
 
     static void Test(int argc, char **argv);
+    
+    static int GetProcessRank() { return rank; }
 
 };
 

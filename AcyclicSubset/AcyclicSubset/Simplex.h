@@ -4,7 +4,44 @@
 #include <vector>
 #include <set>
 
+#ifdef DEBUG_MEMORY_VERTEX
+
+#include "../Helpers/DebugMemory.h"
+
+class DebugMemoryVertex : DebugMemory<DebugMemoryVertex>
+{
+public:
+    int vertex;
+
+    DebugMemoryVertex() { vertex = 0; }
+    DebugMemoryVertex(int v) { vertex = v; }
+    DebugMemoryVertex(const DebugMemoryVertex &v) { vertex = v.vertex; }
+    // operator int() { return vertex; }
+    bool operator==(DebugMemoryVertex v) const { return vertex == v.vertex; }
+    bool operator!=(DebugMemoryVertex v) const { return vertex != v.vertex; }
+    bool operator>=(DebugMemoryVertex v) const { return vertex >= v.vertex; }
+    bool operator>(DebugMemoryVertex v) const { return vertex > v.vertex; }
+    bool operator<=(DebugMemoryVertex v) const { return vertex <= v.vertex; }
+    bool operator<(DebugMemoryVertex v) const { return vertex < v.vertex; }
+    bool operator++() { ++vertex; }
+    bool operator++(int) { int val = vertex; vertex++; return val; }
+
+    friend std::ostream& operator<<(std::ostream &str, DebugMemoryVertex v)
+    {
+        str<<v.vertex;
+        return str;
+    }
+};
+
+//int operator<<(int i , DebugMemoryVertex v) { return i << v.vertex; }
+
+typedef DebugMemoryVertex Vertex;
+#else
+
 typedef int Vertex;
+
+#endif
+
 typedef std::set<Vertex> VertsSet;
 typedef std::vector<Vertex> Simplex;
 typedef std::vector<Simplex> SimplexList;

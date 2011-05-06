@@ -153,7 +153,7 @@ OutputGraph::OutputGraph(const SimplexList &simplexList)
             int kappa = 1;
             for (Simplex::iterator j = s.begin(); j != s.end(); j++)
             {
-                int vertex = (*j);
+                Vertex vertex = (*j);
                 j = s.erase(j);
                 node->AddSubnode(FindOrAddNode(*i), kappa);
                 j = s.insert(j, vertex);
@@ -236,7 +236,7 @@ OutputGraph::Node *OutputGraph::GenerateNode(IncidenceGraph::Node *baseNode, Sim
         int kappa = 1;
         for (Simplex::iterator i = baseSimplex.begin(); i != baseSimplex.end(); i++)
         {
-            int vertex = (*i);
+            Vertex vertex = (*i);
             i = baseSimplex.erase(i);
             Node *subnode = GenerateNode(baseNode, baseSimplex, generatedSubnodes, subnodesFlags);
             if (subnode != 0)
@@ -275,7 +275,7 @@ OutputGraph::Node *OutputGraph::FindOrAddNode(const Simplex &simplex)
         int kappa = 1;
         for (Simplex::iterator j = s.begin(); j != s.end(); j++)
         {
-            int vertex = (*j);
+            Vertex vertex = (*j);
             j = s.erase(j);
             node->AddSubnode(FindOrAddNode(s), kappa);
             j = s.insert(j, vertex);
