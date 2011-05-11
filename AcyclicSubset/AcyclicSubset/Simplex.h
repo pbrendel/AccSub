@@ -38,7 +38,7 @@ public:
 typedef DebugMemoryVertex Vertex;
 #else
 
-typedef int Vertex;
+typedef long Vertex;
 
 #endif
 

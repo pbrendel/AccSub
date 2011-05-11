@@ -100,7 +100,7 @@ void MemoryInfo::PrintInfo(bool full)
 #ifdef DEBUG_MEMORY
 #define MINF(a) (a / (1024 * 1024))
 #ifdef USE_MPI
-    std::cout<<"process "<<MPITest::GetProcessRank();
+    std::cout<<"process "<<MPITest::GetProcessRank()<<" ";
 #endif
     std::cout<<"memory: "<<MINF(memoryAllocated)<<" max: "<<MINF(maxMemoryAllocated);
     std::cout<<" alloc: "<<MINF(totalAllocations)<<" dealloc: "<<MINF(totalDeallocations)<<std::endl;

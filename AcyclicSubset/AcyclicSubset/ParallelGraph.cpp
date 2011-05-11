@@ -47,9 +47,15 @@ void ParallelGraph::DataNode::SendMPIData(const IncidenceGraph::Params &params, 
 {
 #ifdef USE_MPI    
     this->processRank = processRank;
+#ifdef DEBUG_MPI
+        std::cout<<"process 0 packing data at "<<MPI_Wtime()<<std::endl;
+#endif
     MPIData::SimplexData *data = new MPIData::SimplexData(simplexPtrList, borderVerts, params.dim, 0, GetConstantSimplexSize());
     int dataSize = data->GetSize();
     MPI_Send(&dataSize, 1, MPI_INT, processRank, MPI_MY_DATASIZE_TAG, MPI_COMM_WORLD);
+#ifdef DEBUG_MPI
+        std::cout<<"process 0 sending data at "<<MPI_Wtime()<<std::endl;
+#endif
     MPI_Send(data->GetBuffer(), dataSize, MPI_INT, processRank, MPI_MY_WORK_TAG, MPI_COMM_WORLD);
     delete data;
 #endif
@@ -61,6 +67,9 @@ void ParallelGraph::DataNode::SetMPIIncidenceGraphData(int* buffer, int size)
     this->processRank = -1;
     MPIData::IncidenceGraphData *data = new MPIData::IncidenceGraphData(buffer, size);
     this->ig = data->GetIncidenceGraph(simplexPtrList);
+#ifdef DEBUG_MPI
+        std::cout<<"process 0 unpacked data at "<<MPI_Wtime()<<std::endl;
+#endif
     delete data;
 #endif
 }
@@ -504,10 +513,10 @@ void ParallelGraph::PrepareData(SimplexList &simplexList, int packSize)
             for (Simplex::iterator v = sd->simplex.begin(); v != sd->simplex.end(); v++)
             {
                 std::vector<SimplexDescriptor *> neighbours = H[*v];
-                if (neighbours.size() > 20)
-                {
-                    continue;
-                }
+//                if (neighbours.size() > 20)
+//                {
+//                    continue;
+//                }
                 for (std::vector<SimplexDescriptor *>::iterator n = neighbours.begin(); n != neighbours.end(); n++)
                 {
                     if (!(*n)->added)
@@ -642,6 +651,9 @@ void ParallelGraph::CalculateIncidenceGraphs(DataNodes &sourceNodes, const Incid
 #endif
             // teraz dane od node'a od ktorego dostalismy info o rozmiarze danych
             MPI_Recv(buffer, dataSize, MPI_INT, status.MPI_SOURCE, MPI_MY_DATA_TAG, MPI_COMM_WORLD, &status);
+#ifdef DEBUG_MPI
+        std::cout<<"process 0 received data at "<<MPI_Wtime()<<std::endl;
+#endif
             GetNodeWithProcessRank(sourceNodes, status.MPI_SOURCE)->SetMPIIncidenceGraphData(buffer, size);
             std::cout<<"sending node "<<currentNode<<" to process: "<<status.MPI_SOURCE<<std::endl;
             sourceNodes[currentNode++]->SendMPIData(params, status.MPI_SOURCE);
@@ -658,6 +670,9 @@ void ParallelGraph::CalculateIncidenceGraphs(DataNodes &sourceNodes, const Incid
 #endif
             // teraz dane od node'a od ktorego dostalismy info o rozmiarze danych
             MPI_Recv(buffer, dataSize, MPI_INT, status.MPI_SOURCE, MPI_MY_DATA_TAG, MPI_COMM_WORLD, &status);
+#ifdef DEBUG_MPI
+            std::cout<<"process 0 received data at "<<MPI_Wtime()<<std::endl;
+#endif
             GetNodeWithProcessRank(sourceNodes, status.MPI_SOURCE)->SetMPIIncidenceGraphData(buffer, size);
         }
 
@@ -919,6 +934,9 @@ void ParallelGraph::MPISlave(int processRank)
         MemoryInfo::Alloc(dataSize);
 #endif
         MPI_Recv(buffer, dataSize, MPI_INT, 0, MPI_MY_WORK_TAG, MPI_COMM_WORLD, &status);
+#ifdef DEBUG_MPI
+        std::cout<<"process "<<processRank<<" received data at "<<MPI_Wtime()<<std::endl;
+#endif
 
         // z pobranego bufora budujemy dane wejsciowe
         MPIData::SimplexData *data = new MPIData::SimplexData(buffer, dataSize);
@@ -926,6 +944,9 @@ void ParallelGraph::MPISlave(int processRank)
         std::set<Vertex> borderVerts;
         IncidenceGraph::Params params;
         data->GetSimplexData(simplexList, borderVerts, params.dim, params.acyclicTestNumber);
+#ifdef DEBUG_MPI
+        std::cout<<"process "<<processRank<<" upacked data at "<<MPI_Wtime()<<std::endl;
+#endif
         AcyclicTest<IncidenceGraph::IntersectionFlags> *test = AcyclicTest<IncidenceGraph::IntersectionFlags>::Create(params.acyclicTestNumber, params.dim);
 
         // tworzymy graf incydencji z policzonym podzbiorem acyklicznym
@@ -938,8 +959,14 @@ void ParallelGraph::MPISlave(int processRank)
 
         // zamieniamy na bufor danych
         MPIData::IncidenceGraphData *igData = new MPIData::IncidenceGraphData(ig);
+#ifdef DEBUG_MPI
+        std::cout<<"process "<<processRank<<" packing data at "<<MPI_Wtime()<<std::endl;
+#endif
         dataSize = igData->GetSize();
 
+#ifdef DEBUG_MPI
+        std::cout<<"process "<<processRank<<" sending data at "<<MPI_Wtime()<<std::endl;
+#endif
         // i odsylamy do mastera
         MPI_Send(&dataSize, 1, MPI_INT, 0, MPI_MY_DATASIZE_TAG, MPI_COMM_WORLD);
         MPI_Send(igData->GetBuffer(), dataSize, MPI_INT,0, MPI_MY_DATA_TAG, MPI_COMM_WORLD);
