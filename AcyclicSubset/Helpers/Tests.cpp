@@ -230,6 +230,8 @@ void Tests::Test(SimplexList &simplexList, ReductionType reductionType)
     Timer::Update();
     Timer::Time timeStart = Timer::Now();
 
+    MemoryInfo::Reset();
+
     AcyclicTest<IncidenceGraph::IntersectionFlags> *test = IsAcyclicSubsetReduction(reductionType) ? AcyclicTest<IncidenceGraph::IntersectionFlags>::Create(incidenceGraphParams.acyclicTestNumber, incidenceGraphParams.dim) : 0;
     IncidenceGraph *ig = 0;
     if (reductionType == RT_AcyclicSubset)

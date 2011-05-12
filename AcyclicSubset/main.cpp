@@ -7,19 +7,6 @@
 // - hash vertex -> index
 ////////////////////////////////////////////////////////////////////////////////
 
-void* operator new(size_t sz)
-{
-    void* m = malloc(sz);
-    if (!m)
-    {
-        std::cout<<"out of memory"<<std::endl;
-        MemoryInfo::PrintInfo(true);
-    }
-    return m;
-}
-
-
-
 #ifdef DEBUG_MEMORY_OPERATORS
 
 void UpdateAllocatedMemory(int sz)

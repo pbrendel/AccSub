@@ -46,7 +46,11 @@ void MPITest::Slave(int processRank)
 #ifdef USE_MPI
 
     ParallelGraph::MPISlave(processRank);
-    
+
+#ifdef DEBUG_MEMORY
+    MemoryInfo::PrintInfo(true);
+#endif
+
 #endif
 }
 

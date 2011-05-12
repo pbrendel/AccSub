@@ -112,5 +112,14 @@ void MemoryInfo::PrintInfo(bool full)
 #endif
 }
 
+void MemoryInfo::Reset()
+{
+#ifdef DEBUG_MEMORY
+    maxMemoryAllocated = memoryAllocated;
+    totalAllocations -= totalDeallocations;
+    totalDeallocations = 0;
+#endif
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // eof

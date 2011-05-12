@@ -69,6 +69,7 @@ public:
 private:
     
     static Time now;
+    static Time timeStart;
 
 public:
 
@@ -78,6 +79,7 @@ public:
     static Time Now();
     static float TimeFrom(Time);
     static float TimeFrom(Time, const char *);
+    static void TimeStamp(const char *);
     
 };
 

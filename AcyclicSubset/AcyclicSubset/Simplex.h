@@ -6,6 +6,7 @@
 
 #ifdef DEBUG_MEMORY_VERTEX
 
+#include <iostream>
 #include "../Helpers/DebugMemory.h"
 
 class DebugMemoryVertex : DebugMemory<DebugMemoryVertex>

@@ -19,6 +19,7 @@ public:
     static void Dealloc(int);
 
     static void PrintInfo(bool = false);
+    static void Reset();
 };
 
 template <typename T>

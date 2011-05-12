@@ -615,9 +615,11 @@ void ParallelGraph::CalculateIncidenceGraphs(DataNodes &sourceNodes, const Incid
 {
     if (local)
     {
+        Timer::TimeStamp("incidence graph calculating start");
         for (DataNodes::iterator i = sourceNodes.begin(); i != sourceNodes.end(); i++)
         {
             (*i)->CreateIncidenceGraphLocally(params, test);
+            Timer::TimeStamp("incidence graph calculated");
         }
     }
 #ifdef USE_MPI
@@ -631,7 +633,7 @@ void ParallelGraph::CalculateIncidenceGraphs(DataNodes &sourceNodes, const Incid
 
         MPI_Comm_size(MPI_COMM_WORLD, &tasksCount);
 
-        int size = (tasksCount < nodesCount) ? tasksCount : nodesCount;
+        int size = (tasksCount < (nodesCount + 1)) ? tasksCount : (nodesCount + 1);
 
         // dopoki starczy nam node'ow wysylamy paczki
         for (int rank = 1; rank < size; rank++)
