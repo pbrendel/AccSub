@@ -106,6 +106,8 @@ void Tests::PrintHelp()
     std::cout<<"                (def. "<<parallelParams.packsCount<<")"<<std::endl;
     std::cout<<"    -ppd [0|1] - przetworz dane przed podzialem na paczki"<<std::endl;
     std::cout<<"                 (def. "<<parallelParams.prepareData<<")"<<std::endl;
+    std::cout<<"    -paso [0|1] - uzyj algorytmu online do obliczania podzadan"<<std::endl;
+    std::cout<<"                  (def. "<<parallelParams.useAcyclicSubsetOnlineAlgorithm<<")"<<std::endl;
     std::cout<<"    -use_alg [0|1] - wykonaj obliczenia bez zadnych redukcji"<<std::endl;
     std::cout<<"                     (def. "<<useAlgebraic<<")"<<std::endl;
     std::cout<<"    -use_cored [0|1] - wykonaj obliczenia dla koredukcji"<<std::endl;
@@ -171,6 +173,7 @@ void Tests::ProcessArguments(int argc, char **argv)
         else if (CHECK_ARG_NEXT("-ps")) { parallelParams.packSize = atoi(argv[index + 1]); index += 2; }
         else if (CHECK_ARG_NEXT("-pc")) { parallelParams.packsCount = atoi(argv[index + 1]); index += 2; }
         else if (CHECK_ARG_NEXT("-ppd")) { parallelParams.prepareData = atoi(argv[index + 1]); index += 2; }
+        else if (CHECK_ARG_NEXT("-paso")) { parallelParams.useAcyclicSubsetOnlineAlgorithm = atoi(argv[index + 1]); index += 2; }
         else if (CHECK_ARG_NEXT("-log")) { logFilename = argv[index + 1]; index+= 2; }
         else if (CHECK_ARG_NEXT("-use_alg")) { useAlgebraic = atoi(argv[index + 1]); index+= 2; }
         else if (CHECK_ARG_NEXT("-use_cored")) { useCoreduction = atoi(argv[index + 1]); index+= 2; }
@@ -276,7 +279,7 @@ void Tests::Test(IncidenceGraph *ig, ReductionType reductionType, float totalTim
 
     Timer::Update();
     OutputGraph *og = new OutputGraph(ig);
-    MemoryInfo::PrintInfo();
+    MemoryInfo::PrintInfo(true);
     float t = Timer::Update("creating output");
     log<<"\t\t\t<output_graph>"<<t<<"</output_graph>"<<std::endl;
     totalTime += t;

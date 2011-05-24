@@ -53,14 +53,16 @@ public:
         int packSize;
         int packsCount;
         bool prepareData;
+        bool useAcyclicSubsetOnlineAlgorithm;
         
     public:
         
-        ParallelParams(int packSize, int packsCount = -1, bool prepareData = false)
+        ParallelParams(int packSize = 1000, int packsCount = -1, bool prepareData = false, bool useAcyclicSubsetOnlineAlgorithm = false)
         {
             this->packSize = packSize;
             this->packsCount = packsCount;
             this->prepareData = prepareData;
+            this->useAcyclicSubsetOnlineAlgorithm = useAcyclicSubsetOnlineAlgorithm;
         }
     };
 
@@ -194,6 +196,8 @@ public:
     static IncidenceGraph *CreateWithBorderVerts(SimplexPtrList &simplexPtrList, const VertsSet &borderVerts, const Params &params);
     static IncidenceGraph *CreateAndCalculateAcyclicSubset(SimplexList &simplexList, const Params &params, AcyclicTest<IntersectionFlags> *test);
     static IncidenceGraph *CreateAndCalculateAcyclicSubsetOnline(SimplexList &simplexList, const Params &params, AcyclicTest<IntersectionFlags> *test);
+    static IncidenceGraph *CreateAndCalculateAcyclicSubsetOnlineWithBorderVerts(SimplexList &simplexList, const VertsSet &borderVerts, const Params &params, AcyclicTest<IntersectionFlags> *test);
+    static IncidenceGraph *CreateAndCalculateAcyclicSubsetOnlineWithBorderVerts(SimplexPtrList &simplexPtrList, const VertsSet &borderVerts, const Params &params, AcyclicTest<IntersectionFlags> *test);
     static IncidenceGraph *CreateAndCalculateAcyclicSubsetWithSpanningTree(SimplexList &simplexList, const Params &params, AcyclicTest<IntersectionFlags> *test);
     static IncidenceGraph *CreateAndCalculateAcyclicSubsetParallel(SimplexList &simplexList, const Params &params, const ParallelParams &parallelParams, AcyclicTest<IntersectionFlags> *test, bool local);
 

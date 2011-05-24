@@ -78,7 +78,7 @@ public:
             borderVerts.insert(verts.begin(), verts.end());
         }
 
-        void CreateIncidenceGraphLocally(const IncidenceGraph::Params &params, AcyclicTest<IncidenceGraph::IntersectionFlags> *test);
+        void CreateIncidenceGraphLocally(const IncidenceGraph::Params &params, const IncidenceGraph::ParallelParams &params, AcyclicTest<IncidenceGraph::IntersectionFlags> *test);
         int GetConstantSimplexSize();
         void SendMPIData(const IncidenceGraph::Params &params, int processRank);
         void SetMPIIncidenceGraphData(int *buffer, int size);
@@ -160,13 +160,17 @@ public:
 
     void GetIntersection(std::vector<Vertex> &intersection, std::set<Vertex> &setA, std::set<Vertex> &setB);
     
-    ParallelGraph(IncidenceGraph *ig, SimplexList &simplexList, IncidenceGraph::Params params, IncidenceGraph::ParallelParams parallelParams, AcyclicTest<IncidenceGraph::IntersectionFlags> *test, bool local);
+    ParallelGraph(IncidenceGraph *ig, SimplexList &simplexList, const IncidenceGraph::Params &params, const IncidenceGraph::ParallelParams &parallelParams, AcyclicTest<IncidenceGraph::IntersectionFlags> *acyclicTest, bool local);
     ~ParallelGraph();
 
 private:
 
     IncidenceGraph *incidenceGraph;
     bool local;
+
+    IncidenceGraph::Params params;
+    IncidenceGraph::ParallelParams parallelParams;
+    AcyclicTest<IncidenceGraph::IntersectionFlags> *acyclicTest;
 
     DataNodes dataNodes;
     DataEdges dataEdges;
@@ -178,7 +182,7 @@ private:
     void DivideData(SimplexList &simplexList, int packSize);
     void CreateDataEdges();
     DataNode *GetNodeWithProcessRank(DataNodes &sourceNodes, int processRank);
-    void CalculateIncidenceGraphs(DataNodes &sourceNodes, const IncidenceGraph::Params &params, AcyclicTest<IncidenceGraph::IntersectionFlags> *test);
+    void CalculateIncidenceGraphs(DataNodes &sourceNodes);
     void CreateSpanningTree();
     void CombineGraphs();
 

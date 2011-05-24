@@ -143,6 +143,36 @@ IncidenceGraph *IncidenceGraph::CreateAndCalculateAcyclicSubsetOnline(SimplexLis
     return ig;
 }
 
+IncidenceGraph *IncidenceGraph::CreateAndCalculateAcyclicSubsetOnlineWithBorderVerts(SimplexList& simplexList, const VertsSet &borderVerts, const Params& params, AcyclicTest<IntersectionFlags>* test)
+{
+#ifdef USE_HELPERS
+    Timer::Update();
+    IncidenceGraph *ig = new IncidenceGraph(simplexList, params);
+    ig->borderVerts = borderVerts;
+    ig->CreateGraphAndCalculateAcyclicSubset(test);
+    Timer::Update("incidence graph created and acyclic subset calculated");
+#else
+    IncidenceGraph *ig = new IncidenceGraph(simplexList, params);
+    ig->CreateGraphAndCalculateAcyclicSubset(test);
+#endif
+    return ig;
+}
+
+IncidenceGraph *IncidenceGraph::CreateAndCalculateAcyclicSubsetOnlineWithBorderVerts(SimplexPtrList& simplexPtrList, const VertsSet &borderVerts, const Params& params, AcyclicTest<IntersectionFlags>* test)
+{
+#ifdef USE_HELPERS
+    Timer::Update();
+    IncidenceGraph *ig = new IncidenceGraph(simplexPtrList, params);
+    ig->borderVerts = borderVerts;
+    ig->CreateGraphAndCalculateAcyclicSubset(test);
+    Timer::Update("incidence graph created and acyclic subset calculated");
+#else
+    IncidenceGraph *ig = new IncidenceGraph(simplexList, params);
+    ig->CreateGraphAndCalculateAcyclicSubset(test);
+#endif
+    return ig;
+}
+
 IncidenceGraph *IncidenceGraph::CreateAndCalculateAcyclicSubsetWithSpanningTree(SimplexList& simplexList, const Params& params, AcyclicTest<IntersectionFlags>* test)
 {
 #ifdef USE_HELPERS
@@ -264,10 +294,10 @@ void IncidenceGraph::CreateGraph(bool minimizeSimplices)
         }
         connectedComponentsBorders.push_back(connectedComponentBorder);
         connectedComponentBorder.clear();
-        if (borderVerts.size() > 0)
-        {
-            std::cout<<"number of simplices in border: "<<nodesOnBorder<<" with total simplices count: "<<totalNodes<<std::endl;
-        }
+//        if (borderVerts.size() > 0)
+//        {
+//            std::cout<<"number of simplices in border: "<<nodesOnBorder<<" with total simplices count: "<<totalNodes<<std::endl;
+//        }
     }
 
     #ifdef USE_LOG
@@ -485,7 +515,7 @@ void IncidenceGraph::CalculateAcyclicSubsetWithSpanningTree(AcyclicTest<Intersec
        }
 
         connectedComponentsAcyclicSubsetSize.push_back(size);
-        std::cout<<"number of acyclic subsets in "<<index++<<"-th connected component: "<<firstNodes.size()<<std::endl;
+        // std::cout<<"number of acyclic subsets in "<<index++<<"-th connected component: "<<firstNodes.size()<<std::endl;
 
         // jezeli wiecej niz jeden podzbior acykliczny, to tworzymy graf
         if (firstNodes.size() > 1)

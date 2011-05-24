@@ -57,7 +57,7 @@ void CountDeallocation(int size)
 
 void PrintCounters()
 {
-#define PC(a) std::cout<<#a<<" allocated: "<<allocationsCounters[sizeof(a)]<<" deallocated: "<<deallocationsCounters[sizeof(a)]<<std::endl;
+#define PC(a) std::cout<<#a<<" allocated: "<<allocationsCounters[sizeof(a)]<<" deallocated: "<<deallocationsCounters[sizeof(a)]<<" sizeof: "<<sizeof(a)<<" total allocated in kb: "<<(allocationsCounters[sizeof(a)] * sizeof(a) / 1024)<<std::endl;
     PC(IncidenceGraph)
     PC(IncidenceGraph::Node)
     PC(IncidenceGraph::Edge)
