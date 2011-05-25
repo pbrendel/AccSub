@@ -225,6 +225,8 @@ private:
     void CreateGraph(bool minimizeSimplices);
     
     void CreateGraphAndCalculateAcyclicSubset(AcyclicTest<IntersectionFlags> *test);
+    void CreateGraphAndCalculateAcyclicSubsetWithBorderVerts(AcyclicTest<IntersectionFlags> *test);
+    inline void CheckIfIsOnBorder(Node *node, VertsSet &connectedComponentBorder);
     void AddNeighboursToListAndUpdateAcyclicIntersection(Node *node, VertexNodesMap &H, std::queue<Node *> &L);
     void AddNodeToGraphAndNeighboursToList(Node *node, VertexNodesMap &H, std::queue<Node *> &L);
     void RemoveNodeFromGraph(Node *node);

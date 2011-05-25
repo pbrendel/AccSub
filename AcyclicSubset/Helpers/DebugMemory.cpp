@@ -34,6 +34,7 @@ bool CountSize(int size)
     if (size == sizeof(OutputGraph)) return true;
     if (size == sizeof(OutputGraph::Node)) return true;
 #ifdef DEBUG_MEMORY_VERTEX
+    if (size == sizeof(Simplex)) return true;
     if (size == sizeof(DebugMemoryVertex)) return true;
 #endif
     return false;
@@ -57,16 +58,19 @@ void CountDeallocation(int size)
 
 void PrintCounters()
 {
-#define PC(a) std::cout<<#a<<" allocated: "<<allocationsCounters[sizeof(a)]<<" deallocated: "<<deallocationsCounters[sizeof(a)]<<" sizeof: "<<sizeof(a)<<" total allocated in kb: "<<(allocationsCounters[sizeof(a)] * sizeof(a) / 1024)<<std::endl;
+    int total = 0;
+#define PC(a) std::cout<<#a<<" allocated: "<<allocationsCounters[sizeof(a)]<<" deallocated: "<<deallocationsCounters[sizeof(a)]<<" sizeof: "<<sizeof(a)<<" bytes: "<<(allocationsCounters[sizeof(a)] * sizeof(a))<<std::endl; total += (allocationsCounters[sizeof(a)] * sizeof(a));
     PC(IncidenceGraph)
     PC(IncidenceGraph::Node)
     PC(IncidenceGraph::Edge)
     PC(OutputGraph)
     PC(OutputGraph::Node)
 #ifdef DEBUG_MEMORY_VERTEX
+    PC(Simplex)
     PC(DebugMemoryVertex)
 #endif
 #undef PC
+    std::cout<<"total "<<total<<" in megabytes: "<<(total >> 20)<<std::endl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -98,7 +102,7 @@ void MemoryInfo::Dealloc(int size)
 void MemoryInfo::PrintInfo(bool full)
 {
 #ifdef DEBUG_MEMORY
-#define MINF(a) (a / (1024 * 1024))
+#define MINF(a) (a >> 20)
 #ifdef USE_MPI
     std::cout<<"process "<<MPITest::GetProcessRank()<<" ";
 #endif

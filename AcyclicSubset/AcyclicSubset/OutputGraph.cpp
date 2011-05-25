@@ -55,7 +55,7 @@ OutputGraph::Node *OutputGraph::Node::FindNodeWithSimplex(const Simplex &s)
 OutputGraph::Node *OutputGraph::Node::FindNodeWithSimplex(std::vector<OutputGraph::Node *> nodes, const Simplex &s)
 {
     for (Nodes::iterator i = nodes.begin(); i != nodes.end(); i++)
-    {        
+    {
         if ((*i)->simplex == s)
         {
             return (*i);

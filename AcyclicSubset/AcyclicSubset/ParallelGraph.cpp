@@ -846,11 +846,30 @@ void ParallelGraph::CreateSpanningTree()
     // prostu "przenosimy" nowo utworzony graf jako osobna spojna skladowa
     // duzego grafu
     std::map<int, SimplexPtrList> simplexPtrLists;
-    for (SpanningTreeNodes::iterator node = spanningTreeNodes.begin(); node != spanningTreeNodes.end(); node++)
+    SpanningTreeNodes::iterator node = spanningTreeNodes.begin();
+    while (node != spanningTreeNodes.end())
     {
         if (spanningTreeAcyclicSubsetSize[(*node)->subtreeID] == 0)
         {
             (*node)->parent->RemoveChildAndCopySimplexPtrList(*node, simplexPtrLists[(*node)->subtreeID]);
+            // usuwamy krawedzie drzewa rozpinajacego laczace tego node'a
+            SpanningTreeEdges::iterator edge = spanningTreeEdges.begin();
+            while (edge != spanningTreeEdges.end())
+            {
+                if ((*edge)->nodeA == *node || (*edge)->nodeB == *node)
+                {
+                    edge = spanningTreeEdges.erase(edge);
+                }
+                else
+                {
+                    edge++;
+                }
+            }
+            node = spanningTreeNodes.erase(node);
+        }
+        else
+        {
+            node++;
         }
     }
 

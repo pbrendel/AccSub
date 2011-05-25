@@ -44,7 +44,19 @@ typedef long Vertex;
 #endif
 
 typedef std::set<Vertex> VertsSet;
+
+#ifdef DEBUG_MEMORY_VERTEX
+class Simplex : public std::vector<Vertex>, DebugMemory<Simplex>
+{
+public:
+
+    Simplex() { }
+    Simplex(int size) : std::vector<Vertex>(size) { }
+};
+#else
 typedef std::vector<Vertex> Simplex;
+#endif
+
 typedef std::vector<Simplex> SimplexList;
 typedef Simplex* SimplexPtr;
 typedef std::vector<SimplexPtr> SimplexPtrList;
@@ -65,6 +77,6 @@ void AddSubsimplices(Simplex &simplex, SimplexList &simplexList);
 
 bool FindDuplicates(SimplexList &simplexList);
 
-bool operator==(Simplex &a, Simplex &b);
+bool operator==(const Simplex &a, const Simplex &b);
 
 #endif /* SIMPLEX_H */

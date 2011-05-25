@@ -57,6 +57,11 @@ private:
     Node *AddNode(const Simplex &s);
     Node *FindOrAddNode(const Simplex &simplex);
 
+#ifdef DEBUG_MEMORY
+    // zeby rozmiar roznil sie od IncidenceGraph::Edge
+    int dummy;
+#endif
+
 };
 
 #endif /* OUTPUTGRAPH_H */

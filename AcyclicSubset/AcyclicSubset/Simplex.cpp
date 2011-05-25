@@ -406,14 +406,14 @@ bool SimplexSorter(Simplex a, Simplex b)
 ////////////////////////////////////////////////////////////////////////////////
 // operator==
 
-bool operator==(Simplex &a, Simplex &b)
+bool operator==(const Simplex &a, const Simplex &b)
 {
     if (a.size() != b.size())
     {
         return false;
     }
-    Simplex::iterator i = a.begin();
-    Simplex::iterator j = b.begin();
+    Simplex::const_iterator i = a.begin();
+    Simplex::const_iterator j = b.begin();
     while (i != a.end())
     {
         if ((*i) != (*j)) return false;

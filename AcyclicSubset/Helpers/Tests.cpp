@@ -522,6 +522,9 @@ float Tests::ComputeHomology(OutputGraph *g, bool doCoreduction)
 //    }
 
     Complex complex(3, dims, kappaMap, 1);
+    t = Timer::Update("creating complex");
+    log<<"\t\t\t<creating_complex>"<<t<<"</creating_complex>"<<std::endl;
+    total += t;
 
     if (doCoreduction)
     {
