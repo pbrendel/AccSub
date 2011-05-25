@@ -27,14 +27,14 @@ void ParallelGraph::DataNode::CreateIncidenceGraphLocally(const IncidenceGraph::
 {
     if (parallelParams.useAcyclicSubsetOnlineAlgorithm)
     {
-        ig = IncidenceGraph::CreateAndCalculateAcyclicSubsetOnlineWithBorderVerts(simplexPtrList, borderVerts, params, test);
+        ig = IncidenceGraph::CreateAndCalculateAcyclicSubsetOnlineWithBorder(simplexPtrList, borderVerts, params, test);
     }
     else
     {
-        ig = IncidenceGraph::CreateWithBorderVerts(simplexPtrList, borderVerts, params);
-        ig->CalculateAcyclicSubsetWithSpanningTree(test);
+        ig = IncidenceGraph::CreateAndCalculateAcyclicSubsetSpanningTreeWithBorder(simplexPtrList, borderVerts, params, test);
     }
     ig->RemoveAcyclicSubset();
+    Timer::Update("acyclic subset removed");
 }
 
 int ParallelGraph::DataNode::GetConstantSimplexSize()
@@ -975,7 +975,7 @@ void ParallelGraph::CombineGraphs()
     }
 
     std::cout<<"total simplices after connecting graphs: "<<incidenceGraph->nodes.size()<<std::endl;
-    std::cout<<"reduced acyclic subset size: "<<(inputSize - incidenceGraph->nodes.size())<<std::endl;
+    std::cout<<"reduced acyclic subset size: "<<(inputSize - incidenceGraph->nodes.size())<<" ("<<((inputSize - incidenceGraph->nodes.size()) * 100 / inputSize)<<"%)"<<std::endl;
 
     Timer::Update("moving simplices to single incidence graph");
 
@@ -1036,8 +1036,9 @@ void ParallelGraph::MPISlave(int processRank)
         AcyclicTest<IncidenceGraph::IntersectionFlags> *test = AcyclicTest<IncidenceGraph::IntersectionFlags>::Create(params.acyclicTestNumber, params.dim);
 
         // tworzymy graf incydencji z policzonym podzbiorem acyklicznym
-        IncidenceGraph *ig = IncidenceGraph::CreateWithBorderVerts(simplexList, borderVerts, params);
-        ig->CalculateAcyclicSubsetWithSpanningTree(test);
+        IncidenceGraph *ig = IncidenceGraph::CreateAndCalculateAcyclicSubsetSpanningTreeWithBorder(simplexList, borderVerts, params, test);
+//        IncidenceGraph *ig = IncidenceGraph::CreateWithBorder(simplexList, borderVerts, params);
+//        ig->CalculateAcyclicSubsetSpanningTreeWithBorder(test);
         ig->RemoveAcyclicSubset();
 
         delete data;

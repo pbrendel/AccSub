@@ -247,7 +247,7 @@ void Tests::Test(SimplexList &simplexList, ReductionType reductionType)
     }
     else if (reductionType == RT_AcyclicSubsetSpanningTree)
     {
-        ig = IncidenceGraph::CreateAndCalculateAcyclicSubsetWithSpanningTree(simplexList, incidenceGraphParams, test);
+        ig = IncidenceGraph::CreateAndCalculateAcyclicSubsetSpanningTree(simplexList, incidenceGraphParams, test);
     }
     else if (reductionType == RT_AcyclicSubsetParallel)
     {

@@ -81,5 +81,68 @@ void GetSortedIntersectionOfUnsortedSets(std::vector<Vertex> &intersection, cons
     }
 }
 
+void GetIntersectionOfUnsortedSets(std::set<Vertex> &intersection, const std::set<Vertex> &setA, const std::set<Vertex> &setB)
+{
+    std::vector<Vertex> va;
+    va.assign(setA.begin(), setA.end());
+    std::sort(va.begin(), va.end());
+    std::vector<Vertex> vb;
+    vb.assign(setB.begin(), setB.end());
+    std::sort(vb.begin(), vb.end());
+
+    if (intersection.size() > 0)
+    {
+        intersection.clear();
+    }
+
+    if (va.size() == 0 || vb.size() == 0) return;
+    if (va.front() > vb.back()) return;
+    if (va.back() < vb.front()) return;
+
+    std::vector<Vertex>::iterator ia = va.begin();
+    std::vector<Vertex>::iterator ib = vb.begin();
+    while (ia != va.end() && ib != vb.end())
+    {
+        if (*ia < *ib) ia++;
+        else if (*ib < *ia) ib++;
+        else
+        {
+            intersection.insert(*ia);
+            ia++;
+            ib++;
+        }
+    }
+}
+
+void GetIntersectionOfUnsortedSetAndSortedVector(std::set<Vertex> &intersection, const std::set<Vertex> &setA, const std::vector<Vertex> &vb)
+{
+    std::vector<Vertex> va;
+    va.assign(setA.begin(), setA.end());
+    std::sort(va.begin(), va.end());
+
+    if (intersection.size() > 0)
+    {
+        intersection.clear();
+    }
+
+    if (va.size() == 0 || vb.size() == 0) return;
+    if (va.front() > vb.back()) return;
+    if (va.back() < vb.front()) return;
+
+    std::vector<Vertex>::iterator ia = va.begin();
+    std::vector<Vertex>::const_iterator ib = vb.begin();
+    while (ia != va.end() && ib != vb.end())
+    {
+        if (*ia < *ib) ia++;
+        else if (*ib < *ia) ib++;
+        else
+        {
+            intersection.insert(*ia);
+            ia++;
+            ib++;
+        }
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // eof

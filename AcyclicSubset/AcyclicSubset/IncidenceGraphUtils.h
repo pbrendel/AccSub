@@ -162,6 +162,20 @@ public:
     }
 };
 
+class FindPathToNodeNotInAcyclicSubset : public FindPathBase
+{
+public:
+    bool FoundNode(IncidenceGraph::Node *n)
+    {
+        return (!n->GetAcyclicIntersectionFlags() && !n->IsAcyclic());
+    }
+
+    bool EndOfPath(IncidenceGraph::Node *n)
+    {
+        return n->IsAcyclic();
+    }
+};
+
 class FindPathToNodeNotInAcyclicSubsetNorOnBorder : public FindPathBase
 {
 public:
@@ -241,6 +255,8 @@ IncidenceGraph::Path FindPath(IncidenceGraph::Node *firstNode, FindOptions findO
 
 void CreateConfigurationsFlags(int maxDim, std::map<Simplex, IncidenceGraph::IntersectionFlags> &configurationsFlags, std::map<Simplex, IncidenceGraph::IntersectionFlags> &subconfigurationsFlags);
 void GetSortedIntersectionOfUnsortedSets(std::vector<Vertex> &intersection, const std::set<Vertex> &setA, const std::set<Vertex> &setB);
+void GetIntersectionOfUnsortedSets(std::set<Vertex> &intersection, const std::set<Vertex> &setA, const std::set<Vertex> &setB);
+void GetIntersectionOfUnsortedSetAndSortedVector(std::set<Vertex> &intersection, const std::set<Vertex> &setA, const std::vector<Vertex> &vb);
 
 ////////////////////////////////////////////////////////////////////////////////
 

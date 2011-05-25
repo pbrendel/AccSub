@@ -192,19 +192,23 @@ public:
     std::map<Simplex, IntersectionFlags> subconfigurationsFlags;
 
     static IncidenceGraph *Create(SimplexList &simplexList, const Params &params);
-    static IncidenceGraph *CreateWithBorderVerts(SimplexList &simplexList, const VertsSet &borderVerts, const Params &params);
-    static IncidenceGraph *CreateWithBorderVerts(SimplexPtrList &simplexPtrList, const VertsSet &borderVerts, const Params &params);
+    static IncidenceGraph *CreateWithBorder(SimplexList &simplexList, const VertsSet &borderVerts, const Params &params);
+    static IncidenceGraph *CreateWithBorder(SimplexPtrList &simplexPtrList, const VertsSet &borderVerts, const Params &params);
     static IncidenceGraph *CreateAndCalculateAcyclicSubset(SimplexList &simplexList, const Params &params, AcyclicTest<IntersectionFlags> *test);
     static IncidenceGraph *CreateAndCalculateAcyclicSubsetOnline(SimplexList &simplexList, const Params &params, AcyclicTest<IntersectionFlags> *test);
-    static IncidenceGraph *CreateAndCalculateAcyclicSubsetOnlineWithBorderVerts(SimplexList &simplexList, const VertsSet &borderVerts, const Params &params, AcyclicTest<IntersectionFlags> *test);
-    static IncidenceGraph *CreateAndCalculateAcyclicSubsetOnlineWithBorderVerts(SimplexPtrList &simplexPtrList, const VertsSet &borderVerts, const Params &params, AcyclicTest<IntersectionFlags> *test);
-    static IncidenceGraph *CreateAndCalculateAcyclicSubsetWithSpanningTree(SimplexList &simplexList, const Params &params, AcyclicTest<IntersectionFlags> *test);
+    static IncidenceGraph *CreateAndCalculateAcyclicSubsetOnlineWithBorder(SimplexList &simplexList, const VertsSet &borderVerts, const Params &params, AcyclicTest<IntersectionFlags> *test);
+    static IncidenceGraph *CreateAndCalculateAcyclicSubsetOnlineWithBorder(SimplexPtrList &simplexPtrList, const VertsSet &borderVerts, const Params &params, AcyclicTest<IntersectionFlags> *test);
+    static IncidenceGraph *CreateAndCalculateAcyclicSubsetSpanningTree(SimplexList &simplexList, const Params &params, AcyclicTest<IntersectionFlags> *test);
+    static IncidenceGraph *CreateAndCalculateAcyclicSubsetSpanningTree(SimplexPtrList &simplexPtrList, const Params &params, AcyclicTest<IntersectionFlags> *test);
+    static IncidenceGraph *CreateAndCalculateAcyclicSubsetSpanningTreeWithBorder(SimplexList &simplexList, const VertsSet &borderVerts, const Params &params, AcyclicTest<IntersectionFlags> *test);
+    static IncidenceGraph *CreateAndCalculateAcyclicSubsetSpanningTreeWithBorder(SimplexPtrList &simplexPtrList, const VertsSet &borderVerts, const Params &params, AcyclicTest<IntersectionFlags> *test);
     static IncidenceGraph *CreateAndCalculateAcyclicSubsetParallel(SimplexList &simplexList, const Params &params, const ParallelParams &parallelParams, AcyclicTest<IntersectionFlags> *test, bool local);
 
     ~IncidenceGraph();
 
     void CalculateAcyclicSubset(AcyclicTest<IntersectionFlags> *test);
-    void CalculateAcyclicSubsetWithSpanningTree(AcyclicTest<IntersectionFlags> *test);
+    void CalculateAcyclicSubsetSpanningTree(AcyclicTest<IntersectionFlags> *test);
+    void CalculateAcyclicSubsetSpanningTreeWithBorder(AcyclicTest<IntersectionFlags> *test);
 
     void RemoveAcyclicSubset();
     
@@ -223,9 +227,10 @@ public:
 private:
 
     void CreateGraph(bool minimizeSimplices);
+    void CreateGraphWithBorder(bool minimizeSimplices);
     
     void CreateGraphAndCalculateAcyclicSubset(AcyclicTest<IntersectionFlags> *test);
-    void CreateGraphAndCalculateAcyclicSubsetWithBorderVerts(AcyclicTest<IntersectionFlags> *test);
+    void CreateGraphAndCalculateAcyclicSubsetWithBorder(AcyclicTest<IntersectionFlags> *test);
     inline void CheckIfIsOnBorder(Node *node, VertsSet &connectedComponentBorder);
     void AddNeighboursToListAndUpdateAcyclicIntersection(Node *node, VertexNodesMap &H, std::queue<Node *> &L);
     void AddNodeToGraphAndNeighboursToList(Node *node, VertexNodesMap &H, std::queue<Node *> &L);
