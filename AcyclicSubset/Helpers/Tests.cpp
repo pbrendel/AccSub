@@ -368,16 +368,16 @@ void Tests::StandardTest()
     switch (testType)
     {
         case 0:
-            sprintf(buff, "random set of size: %d", simplexList.size());
+            sprintf(buff, "random set of size: %d", (int)simplexList.size());
             break;
         case 1:
-            sprintf(buff, "random set of size %d, randomly removed %d simplices", simplexList.size(), simplicesCount);
+            sprintf(buff, "random set of size %d, randomly removed %d simplices", (int)simplexList.size(), simplicesCount);
             break;
         case 2:
             sprintf(buff, "testing %s", inputFilename.c_str());
             break;
         case 3:
-            sprintf(buff, "acyclic tree of %d nodes %d simplices each, total: %d", nodesCount, nodeSimplicesCount, simplexList.size());
+            sprintf(buff, "acyclic tree of %d nodes %d simplices each, total: %d", nodesCount, nodeSimplicesCount, (int)simplexList.size());
             break;
         default:
             break;

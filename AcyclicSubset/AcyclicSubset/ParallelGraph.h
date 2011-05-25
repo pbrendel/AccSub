@@ -78,7 +78,7 @@ public:
             borderVerts.insert(verts.begin(), verts.end());
         }
 
-        void CreateIncidenceGraphLocally(const IncidenceGraph::Params &params, const IncidenceGraph::ParallelParams &params, AcyclicTest<IncidenceGraph::IntersectionFlags> *test);
+        void CreateIncidenceGraphLocally(const IncidenceGraph::Params &params, const IncidenceGraph::ParallelParams &parallelParams, AcyclicTest<IncidenceGraph::IntersectionFlags> *test);
         int GetConstantSimplexSize();
         void SendMPIData(const IncidenceGraph::Params &params, int processRank);
         void SetMPIIncidenceGraphData(int *buffer, int size);

@@ -188,7 +188,7 @@ void Timer::Init()
 {
 #ifdef USE_MPI
     now = MPI_Wtime();
-    timestart = MPI_Wtime();
+    timeStart = MPI_Wtime();
 #else
     now = clock();
     timeStart = clock();

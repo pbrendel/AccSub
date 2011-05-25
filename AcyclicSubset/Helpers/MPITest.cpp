@@ -61,6 +61,7 @@ void MPITest::Test(int argc, char **argv)
 #ifdef USE_MPI
 
     MPI_Init(&argc, &argv);
+    Timer::Init();
     
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     std::cout<<"starting process: "<<rank<<std::endl;
