@@ -21,6 +21,8 @@
 // test!!!
 #include "../Helpers/Tests.h"
 
+#include "MPIData.h"
+
 ////////////////////////////////////////////////////////////////////////////////
 
 void ParallelGraph::DataNode::CreateIncidenceGraphLocally(const IncidenceGraph::Params &params, const IncidenceGraph::ParallelParams &parallelParams, AcyclicTest<IncidenceGraph::IntersectionFlags> *test)
@@ -33,7 +35,9 @@ void ParallelGraph::DataNode::CreateIncidenceGraphLocally(const IncidenceGraph::
     {
         ig = IncidenceGraph::CreateAndCalculateAcyclicSubsetSpanningTreeWithBorder(simplexPtrList, borderVerts, params, test);
     }
+    ig->UpdateConnectedComponents();
     ig->RemoveAcyclicSubset();
+    ig->AssignNewIndices(false);
     Timer::Update("acyclic subset removed");
 }
 
@@ -1039,7 +1043,8 @@ void ParallelGraph::MPISlave(int processRank)
         IncidenceGraph *ig = IncidenceGraph::CreateAndCalculateAcyclicSubsetSpanningTreeWithBorder(simplexList, borderVerts, params, test);
 //        IncidenceGraph *ig = IncidenceGraph::CreateWithBorder(simplexList, borderVerts, params);
 //        ig->CalculateAcyclicSubsetSpanningTreeWithBorder(test);
-        ig->RemoveAcyclicSubset();
+        ig->UpdateConnectedComponents();
+        ig->AssignNewIndices(true);
 
         delete data;
         delete test;

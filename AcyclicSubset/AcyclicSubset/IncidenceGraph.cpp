@@ -943,7 +943,7 @@ void IncidenceGraph::CreateAcyclicSpanningTree(std::vector<IncidenceGraph::Path>
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void IncidenceGraph::RemoveAcyclicSubset()
+void IncidenceGraph::UpdateConnectedComponents()
 {
     ConnectedComponents::iterator cc = connectedComponents.begin();
     std::vector<std::set<Vertex> >::iterator ccb = connectedComponentsBorders.begin();
@@ -971,75 +971,53 @@ void IncidenceGraph::RemoveAcyclicSubset()
         ccb++;
         ccass++;
     }
+}
 
-    // najpierw usuwamy krawedzie od wierzcholkow, ktore nie sa w zbiorze
-    // acyklicznym, do tych, ktore bedziemy usuwali
-     for (Nodes::iterator i = nodes.begin(); i != nodes.end(); i++)
+void IncidenceGraph::RemoveAcyclicSubset()
+{
+    Nodes newNodes;
+    for (Nodes::iterator i = nodes.begin(); i != nodes.end(); i++)
     {
         if ((*i)->IsAcyclic())
         {
             continue;
         }
-        Edges::iterator edge = (*i)->edges.begin();
-        while (edge != (*i)->edges.end())
+        Node *node = *i;
+        newNodes.push_back(node);
+        Edges newEdges;
+        for (Edges::iterator edge = node->edges.begin(); edge != node->edges.end(); edge++)
         {
             if (edge->node->IsAcyclic())
             {
-                edge = (*i)->edges.erase(edge);
+                continue;
             }
-            else
-            {
-                edge++;
-            }
+            newEdges.push_back(*edge);
         }
+        node->edges = newEdges;
     }
-
-    // a potem acykliczne node'y
-    Nodes::iterator i = nodes.begin();
-    while (i != nodes.end())
-    {
-        if ((*i)->IsAcyclic())
-        {
-            delete *i;
-            i = nodes.erase(i);
-        }
-        else
-        {
-            i++;
-        }
-    }
-
-
-//    for (Nodes::iterator i = nodes.begin(); i != nodes.end(); i++)
-//    {
-//        if ((*i)->IsAcyclic())
-//        {
-//            RemoveNodeFromGraph(*i);
-//        }
-//    }
-//    Nodes::iterator i = nodes.begin();
-//    while (i != nodes.end())
-//    {
-//        if ((*i)->IsAcyclic())
-//        {
-//            delete *i;
-//            i = nodes.erase(i);
-//        }
-//        else
-//        {
-//            i++;
-//        }
-//    }
-
-    AssignNewIndices();
+    nodes = newNodes;
 }
 
-void IncidenceGraph::AssignNewIndices()
+void IncidenceGraph::AssignNewIndices(bool checkAcyclicity)
 {
     int index = 0;
-    for (Nodes::iterator i = nodes.begin(); i != nodes.end(); i++)
+    if (checkAcyclicity)
     {
-        (*i)->newIndex = index++;
+        for (Nodes::iterator i = nodes.begin(); i != nodes.end(); i++)
+        {
+            if ((*i)->IsAcyclic())
+            {
+                continue;
+            }
+            (*i)->newIndex = index++;
+        }
+    }
+    else
+    {
+        for (Nodes::iterator i = nodes.begin(); i != nodes.end(); i++)
+        {
+            (*i)->newIndex = index++;
+        }
     }
 }
 

@@ -210,7 +210,9 @@ public:
     void CalculateAcyclicSubsetSpanningTree(AcyclicTest<IntersectionFlags> *test);
     void CalculateAcyclicSubsetSpanningTreeWithBorder(AcyclicTest<IntersectionFlags> *test);
 
+    void UpdateConnectedComponents();
     void RemoveAcyclicSubset();
+    void AssignNewIndices(bool checkAcyclicity);
     
     void GetAcyclicSubset(SimplexList &simplexList);
     int GetAcyclicSubsetSize();
@@ -237,8 +239,6 @@ private:
     void RemoveNodeFromGraph(Node *node);
 
     void CreateAcyclicSpanningTree(std::vector<Path> &paths, int maxAcyclicSubsetID);
-
-    void AssignNewIndices();
 
     friend class MPIData::IncidenceGraphData;
     
