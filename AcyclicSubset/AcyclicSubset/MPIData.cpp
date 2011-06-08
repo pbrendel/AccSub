@@ -311,7 +311,6 @@ IncidenceGraph *IncidenceGraphData::GetIncidenceGraph(const SimplexPtrList &simp
         int newIndex = buffer[index++];
         int acyclicIntersectionFlags = buffer[index++];
         int edgesCount = buffer[index++];
-        std::cout<<simplexPtrList.size()<<" "<<ind<<" "<<newIndex<<std::endl;
         IncidenceGraph::Node *node = new IncidenceGraph::Node(ig, const_cast<Simplex *>(simplexPtrList.at(ind)), newIndex);
         node->UpdateAcyclicIntersectionFlags(acyclicIntersectionFlags, 0);
         ig->nodes.push_back(node);

@@ -30,15 +30,17 @@ void ParallelGraph::DataNode::CreateIncidenceGraphLocally(const IncidenceGraph::
     if (parallelParams.useAcyclicSubsetOnlineAlgorithm)
     {
         ig = IncidenceGraph::CreateAndCalculateAcyclicSubsetOnlineWithBorder(simplexPtrList, borderVerts, params, test);
+        ig->UpdateConnectedComponents();
+        ig->AssignNewIndices(false);
     }
     else
     {
         ig = IncidenceGraph::CreateAndCalculateAcyclicSubsetSpanningTreeWithBorder(simplexPtrList, borderVerts, params, test);
+        ig->UpdateConnectedComponents();
+        ig->RemoveAcyclicSubset();
+        ig->AssignNewIndices(false);
+        Timer::Update("acyclic subset removed");
     }
-    ig->UpdateConnectedComponents();
-    ig->RemoveAcyclicSubset();
-    ig->AssignNewIndices(false);
-    Timer::Update("acyclic subset removed");
 }
 
 int ParallelGraph::DataNode::GetConstantSimplexSize()
@@ -743,20 +745,7 @@ void ParallelGraph::CalculateIncidenceGraphs(DataNodes &sourceNodes)
 #endif
             GetNodeWithProcessRank(sourceNodes, status.MPI_SOURCE)->SetMPIIncidenceGraphData(buffer, size);
         }
-
-        // konczymy prace procesow, tylko jezeli pracowalismy na secondPhaseDataNodes
-        if (sourceNodes == secondPhaseDataNodes)
-        {
-            std::cout<<"terminating jobs"<<std::endl;
-
-            // wysylamy informacje do node'ow o zakonczeniu pracy
-            for (int rank = 1; rank < tasksCount; ++rank)
-            {
-                MPI_Send(0, 0, MPI_INT, rank, MPI_MY_DIE_TAG, MPI_COMM_WORLD);
-            }
-
-            std::cout<<"parallel computing done"<<std::endl;
-        }
+        std::cout<<"parallel computing done"<<std::endl;
     }
 #endif
 }
@@ -993,6 +982,24 @@ void ParallelGraph::CombineGraphs()
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+
+void ParallelGraph::KillMPISlaves()
+{
+#ifdef USE_MPI
+
+    int tasksCount;    
+    MPI_Comm_size(MPI_COMM_WORLD, &tasksCount);
+    for (int rank = 1; rank < tasksCount; ++rank)
+    {
+        MPI_Send(0, 0, MPI_INT, rank, MPI_MY_DIE_TAG, MPI_COMM_WORLD);
+    }
+    std::cout<<"slaves killed"<<std::endl;
+
+#endif
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 
 void ParallelGraph::MPISlave(int processRank)
 {

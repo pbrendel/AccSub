@@ -187,7 +187,8 @@ private:
     void CombineGraphs();
 
 public:
-    
+
+    static void KillMPISlaves();
     static void MPISlave(int processRank);
 
 };

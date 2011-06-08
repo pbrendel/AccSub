@@ -13,6 +13,9 @@ class MPITest
 {
     static int rank;
 
+    static void StandardTest();
+    static void TestFromList();
+
     static void Master(int argc, char **argv);
     static void Slave(int processRank);
 

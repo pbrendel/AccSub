@@ -422,14 +422,7 @@ void Tests::TestFromCommandLine(int argc, char **argv)
 
     std::cout<<"Aby uzyskac wiecej informacji uruchom z parametrem -help"<<std::endl;
 
-    log.open(logFilename.c_str());
-    log<<"<tests>"<<std::endl<<std::endl;
-    log<<"<simplices_count>"<<simplicesCount<<"</simplices_count>"<<std::endl;
-    log<<"<vertices_count>"<<vertsCount<<"</vertices_count>"<<std::endl;
-    log<<"<input>"<<inputFilename<<"</input>"<<std::endl;
-    log<<"<acyclic_test_number>"<<incidenceGraphParams.acyclicTestNumber<<"</acyclic_test_number>"<<std::endl;
-    log<<"<dim>"<<incidenceGraphParams.dim<<"</dim>"<<std::endl;
-    log<<"<minimalization>"<<incidenceGraphParams.minimizeSimplices<<"</minimalization>"<<std::endl;
+    OpenLog();
 
     switch (testType)
     {
@@ -446,9 +439,10 @@ void Tests::TestFromCommandLine(int argc, char **argv)
             break;
     }
 
-    log<<"</tests>"<<std::endl;
-    log.close();
+    CloseLog();
+#ifdef DEBUG_MEMORY
     MemoryInfo::PrintInfo(true);
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -548,6 +542,26 @@ float Tests::ComputeHomology(OutputGraph *g, bool doCoreduction)
     std::cout<<homSignCR();
 
     return total;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+void Tests::OpenLog()
+{
+    log.open(logFilename.c_str());
+    log<<"<tests>"<<std::endl<<std::endl;
+    log<<"<simplices_count>"<<simplicesCount<<"</simplices_count>"<<std::endl;
+    log<<"<vertices_count>"<<vertsCount<<"</vertices_count>"<<std::endl;
+    log<<"<input>"<<inputFilename<<"</input>"<<std::endl;
+    log<<"<acyclic_test_number>"<<incidenceGraphParams.acyclicTestNumber<<"</acyclic_test_number>"<<std::endl;
+    log<<"<dim>"<<incidenceGraphParams.dim<<"</dim>"<<std::endl;
+    log<<"<minimalization>"<<incidenceGraphParams.minimizeSimplices<<"</minimalization>"<<std::endl;
+}
+
+void Tests::CloseLog()
+{
+    log<<"</tests>"<<std::endl;
+    log.close();
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -42,6 +42,9 @@ public:
     static int GetBetti(SimplexList &, int);
     static float ComputeHomology(OutputGraph *, bool);
 
+    static void OpenLog();
+    static void CloseLog();
+
 private:
     
     static bool IsAcyclicSubsetReduction(ReductionType);

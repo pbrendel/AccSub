@@ -498,8 +498,18 @@ void IncidenceGraph::CreateGraphAndCalculateAcyclicSubsetWithBorder(AcyclicTest<
         }
     }
 
-    Nodes nodesInConnectedComponent;
-    VertsSet connectedComponentBorder;
+    for (VertsSet::iterator v = borderVerts.begin(); v != borderVerts.end(); v++)
+    {
+        Nodes nodes = H[*v];
+        for (Nodes::iterator node = nodes.begin(); node != nodes.end(); node++)
+        {
+            (*node)->IsOnBorder(true);
+        }
+    }
+
+    std::vector<Vertex> vectorBorderVerts;
+    vectorBorderVerts.assign(borderVerts.begin(), borderVerts.end());
+    std::sort(vectorBorderVerts.begin(), vectorBorderVerts.end());
 
     std::queue<Node *> L;
     for (Nodes::iterator i = nodes.begin(); i != nodes.end(); i++)
@@ -508,55 +518,36 @@ void IncidenceGraph::CreateGraphAndCalculateAcyclicSubsetWithBorder(AcyclicTest<
         {
             continue;
         }
-        CheckIfIsOnBorder((*i), connectedComponentBorder);
-        // jezeli nie jest na brzegu, to zaczynamy budowac od niego
-        // pozdbior acykliczny
-        if (!(*i)->IsOnBorder())
-        {
-            AddNeighboursToListAndUpdateAcyclicIntersection(*i, H, L);
-            (*i)->IsAcyclic(true);
-        }
-        // wpp. dodajemy do grafu wierzcholki az trafimy na jakis sympleks
-        // nie lezacy na zbiorze (mozemy w ogole nie trafic)
-        else
-        {
-            nodesInConnectedComponent.push_back(*i);
-            AddNodeToGraphAndNeighboursToList(*i, H, L);
-            while (!L.empty())
-            {
-                Node *currentNode = L.front();
-                L.pop();
-                if (currentNode->IsAddedToGraph())
-                {
-                    continue;
-                }
-                CheckIfIsOnBorder(currentNode, connectedComponentBorder);
-                // kazdy sasiad ktory jest na brzegu jest dodawany do listy
-                // i bedzie sprawdzony pozniej
-                if (currentNode->IsOnBorder())
-                {
-                    nodesInConnectedComponent.push_back(currentNode);
-                    AddNodeToGraphAndNeighboursToList(currentNode, H, L);
-                }
-                // jezeli znalezlismy cos co nie jest na brzegu
-                // to zaczynamy budowac od tego podzbior acykliczny
-                else
-                {
-                    (*i)->IsAcyclic(true);
-                    AddNeighboursToListAndUpdateAcyclicIntersection(*i, H, L);
-                    break;
-                }
-            }
-        }
+        
+        Node *connectedComponent = 0;
+        VertsSet connectedComponentBorderVerts;
+        int acyclicSubsetSize = 0;
 
+        L.push(*i);
         while (!L.empty())
         {
             Node *currentNode = L.front();
             L.pop();
             currentNode->IsAddedToList(false);
 
-            CheckIfIsOnBorder(currentNode, connectedComponentBorder);
-            if (currentNode->HasAcyclicIntersection(test) && !currentNode->IsOnBorder())
+            if (acyclicSubsetSize == 0 && ! currentNode->IsOnBorder())
+            {
+                AddNeighboursToListAndUpdateAcyclicIntersection(currentNode, H, L);
+                currentNode->IsAcyclic(true);
+                acyclicSubsetSize = 1;
+                continue;
+            }
+
+            if (currentNode->IsOnBorder())
+            {
+                if (!currentNode->IsAddedToGraph())
+                {
+                    connectedComponentBorderVerts.insert(currentNode->simplex->begin(), currentNode->simplex->end());
+                    connectedComponent = currentNode;
+                    AddNodeToGraphAndNeighboursToList(currentNode, H, L);
+                }
+            }
+            else if (currentNode->HasAcyclicIntersection(test))
             {
                 currentNode->IsAcyclic(true);
                 AddNeighboursToListAndUpdateAcyclicIntersection(currentNode, H, L);
@@ -573,72 +564,21 @@ void IncidenceGraph::CreateGraphAndCalculateAcyclicSubsetWithBorder(AcyclicTest<
                 }
                 else
                 {
-                    nodesInConnectedComponent.push_back(currentNode);
                     AddNodeToGraphAndNeighboursToList(currentNode, H, L);
                 }
             }
         }
-        int acyclicSubsetSize = 0;
-        Node *connectedComponent;
-        for (Nodes::iterator cc = nodesInConnectedComponent.begin(); cc != nodesInConnectedComponent.end(); cc++)
+        if (connectedComponent != 0)
         {
-            if ((*cc)->IsAcyclic())
-            {
-                acyclicSubsetSize++;
-            }
-            else
-            {
-                connectedComponent = *cc;
-            }
-        }
-        std::cout<<"acyclic subset size: "<<acyclicSubsetSize<<std::endl;
-        connectedComponents.push_back(connectedComponent);
-        connectedComponentsAcyclicSubsetSize.push_back(acyclicSubsetSize);
-        connectedComponentsBorders.push_back(connectedComponentBorder);
-        nodesInConnectedComponent.clear();
-        connectedComponentBorder.clear();
-    }
-
-    // zerujemy flagi pomocnicze uzywane do zaznaczania, ktory node mial juz
-    // sprawdzana przynaleznosc do brzegu
-    for (Nodes::iterator node = nodes.begin(); node != nodes.end(); node++)
-    {
-        (*node)->IsHelperFlag1(false);
-    }
-
-    std::cout<<"connected components: "<<connectedComponents.size()<<std::endl;
-
-    if (connectedComponents.size() > 1)
-    {
-    std::cout<<"border verts: ";
-    Debug::Print(std::cout, borderVerts);
-    for (Nodes::iterator node = nodes.begin(); node != nodes.end(); node++)
-    {
-        Debug::Print(std::cout, (*node)->simplex);
-        std::cout<<(*node)->index<<" added: "<<(*node)->IsAddedToGraph()<<" acyclic: "<<(*node)->IsAcyclic()<<" on border: "<<(*node)->IsOnBorder()<<std::endl;
-        std::cout<<"neighbours: "<<std::endl;
-        for (Edges::iterator edge = (*node)->edges.begin(); edge != (*node)->edges.end(); edge++)
-        {
-            std::cout<<" - "<<edge->node->index<<std::endl;
+            connectedComponents.push_back(connectedComponent);
+            VertsSet tempSet;
+            GetIntersectionOfUnsortedSetAndSortedVector(tempSet, connectedComponentBorderVerts, vectorBorderVerts);
+            connectedComponentsBorders.push_back(tempSet);
+            connectedComponentsAcyclicSubsetSize.push_back(acyclicSubsetSize);
         }
     }
-    }
-}
 
-inline void IncidenceGraph::CheckIfIsOnBorder(Node *node, VertsSet &connectedComponentBorder)
-{
-    if (!node->IsHelperFlag1())
-    {
-        node->IsHelperFlag1(true);
-        for (Simplex::iterator vertex = node->simplex->begin(); vertex != node->simplex->end(); vertex++)
-        {
-            if (find(borderVerts.begin(), borderVerts.end(), *vertex) != borderVerts.end())
-            {
-                node->IsOnBorder(true);
-                connectedComponentBorder.insert(*vertex);
-            }
-        }
-    }    
+    // std::cout<<"connected components: "<<connectedComponents.size()<<std::endl;
 }
 
 void IncidenceGraph::AddNeighboursToListAndUpdateAcyclicIntersection(Node* node, VertexNodesMap &H, std::queue<Node*> &L)
