@@ -13,7 +13,7 @@ SimplexData::SimplexData(int* buffer, int size)
     this->size = size;
 }
 
-SimplexData::SimplexData(const SimplexPtrList& simplexPtrList, const std::set<Vertex>& borderVerts, int dim, int acyclicTestNumber, int simplexSize)
+SimplexData::SimplexData(const SimplexPtrList& simplexPtrList, const std::set<Vertex>& borderVerts, const IncidenceGraph::Params &params, int acyclicSubsetAlgorithm, int simplexSize)
 {
     size = CalcBufferSize(simplexPtrList, borderVerts.size(), simplexSize);
     buffer = new int[size];
@@ -29,10 +29,10 @@ SimplexData::SimplexData(const SimplexPtrList& simplexPtrList, const std::set<Ve
     buffer[index++] = simplexSize;
     // ilosc sympleksow
     buffer[index++] = simplexPtrList.size();
-    // wymiar
-    buffer[index++] = dim;
-    // numer testu acyklicznosc
-    buffer[index++] = acyclicTestNumber;
+    // parametry grafu
+    index += params.WriteData(buffer);
+    // typ redukcji
+    buffer[index++] = acyclicSubsetAlgorithm;
     // dane sympleksow
     if (simplexSize == 0)
     {
@@ -99,19 +99,18 @@ int SimplexData::CalcBufferSize(const SimplexPtrList& simplexPtrList, int border
     // dodatkowe inty to:
     // - wartosc simplexSize
     // - rozmiar simplexList
-    // - wymiar
-    // - numer testu acyklicznosci
     // - rozmiar borderVerts
-    return size + borderVertsCount + 5;
+    // - rodzaj algorytmu
+    return size + IncidenceGraph::Params::DataSize() + borderVertsCount + 4;
 }
 
-void SimplexData::GetSimplexData(SimplexList& simplexList, std::set<Vertex>& borderVerts, int &dim, int &acyclicTestNumber)
+void SimplexData::GetSimplexData(SimplexList& simplexList, std::set<Vertex>& borderVerts, IncidenceGraph::Params &params, int &acyclicSubsetAlgorithm)
 {
     int index = 0;
     int simplexSize = buffer[index++];
     int simplexCount = buffer[index++];
-    dim = buffer[index++];
-    acyclicTestNumber = buffer[index++];
+    index += params.ReadData(buffer);
+    acyclicSubsetAlgorithm = buffer[index++];
     if (simplexSize == 0)
     {
         for (int i = 0; i < simplexCount; i++)

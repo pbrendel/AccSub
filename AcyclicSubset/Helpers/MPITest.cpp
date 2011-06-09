@@ -117,7 +117,7 @@ void MPITest::Master(int argc, char **argv)
     Tests::CloseLog();
 
 #ifdef DEBUG_MEMORY
-    MemoryInfo::PrintInfo(true);
+    MemoryInfo::PrintInfo();
 #endif
 
 #endif
@@ -132,7 +132,7 @@ void MPITest::Slave(int processRank)
     ParallelGraph::MPISlave(processRank);
 
 #ifdef DEBUG_MEMORY
-    MemoryInfo::PrintInfo(true);
+    MemoryInfo::PrintInfo();
 #endif
 
 #endif

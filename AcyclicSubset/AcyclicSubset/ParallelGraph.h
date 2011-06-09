@@ -80,7 +80,7 @@ public:
 
         void CreateIncidenceGraphLocally(const IncidenceGraph::Params &params, const IncidenceGraph::ParallelParams &parallelParams, AcyclicTest<IncidenceGraph::IntersectionFlags> *test);
         int GetConstantSimplexSize();
-        void SendMPIData(const IncidenceGraph::Params &params, int processRank);
+        void SendMPIData(const IncidenceGraph::Params &params, const IncidenceGraph::ParallelParams &parallelParams, int processRank);
         void SetMPIIncidenceGraphData(int *buffer, int size);
         void CreateIntNodesMapWithBorderNodes();
         void RemoveChildAndCopySimplexPtrList(SpanningTreeNode *node, SimplexPtrList &simplexPtrList);

@@ -129,6 +129,24 @@ IncidenceGraph *IncidenceGraph::CreateAndCalculateAcyclicSubset(SimplexList& sim
     return ig;
 }
 
+IncidenceGraph *IncidenceGraph::CreateAndCalculateAcyclicSubsetWithBorder(SimplexList& simplexList, const VertsSet &borderVerts, const Params& params, AcyclicTest<IntersectionFlags>* test)
+{
+#ifdef USE_HELPERS
+    Timer::Update();
+    IncidenceGraph *ig = new IncidenceGraph(simplexList, params);
+    ig->borderVerts = borderVerts;
+    ig->CreateGraphWithBorder(params.minimizeSimplices);
+    Timer::Update("incidence graph created");
+    ig->CalculateAcyclicSubsetWithBorder(test);
+    Timer::Update("acyclic subset calculated");
+#else
+    IncidenceGraph *ig = new IncidenceGraph(simplexList, params);
+    ig->CreateGraph(params.minimizeSimplices);
+    ig->CalculateAcyclicSubset(test);
+#endif
+    return ig;
+}
+
 IncidenceGraph *IncidenceGraph::CreateAndCalculateAcyclicSubsetOnline(SimplexList& simplexList, const Params& params, AcyclicTest<IntersectionFlags>* test)
 {
 #ifdef USE_HELPERS
@@ -677,6 +695,44 @@ void IncidenceGraph::CalculateAcyclicSubset(AcyclicTest<IntersectionFlags> *test
                 }
             }            
         }        
+    }
+}
+
+void IncidenceGraph::CalculateAcyclicSubsetWithBorder(AcyclicTest<IntersectionFlags> *test)
+{
+    std::queue<Node *> L;
+    for (std::vector<ConnectedComponent>::iterator i = connectedComponents.begin(); i != connectedComponents.end(); i++)
+    {
+        Node *first = FindNode(*i, FindNodeNotOnBorder());
+        // wszystkie sympleksy w tej spojnej sa w brzegu
+        if (first == 0)
+        {
+            continue;
+        }
+        // pierwszy wierzcholek w skladowej zaznaczamy jako acykliczny
+        first->IsAcyclic(true);
+        first->UpdateNeighboursAcyclicIntersection();
+        L.push(first);
+        while (!L.empty())
+        {
+            Node *currentNode = L.front();
+            L.pop();
+
+            for (Edges::iterator j = currentNode->edges.begin(); j != currentNode->edges.end(); j++)
+            {
+                Node *neighbour = j->node;
+                if (neighbour->IsAcyclic() || neighbour->IsOnBorder())
+                {
+                    continue;
+                }
+                if (neighbour->HasAcyclicIntersection(test))
+                {
+                    neighbour->IsAcyclic(true);
+                    neighbour->UpdateNeighboursAcyclicIntersection();
+                    L.push(neighbour);
+                }
+            }
+        }
     }
 }
 

@@ -2,6 +2,8 @@
 #define	MPIDATA_H
 
 #include "Simplex.h"
+#include "IncidenceGraph.h"
+//#include "IncidenceGraph.h"
 
 #include <set>
 
@@ -29,13 +31,13 @@ class SimplexData
 public:
 
     SimplexData(int *buffer, int size);
-    SimplexData(const SimplexPtrList &simplexPtrList, const std::set<Vertex> &borderVerts, int dim, int acyclicTestNumber, int simplexSize = 0);
+    SimplexData(const SimplexPtrList &simplexPtrList, const std::set<Vertex> &borderVerts, const IncidenceGraph::Params &params, int acyclicSubsetAlgorithm, int simplexSize = 0);
     ~SimplexData();
     
     int *GetBuffer() const { return buffer; }
     int GetSize() const { return size; }
 
-    void GetSimplexData(SimplexList &simplexList, std::set<Vertex> &borderVerts, int &dim, int &acyclicTestNumber);
+    void GetSimplexData(SimplexList &simplexList, std::set<Vertex> &borderVerts, IncidenceGraph::Params &params, int &acyclicSubsetAlgorithm);
 
 };
 

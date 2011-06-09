@@ -279,7 +279,7 @@ void Tests::Test(IncidenceGraph *ig, ReductionType reductionType, float totalTim
 
     Timer::Update();
     OutputGraph *og = new OutputGraph(ig);
-    MemoryInfo::PrintInfo(true);
+    MemoryInfo::PrintInfo();
     float t = Timer::Update("creating output");
     log<<"\t\t\t<output_graph>"<<t<<"</output_graph>"<<std::endl;
     totalTime += t;
@@ -441,7 +441,7 @@ void Tests::TestFromCommandLine(int argc, char **argv)
 
     CloseLog();
 #ifdef DEBUG_MEMORY
-    MemoryInfo::PrintInfo(true);
+    MemoryInfo::PrintInfo();
 #endif
 }
 

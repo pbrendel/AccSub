@@ -56,7 +56,7 @@ int ParallelGraph::DataNode::GetConstantSimplexSize()
    return size;
 }
 
-void ParallelGraph::DataNode::SendMPIData(const IncidenceGraph::Params &params, int processRank)
+void ParallelGraph::DataNode::SendMPIData(const IncidenceGraph::Params &params, const IncidenceGraph::ParallelParams &parallelParams, int acyclicSubsetAlgorithm)
 {
 #ifdef USE_MPI    
     this->processRank = processRank;
@@ -64,7 +64,7 @@ void ParallelGraph::DataNode::SendMPIData(const IncidenceGraph::Params &params, 
         std::cout<<"process 0 ";
         Timer::TimeStamp("packing data");
 #endif
-    MPIData::SimplexData *data = new MPIData::SimplexData(simplexPtrList, borderVerts, params.dim, 0, GetConstantSimplexSize());
+    MPIData::SimplexData *data = new MPIData::SimplexData(simplexPtrList, borderVerts, params, parallelParams.useAcyclicSubsetOnlineAlgorithm ? ASA_Online : ASA_SpanningTree, GetConstantSimplexSize());
     int dataSize = data->GetSize();
     MPI_Send(&dataSize, 1, MPI_INT, processRank, MPI_MY_DATASIZE_TAG, MPI_COMM_WORLD);
 #ifdef DEBUG_MPI
@@ -705,7 +705,7 @@ void ParallelGraph::CalculateIncidenceGraphs(DataNodes &sourceNodes)
         for (int rank = 1; rank < size; rank++)
         {
             std::cout<<"sending node "<<currentNode<<" to process: "<<rank<<std::endl;
-            sourceNodes[currentNode++]->SendMPIData(params, rank);
+            sourceNodes[currentNode++]->SendMPIData(params, parallelParams, rank);
         }
 
         // potem czekamy na dane i wysylamy kolejne
@@ -725,7 +725,7 @@ void ParallelGraph::CalculateIncidenceGraphs(DataNodes &sourceNodes)
 #endif
             GetNodeWithProcessRank(sourceNodes, status.MPI_SOURCE)->SetMPIIncidenceGraphData(buffer, size);
             std::cout<<"sending node "<<currentNode<<" to process: "<<status.MPI_SOURCE<<std::endl;
-            sourceNodes[currentNode++]->SendMPIData(params, status.MPI_SOURCE);
+            sourceNodes[currentNode++]->SendMPIData(params, parallelParams, status.MPI_SOURCE);
         }
 
         // na koncu odbieramy to co jeszcze jest liczone
@@ -1039,7 +1039,8 @@ void ParallelGraph::MPISlave(int processRank)
         SimplexList simplexList;
         std::set<Vertex> borderVerts;
         IncidenceGraph::Params params;
-        data->GetSimplexData(simplexList, borderVerts, params.dim, params.acyclicTestNumber);
+        int acyclicSubsetAlgorithm;
+        data->GetSimplexData(simplexList, borderVerts, params, acyclicSubsetAlgorithm);
 #ifdef DEBUG_MPI
         std::cout<<"process "<<processRank<<" ";
         Timer::TimeStamp("upacked data");
@@ -1047,9 +1048,19 @@ void ParallelGraph::MPISlave(int processRank)
         AcyclicTest<IncidenceGraph::IntersectionFlags> *test = AcyclicTest<IncidenceGraph::IntersectionFlags>::Create(params.acyclicTestNumber, params.dim);
 
         // tworzymy graf incydencji z policzonym podzbiorem acyklicznym
-        IncidenceGraph *ig = IncidenceGraph::CreateAndCalculateAcyclicSubsetSpanningTreeWithBorder(simplexList, borderVerts, params, test);
-//        IncidenceGraph *ig = IncidenceGraph::CreateWithBorder(simplexList, borderVerts, params);
-//        ig->CalculateAcyclicSubsetSpanningTreeWithBorder(test);
+        IncidenceGraph *ig = 0;
+        if (acyclicSubsetAlgorithm == ASA_Online)
+        {
+            ig = IncidenceGraph::CreateAndCalculateAcyclicSubsetOnlineWithBorder(simplexList, borderVerts, params, test);
+        }
+        else if (acyclicSubsetAlgorithm == ASA_SpanningTree)
+        {
+            ig = IncidenceGraph::CreateAndCalculateAcyclicSubsetSpanningTreeWithBorder(simplexList, borderVerts, params, test);
+        }
+        else // (if acyclicSubsetAlgorithm == ASA_Default)
+        {
+            ig = IncidenceGraph::CreateAndCalculateAcyclicSubsetWithBorder(simplexList, borderVerts, params, test);
+        }
         ig->UpdateConnectedComponents();
         ig->AssignNewIndices(true);
 
@@ -1074,6 +1085,12 @@ void ParallelGraph::MPISlave(int processRank)
 
         delete igData;
         delete ig;
+
+#if DEBUG_MEMORY
+        MemoryInfo::PrintInfo();
+        MemoryInfo::Reset();
+#endif
+        
     }
 
 #endif
