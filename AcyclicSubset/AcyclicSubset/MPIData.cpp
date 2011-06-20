@@ -30,7 +30,7 @@ SimplexData::SimplexData(const SimplexPtrList& simplexPtrList, const std::set<Ve
     // ilosc sympleksow
     buffer[index++] = simplexPtrList.size();
     // parametry grafu
-    index += params.WriteData(buffer);
+    index += params.WriteData(&buffer[index]);
     // typ redukcji
     buffer[index++] = acyclicSubsetAlgorithm;
     // dane sympleksow
@@ -109,7 +109,7 @@ void SimplexData::GetSimplexData(SimplexList& simplexList, std::set<Vertex>& bor
     int index = 0;
     int simplexSize = buffer[index++];
     int simplexCount = buffer[index++];
-    index += params.ReadData(buffer);
+    index += params.ReadData(&buffer[index]);
     acyclicSubsetAlgorithm = buffer[index++];
     if (simplexSize == 0)
     {

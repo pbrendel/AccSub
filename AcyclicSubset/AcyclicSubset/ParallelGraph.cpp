@@ -29,12 +29,16 @@ void ParallelGraph::DataNode::CreateIncidenceGraphLocally(const IncidenceGraph::
 {
     if (parallelParams.useAcyclicSubsetOnlineAlgorithm)
     {
+        std::cout<<"using online algorihm"<<std::endl;
         ig = IncidenceGraph::CreateAndCalculateAcyclicSubsetOnlineWithBorder(simplexPtrList, borderVerts, params, test);
         ig->UpdateConnectedComponents();
+        ig->RemoveAcyclicSubset();
         ig->AssignNewIndices(false);
+        Timer::Update("acyclic subset removed");
     }
     else
     {
+        std::cout<<"using spanning tree algorihm"<<std::endl;
         ig = IncidenceGraph::CreateAndCalculateAcyclicSubsetSpanningTreeWithBorder(simplexPtrList, borderVerts, params, test);
         ig->UpdateConnectedComponents();
         ig->RemoveAcyclicSubset();
@@ -56,7 +60,7 @@ int ParallelGraph::DataNode::GetConstantSimplexSize()
    return size;
 }
 
-void ParallelGraph::DataNode::SendMPIData(const IncidenceGraph::Params &params, const IncidenceGraph::ParallelParams &parallelParams, int acyclicSubsetAlgorithm)
+void ParallelGraph::DataNode::SendMPIData(const IncidenceGraph::Params &params, const IncidenceGraph::ParallelParams &parallelParams, int processRank)
 {
 #ifdef USE_MPI    
     this->processRank = processRank;
