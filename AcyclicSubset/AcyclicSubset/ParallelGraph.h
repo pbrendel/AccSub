@@ -11,6 +11,7 @@
 #define MPI_MY_DIE_TAG         2
 #define MPI_MY_DATASIZE_TAG    3
 #define MPI_MY_DATA_TAG        4
+#define MPI_MY_MEMORY_INFO_TAG 5
 
 #ifdef DEBUG_MEMORY
 class ParallelGraph : public DebugMemory<ParallelGraph>
@@ -64,7 +65,7 @@ public:
 
         ~DataNode()
         {
-         //   delete ig;
+            delete ig;
         }
 
         void AddEdge(DataEdge *edge, Simplex &edgeVerts)
@@ -189,6 +190,9 @@ private:
 public:
 
     static void KillMPISlaves();
+#ifdef DEBUG_MEMORY
+    static void CollectDebugMemoryInfo();
+#endif
     static void MPISlave(int processRank);
 
 };

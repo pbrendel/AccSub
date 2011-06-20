@@ -6,6 +6,8 @@
 #ifndef DEBUGMEMORY_H
 #define	DEBUGMEMORY_H
 
+#include <map>
+
 class MemoryInfo
 {
     static long memoryAllocated;
@@ -13,13 +15,22 @@ class MemoryInfo
     static long totalAllocations;
     static long totalDeallocations;
 
+    static std::map<int, int> slavesMemoryInfo;
+    static int slavesMinMemory;
+    static int slavesMaxMemory;
+
 public:
 
     static void Alloc(int);
     static void Dealloc(int);
 
     static void PrintInfo(bool = false);
-    static void Reset();
+    static void Reset(bool = false);
+
+    static int GetMaxMemoryAllocated() { return maxMemoryAllocated; }
+
+    static void AddSlaveMemoryInfo(int, int);
+    static void PrintSlavesMemoryInfo();
 };
 
 template <typename T>

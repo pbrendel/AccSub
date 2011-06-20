@@ -971,6 +971,12 @@ void ParallelGraph::CombineGraphs()
         (*i)->ig->nodes.clear();
     }
 
+    // przypisywanie nowego grafu do nodow
+    for (IncidenceGraph::Nodes::iterator i = incidenceGraph->nodes.begin(); i != incidenceGraph->nodes.end(); i++)
+    {
+        (*i)->SetParentGraph(incidenceGraph);
+    }
+
     std::cout<<"total simplices after connecting graphs: "<<incidenceGraph->nodes.size()<<std::endl;
     std::cout<<"reduced acyclic subset size: "<<(inputSize - incidenceGraph->nodes.size())<<" ("<<((inputSize - incidenceGraph->nodes.size()) * 100 / inputSize)<<"%)"<<std::endl;
 
@@ -1002,6 +1008,27 @@ void ParallelGraph::KillMPISlaves()
 #endif
 }
 
+#ifdef DEBUG_MEMORY
+void ParallelGraph::CollectDebugMemoryInfo()
+{
+#ifdef USE_MPI
+
+    MPI_Status status;
+    int tasksCount;
+    int mem = 0;
+    MPI_Comm_size(MPI_COMM_WORLD, &tasksCount);
+    for (int rank = 1; rank < tasksCount; ++rank)
+    {
+        MPI_Send(0, 0, MPI_INT, rank, MPI_MY_MEMORY_INFO_TAG, MPI_COMM_WORLD);
+        MPI_Recv(&mem, 1, MPI_INT, rank, MPI_MY_MEMORY_INFO_TAG, MPI_COMM_WORLD, &status);
+        MemoryInfo::AddSlaveMemoryInfo(rank, mem);
+    }
+    std::cout<<"slaves killed"<<std::endl;
+
+#endif
+}
+#endif
+
 ////////////////////////////////////////////////////////////////////////////////
 
 
@@ -1023,6 +1050,17 @@ void ParallelGraph::MPISlave(int processRank)
         {
             return;
         }
+
+#ifdef DEBUG_MEMORY
+        if (status.MPI_TAG == MPI_MY_MEMORY_INFO_TAG)
+        {
+            int memory = MemoryInfo::GetMaxMemoryAllocated();
+            MPI_Send(&memory, 1, MPI_INT, 0, MPI_MY_MEMORY_INFO_TAG, MPI_COMM_WORLD);
+            MemoryInfo::PrintInfo();
+            MemoryInfo::Reset();
+            continue;
+        }
+#endif
 
         // wpp. musi to byc MPI_MY_DATASIZE_TAG
         assert(status.MPI_TAG == MPI_MY_DATASIZE_TAG);
@@ -1089,11 +1127,6 @@ void ParallelGraph::MPISlave(int processRank)
 
         delete igData;
         delete ig;
-
-#if DEBUG_MEMORY
-        MemoryInfo::PrintInfo();
-        MemoryInfo::Reset();
-#endif
         
     }
 

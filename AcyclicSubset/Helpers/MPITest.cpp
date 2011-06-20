@@ -113,11 +113,17 @@ void MPITest::Master(int argc, char **argv)
             break;
     }
 
+#ifdef DEBUG_MEMORY
+    ParallelGraph::CollectDebugMemoryInfo();
+#endif
+
     ParallelGraph::KillMPISlaves();
     Tests::CloseLog();
 
 #ifdef DEBUG_MEMORY
+    MemoryInfo::PrintSlavesMemoryInfo();
     MemoryInfo::PrintInfo();
+    MemoryInfo::Reset();
 #endif
 
 #endif

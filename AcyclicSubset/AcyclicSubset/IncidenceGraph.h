@@ -193,6 +193,7 @@ public:
         IntersectionFlags GetAcyclicIntersectionFlagsMaximalFaces() const { return acyclicIntersectionFlagsMaximalFaces; }
         int GetAcyclicSubsetID() const { return acyclicSubsetID; }
         void SetAcyclicSubsetID(int id) { acyclicSubsetID = id; }
+        void SetParentGraph(IncidenceGraph *g) { graph = g; }
 
     private:
 

@@ -991,6 +991,13 @@ void IncidenceGraph::RemoveAcyclicSubset()
         }
         node->edges = newEdges;
     }
+    for (Nodes::iterator i = nodes.begin(); i != nodes.end(); i++)
+    {
+        if ((*i)->IsAcyclic())
+        {
+            delete *i;
+        }
+    }
     nodes = newNodes;
 }
 

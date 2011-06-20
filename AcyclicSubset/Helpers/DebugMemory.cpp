@@ -18,6 +18,10 @@ long MemoryInfo::maxMemoryAllocated = 0;
 long MemoryInfo::totalAllocations = 0;
 long MemoryInfo::totalDeallocations = 0;
 
+int MemoryInfo::slavesMinMemory = 10000000;
+int MemoryInfo::slavesMaxMemory = 0;
+std::map<int, int> MemoryInfo::slavesMemoryInfo;
+
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "../AcyclicSubset/IncidenceGraph.h"
@@ -116,13 +120,48 @@ void MemoryInfo::PrintInfo(bool full)
 #endif
 }
 
-void MemoryInfo::Reset()
+void MemoryInfo::Reset(bool hardReset)
 {
 #ifdef DEBUG_MEMORY
-    maxMemoryAllocated = memoryAllocated;
+    if (hardReset)
+    {
+        maxMemoryAllocated = memoryAllocated = 0;
+    }
+    else
+    {
+        maxMemoryAllocated = memoryAllocated;
+    }
     totalAllocations -= totalDeallocations;
     totalDeallocations = 0;
 #endif
+}
+
+void MemoryInfo::AddSlaveMemoryInfo(int rank, int memory)
+{
+    if (memory < slavesMinMemory)
+    {
+        slavesMinMemory = memory;
+    }
+    if (memory > slavesMaxMemory)
+    {
+        slavesMaxMemory = memory;
+    }
+    slavesMemoryInfo[rank] = memory;
+}
+
+void MemoryInfo::PrintSlavesMemoryInfo()
+{
+    long int total = 0;
+    std::cout<<"slaves memory usage:"<<std::endl;
+    for (std::map<int, int>::iterator i = slavesMemoryInfo.begin(); i != slavesMemoryInfo.end(); i++)
+    {
+        std::cout<<i->first<<" : "<<(i->second >> 20)<<std::endl;
+        total += i->second;
+    }
+    std::cout<<"min: "<<(slavesMinMemory >> 20)<<std::endl;
+    std::cout<<"max: "<<(slavesMaxMemory >> 20)<<std::endl;
+    std::cout<<"avg: "<<((int)((float)total / slavesMemoryInfo.size()) >> 20)<<std::endl;
+    std::cout<<"total: "<<(total >> 20)<<" / "<<((total + maxMemoryAllocated) >> 20)<<std::endl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
