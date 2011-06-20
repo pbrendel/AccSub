@@ -441,7 +441,6 @@ void Tests::TestFromCommandLine(int argc, char **argv)
 
     CloseLog();
 #ifdef DEBUG_MEMORY
-    std::cout<<"sdf"<<std::endl;
     MemoryInfo::PrintInfo();
 #endif
 }
