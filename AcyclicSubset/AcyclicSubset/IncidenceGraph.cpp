@@ -869,6 +869,7 @@ void IncidenceGraph::CalculateAcyclicSubsetSpanningTreeWithBorder(AcyclicTest<In
 
 void IncidenceGraph::CreateAcyclicSpanningTree(std::vector<IncidenceGraph::Path> &paths, int maxAcyclicSubsetID)
 {
+    // todo!!! memory leak
     char *addedToAcyclicTree = new char[maxAcyclicSubsetID];
     memset(addedToAcyclicTree, 0, sizeof(char) * maxAcyclicSubsetID);
 
