@@ -78,7 +78,7 @@ Vertex IncidenceGraph::Node::FindAcyclicVertex()
 {
     if (this->acyclicIntersectionFlags == 0)
     {
-        return -1;
+        return Vertex(-1);
     }
     for (Simplex::iterator v = simplex->begin(); v != simplex->end(); v++)
     {
@@ -87,14 +87,14 @@ Vertex IncidenceGraph::Node::FindAcyclicVertex()
             return *v;
         }
     }
-    return -1;
+    return Vertex(-1);
 }
 
 Vertex IncidenceGraph::Node::FindAcyclicVertexNotEqual(Vertex vertex)
 {
     if (this->acyclicIntersectionFlags == 0)
     {
-        return -1;
+        return Vertex(-1);
     }
     for (Simplex::iterator v = simplex->begin(); v != simplex->end(); v++)
     {
@@ -107,14 +107,14 @@ Vertex IncidenceGraph::Node::FindAcyclicVertexNotEqual(Vertex vertex)
             return *v;
         }
     }
-    return -1;
+    return Vertex(-1);
 }
 
 Vertex IncidenceGraph::Node::FindAcyclicVertexNotIn(const VertsSet &vertsSet)
 {
     if (this->acyclicIntersectionFlags == 0)
     {
-        return -1;
+        return Vertex(-1);
     }
     for (Simplex::iterator v = simplex->begin(); v != simplex->end(); v++)
     {
@@ -127,7 +127,7 @@ Vertex IncidenceGraph::Node::FindAcyclicVertexNotIn(const VertsSet &vertsSet)
             return *v;
         }
     }
-    return -1;
+    return Vertex(-1);
 }
 
 void IncidenceGraph::Node::UpdateAcyclicIntersectionWithVertex(Vertex v)
@@ -244,11 +244,6 @@ int IncidenceGraph::Node::NormalizeVertex(Vertex v)
 bool IncidenceGraph::Node::operator==(const IncidenceGraph::Node &node)
 {
     return (this->simplex == node.simplex);
-}
-
-bool IncidenceGraph::Node::Sorter(const IncidenceGraph::Node *a, const IncidenceGraph::Node *b)
-{
-    return (a->simplex->size() < b->simplex->size());
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -12,40 +12,14 @@
 #include <cstdlib>
 #include <cmath> // ceil()
 
-#ifdef USE_MPI
-#include <mpi.h>
-#include "MPIData.h"
-#endif
 
+#include "ComputationsLocal.h"
+#include "ComputationsLocalMPITest.h"
 
 // test!!!
 #include "../Helpers/Tests.h"
 
-#include "MPIData.h"
-
 ////////////////////////////////////////////////////////////////////////////////
-
-void ParallelGraph::DataNode::CreateIncidenceGraphLocally(const IncidenceGraph::Params &params, const IncidenceGraph::ParallelParams &parallelParams, AcyclicTest<IncidenceGraph::IntersectionFlags> *test)
-{
-    if (parallelParams.useAcyclicSubsetOnlineAlgorithm)
-    {
-        std::cout<<"using online algorihm"<<std::endl;
-        ig = IncidenceGraph::CreateAndCalculateAcyclicSubsetOnlineWithBorder(simplexPtrList, borderVerts, params, test);
-        ig->UpdateConnectedComponents();
-        ig->RemoveAcyclicSubset();
-        ig->AssignNewIndices(false);
-        Timer::Update("acyclic subset removed");
-    }
-    else
-    {
-        std::cout<<"using spanning tree algorihm"<<std::endl;
-        ig = IncidenceGraph::CreateAndCalculateAcyclicSubsetSpanningTreeWithBorder(simplexPtrList, borderVerts, params, test);
-        ig->UpdateConnectedComponents();
-        ig->RemoveAcyclicSubset();
-        ig->AssignNewIndices(false);
-        Timer::Update("acyclic subset removed");
-    }
-}
 
 int ParallelGraph::DataNode::GetConstantSimplexSize()
 {
@@ -58,40 +32,6 @@ int ParallelGraph::DataNode::GetConstantSimplexSize()
        }
    }
    return size;
-}
-
-void ParallelGraph::DataNode::SendMPIData(const IncidenceGraph::Params &params, const IncidenceGraph::ParallelParams &parallelParams, int processRank)
-{
-#ifdef USE_MPI    
-    this->processRank = processRank;
-#ifdef DEBUG_MPI
-        std::cout<<"process 0 ";
-        Timer::TimeStamp("packing data");
-#endif
-    MPIData::SimplexData *data = new MPIData::SimplexData(simplexPtrList, borderVerts, params, parallelParams.useAcyclicSubsetOnlineAlgorithm ? ASA_Online : ASA_SpanningTree, GetConstantSimplexSize());
-    int dataSize = data->GetSize();
-    MPI_Send(&dataSize, 1, MPI_INT, processRank, MPI_MY_DATASIZE_TAG, MPI_COMM_WORLD);
-#ifdef DEBUG_MPI
-        std::cout<<"process 0 ";
-        Timer::TimeStamp("sending data");
-#endif
-    MPI_Send(data->GetBuffer(), dataSize, MPI_INT, processRank, MPI_MY_WORK_TAG, MPI_COMM_WORLD);
-    delete data;
-#endif
-}
-
-void ParallelGraph::DataNode::SetMPIIncidenceGraphData(int* buffer, int size)
-{
-#ifdef USE_MPI
-    this->processRank = -1;
-    MPIData::IncidenceGraphData *data = new MPIData::IncidenceGraphData(buffer, size);
-    this->ig = data->GetIncidenceGraph(simplexPtrList);
-#ifdef DEBUG_MPI
-        std::cout<<"process 0 ";
-        Timer::TimeStamp("unpacked data");
-#endif
-    delete data;
-#endif
 }
 
 void ParallelGraph::DataNode::CreateIntNodesMapWithBorderNodes()
@@ -454,15 +394,9 @@ void ParallelGraph::SpanningTreeEdge::UpdateAcyclicConnections()
 
 ////////////////////////////////////////////////////////////////////////////////
 
-ParallelGraph::ParallelGraph(IncidenceGraph *ig, SimplexList &simplexList, const IncidenceGraph::Params &params, const IncidenceGraph::ParallelParams &parallelParams, AcyclicTest<IncidenceGraph::IntersectionFlags> *acyclicTest, bool local)
+ParallelGraph::ParallelGraph(IncidenceGraph *ig, SimplexList &simplexList, const IncidenceGraph::ParallelParams &parallelParams, AcyclicTest<IncidenceGraph::IntersectionFlags> *acyclicTest, bool local)
 {
     incidenceGraph = ig;
-#ifdef USE_MPI
-    this->local = local;
-#else
-    this->local = true;
-#endif
-    this->params = params;
     this->parallelParams = parallelParams;
     this->acyclicTest = acyclicTest;
     int packSize = parallelParams.packSize;
@@ -657,101 +591,9 @@ void ParallelGraph::CreateDataEdges()
 
 ////////////////////////////////////////////////////////////////////////////////
 
-ParallelGraph::DataNode *ParallelGraph::GetNodeWithProcessRank(DataNodes &sourceNodes, int processRank)
-{
-    for (DataNodes::iterator i = sourceNodes.begin(); i != sourceNodes.end(); i++)
-    {
-        if ((*i)->processRank == processRank)
-        {
-            return (*i);
-        }
-    }
-    return 0;
-}
-
 void ParallelGraph::CalculateIncidenceGraphs(DataNodes &sourceNodes)
 {
-    if (local)
-    {
-        Timer::TimeStamp("***************************incidence graph calculating start");
-        Timer::Time start = Timer::Now();
-#ifdef USE_OPENMP
-        #pragma omp parallel for
-        for (int i = 0; i < sourceNodes.size(); i++)
-        {
-            sourceNodes[i]->CreateIncidenceGraphLocally(params, parallelParams, acyclicTest);
-            Timer::TimeStamp("************************incidence graph calculated");
-        }
-#else
-        for (DataNodes::iterator i = sourceNodes.begin(); i != sourceNodes.end(); i++)
-        {
-            (*i)->CreateIncidenceGraphLocally(params, parallelParams, acyclicTest);
-            Timer::TimeStamp("************************incidence graph calculated");
-        }
-#endif
-        Timer::TimeStamp("***************************incidence graph calculating end");
-        Timer::TimeFrom(start, "total parallel computations");
-    }
-#ifdef USE_MPI
-    else
-    {
-        int nodesCount = sourceNodes.size();
-        int currentNode = 0;
-        int tasksCount;
-        int dataSize;
-        MPI_Status status;
-
-        MPI_Comm_size(MPI_COMM_WORLD, &tasksCount);
-
-        int size = (tasksCount < (nodesCount + 1)) ? tasksCount : (nodesCount + 1);
-
-        // dopoki starczy nam node'ow wysylamy paczki
-        for (int rank = 1; rank < size; rank++)
-        {
-            std::cout<<"sending node "<<currentNode<<" to process: "<<rank<<std::endl;
-            sourceNodes[currentNode++]->SendMPIData(params, parallelParams, rank);
-        }
-
-        // potem czekamy na dane i wysylamy kolejne
-        while (currentNode < nodesCount)
-        {
-            // najpierw pobieramy rozmiar danych
-            MPI_Recv(&dataSize, 1, MPI_INT, MPI_ANY_SOURCE, MPI_MY_DATASIZE_TAG, MPI_COMM_WORLD, &status);
-            int *buffer = new int[dataSize];
-#ifdef DEBUG_MEMORY
-            MemoryInfo::Alloc(dataSize);
-#endif
-            // teraz dane od node'a od ktorego dostalismy info o rozmiarze danych
-            MPI_Recv(buffer, dataSize, MPI_INT, status.MPI_SOURCE, MPI_MY_DATA_TAG, MPI_COMM_WORLD, &status);
-#ifdef DEBUG_MPI
-        std::cout<<"process 0 ";
-        Timer::TimeStamp("received data");
-#endif
-            GetNodeWithProcessRank(sourceNodes, status.MPI_SOURCE)->SetMPIIncidenceGraphData(buffer, size);
-            std::cout<<"sending node "<<currentNode<<" to process: "<<status.MPI_SOURCE<<std::endl;
-            sourceNodes[currentNode++]->SendMPIData(params, parallelParams, status.MPI_SOURCE);
-        }
-
-        // na koncu odbieramy to co jeszcze jest liczone
-        for (int rank = 1; rank < size; ++rank)
-        {
-            // najpierw pobieramy rozmiar danych
-            MPI_Recv(&dataSize, 1, MPI_INT, MPI_ANY_SOURCE, MPI_MY_DATASIZE_TAG, MPI_COMM_WORLD, &status);
-            int *buffer = new int[dataSize];
-#ifdef DEBUG_MEMORY
-            MemoryInfo::Alloc(dataSize);
-#endif
-            // teraz dane od node'a od ktorego dostalismy info o rozmiarze danych
-            MPI_Recv(buffer, dataSize, MPI_INT, status.MPI_SOURCE, MPI_MY_DATA_TAG, MPI_COMM_WORLD, &status);
-#ifdef DEBUG_MPI
-            std::cout<<"process 0 ";
-            Timer::TimeStamp("received data");
-#endif
-            GetNodeWithProcessRank(sourceNodes, status.MPI_SOURCE)->SetMPIIncidenceGraphData(buffer, size);
-        }
-        std::cout<<"parallel computing done"<<std::endl;
-    }
-#endif
+    ComputationsLocalMPITest::Compute(sourceNodes, parallelParams, acyclicTest);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -989,148 +831,6 @@ void ParallelGraph::CombineGraphs()
     }
 
     Timer::Update("adding paths to acyclic subset");
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-void ParallelGraph::KillMPISlaves()
-{
-#ifdef USE_MPI
-
-    int tasksCount;    
-    MPI_Comm_size(MPI_COMM_WORLD, &tasksCount);
-    for (int rank = 1; rank < tasksCount; ++rank)
-    {
-        MPI_Send(0, 0, MPI_INT, rank, MPI_MY_DIE_TAG, MPI_COMM_WORLD);
-    }
-    std::cout<<"slaves killed"<<std::endl;
-
-#endif
-}
-
-#ifdef DEBUG_MEMORY
-void ParallelGraph::CollectDebugMemoryInfo()
-{
-#ifdef USE_MPI
-
-    MPI_Status status;
-    int tasksCount;
-    int mem = 0;
-    MPI_Comm_size(MPI_COMM_WORLD, &tasksCount);
-    for (int rank = 1; rank < tasksCount; ++rank)
-    {
-        MPI_Send(0, 0, MPI_INT, rank, MPI_MY_MEMORY_INFO_TAG, MPI_COMM_WORLD);
-        MPI_Recv(&mem, 1, MPI_INT, rank, MPI_MY_MEMORY_INFO_TAG, MPI_COMM_WORLD, &status);
-        MemoryInfo::AddSlaveMemoryInfo(rank, mem);
-    }
-    std::cout<<"slaves killed"<<std::endl;
-
-#endif
-}
-#endif
-
-////////////////////////////////////////////////////////////////////////////////
-
-
-void ParallelGraph::MPISlave(int processRank)
-{
-#ifdef USE_MPI
-
-    MPI_Status status;
-    int dataSize;
-
-    while (1)
-    {
-
-        // pobieramy pierwszy komunikat
-        MPI_Recv(&dataSize, 1, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-
-        // jezeli polecenie zakonczenia pracy to konczymy
-        if (status.MPI_TAG == MPI_MY_DIE_TAG)
-        {
-            return;
-        }
-
-#ifdef DEBUG_MEMORY
-        if (status.MPI_TAG == MPI_MY_MEMORY_INFO_TAG)
-        {
-            int memory = MemoryInfo::GetMaxMemoryAllocated();
-            MPI_Send(&memory, 1, MPI_INT, 0, MPI_MY_MEMORY_INFO_TAG, MPI_COMM_WORLD);
-            MemoryInfo::PrintInfo();
-            MemoryInfo::Reset();
-            continue;
-        }
-#endif
-
-        // wpp. musi to byc MPI_MY_DATASIZE_TAG
-        assert(status.MPI_TAG == MPI_MY_DATASIZE_TAG);
-
-        // pobieramy bufor z danymi
-        int *buffer = new int[dataSize];
-#ifdef DEBUG_MEMORY
-        MemoryInfo::Alloc(dataSize);
-#endif
-        MPI_Recv(buffer, dataSize, MPI_INT, 0, MPI_MY_WORK_TAG, MPI_COMM_WORLD, &status);
-#ifdef DEBUG_MPI
-        std::cout<<"process "<<processRank<<" ";
-        Timer::TimeStamp("received data");
-#endif
-
-        // z pobranego bufora budujemy dane wejsciowe
-        MPIData::SimplexData *data = new MPIData::SimplexData(buffer, dataSize);
-        SimplexList simplexList;
-        std::set<Vertex> borderVerts;
-        IncidenceGraph::Params params;
-        int acyclicSubsetAlgorithm;
-        data->GetSimplexData(simplexList, borderVerts, params, acyclicSubsetAlgorithm);
-#ifdef DEBUG_MPI
-        std::cout<<"process "<<processRank<<" ";
-        Timer::TimeStamp("upacked data");
-#endif
-        AcyclicTest<IncidenceGraph::IntersectionFlags> *test = AcyclicTest<IncidenceGraph::IntersectionFlags>::Create(params.acyclicTestNumber, params.dim);
-
-        // tworzymy graf incydencji z policzonym podzbiorem acyklicznym
-        IncidenceGraph *ig = 0;
-        if (acyclicSubsetAlgorithm == ASA_Online)
-        {
-            ig = IncidenceGraph::CreateAndCalculateAcyclicSubsetOnlineWithBorder(simplexList, borderVerts, params, test);
-        }
-        else if (acyclicSubsetAlgorithm == ASA_SpanningTree)
-        {
-            ig = IncidenceGraph::CreateAndCalculateAcyclicSubsetSpanningTreeWithBorder(simplexList, borderVerts, params, test);
-        }
-        else // (if acyclicSubsetAlgorithm == ASA_Default)
-        {
-            ig = IncidenceGraph::CreateAndCalculateAcyclicSubsetWithBorder(simplexList, borderVerts, params, test);
-        }
-        ig->UpdateConnectedComponents();
-        ig->AssignNewIndices(true);
-
-        delete data;
-        delete test;
-
-        // zamieniamy na bufor danych
-        MPIData::IncidenceGraphData *igData = new MPIData::IncidenceGraphData(ig);
-#ifdef DEBUG_MPI
-        std::cout<<"process "<<processRank<<" ";
-        Timer::TimeStamp("packing data");
-#endif
-        dataSize = igData->GetSize();
-
-#ifdef DEBUG_MPI
-        std::cout<<"process "<<processRank<<" ";
-        Timer::TimeStamp("sending data");
-#endif
-        // i odsylamy do mastera
-        MPI_Send(&dataSize, 1, MPI_INT, 0, MPI_MY_DATASIZE_TAG, MPI_COMM_WORLD);
-        MPI_Send(igData->GetBuffer(), dataSize, MPI_INT,0, MPI_MY_DATA_TAG, MPI_COMM_WORLD);
-
-        delete igData;
-        delete ig;
-        
-    }
-
-#endif
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -9,10 +9,6 @@
 #include <queue>
 #include <set>
 
-#ifdef DEBUG_MEMORY
-#include "../Helpers/DebugMemory.h"
-#endif
-
 class IncidenceGraph;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -26,59 +22,15 @@ enum AcSubAlgorithm
 
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifdef DEBUG_MEMORY
-class IncidenceGraph : public DebugMemory<IncidenceGraph>
-#else
 class IncidenceGraph
-#endif
 {
     
 public:
 
+    // to na parametry szablonu
     typedef unsigned int IntersectionFlags;
     // typedef IntersectionFlagsBitSet<4> IntersectionFlags;
     
-    struct Params
-    {
-        int dim;
-        int acyclicTestNumber;
-        bool minimizeSimplices;
-        bool sortNodes;
-
-    public:
-
-        explicit Params(int dim = 3, int acyclicTestNumber = 0, bool minimizeSimplices = false, bool sortNodes = false)
-        {
-            this->dim = dim;
-            this->acyclicTestNumber = acyclicTestNumber;
-            this->minimizeSimplices = minimizeSimplices;
-            this->sortNodes = sortNodes;
-        }
-
-        static int DataSize()
-        {
-            return 4;
-        }
-
-        int ReadData(int *buffer)
-        {
-            dim                 = buffer[0];
-            acyclicTestNumber   = buffer[1];
-            minimizeSimplices   = (buffer[2] == 1);
-            sortNodes           = (buffer[3] == 1);
-            return DataSize();
-        }
-
-        int WriteData(int *buffer) const
-        {
-            buffer[0] = dim;
-            buffer[1] = acyclicTestNumber;
-            buffer[2] = minimizeSimplices ? 1 : 0;
-            buffer[3] = sortNodes ? 1 : 0;
-            return DataSize();
-        }
-    };
-
     struct ParallelParams
     {
         int packSize;
@@ -99,11 +51,7 @@ public:
 
     struct Node;
 
-#ifdef DEBUG_MEMORY
-    struct Edge : public DebugMemory<Edge>
-#else
     struct Edge
-#endif
     {
         Node                *node;
         Simplex             intersection;
@@ -125,11 +73,7 @@ public:
     // listy dzialaja szybciej dla algorytmu online
     // typedef std::list<Edge> Edges;
 
-#ifdef DEBUG_MEMORY
-    struct Node : public DebugMemory<Node>
-#else
     struct Node
-#endif
     {
         typedef unsigned short int Flags;
 
@@ -172,7 +116,6 @@ public:
         Simplex Normalize(const Simplex &simplex);
         int NormalizeVertex(Vertex v);
         bool operator==(const Node &node);
-        static bool Sorter(const Node *a, const Node *b);
 
 #define GET_SET(FUNC, FLAG) inline bool Is##FUNC() const { return (propertiesFlags & IGNPF_##FLAG) == IGNPF_##FLAG; } \
                             inline void Is##FUNC(bool f) { if (f) propertiesFlags |= IGNPF_##FLAG; else propertiesFlags &= ~(IGNPF_##FLAG); }
@@ -208,9 +151,9 @@ public:
 
 public:
 
-    IncidenceGraph(const Params &params);
-    IncidenceGraph(SimplexList &simplexList, const Params &params);
-    IncidenceGraph(SimplexPtrList &simplexPtrList, const Params &params);
+    IncidenceGraph(int dim);
+    IncidenceGraph(SimplexList &simplexList);
+    IncidenceGraph(SimplexPtrList &simplexPtrList);
 
 public:
 
@@ -223,19 +166,19 @@ public:
     std::map<Simplex, IntersectionFlags> configurationsFlags;
     std::map<Simplex, IntersectionFlags> subconfigurationsFlags;
 
-    static IncidenceGraph *Create(SimplexList &simplexList, const Params &params);
-    static IncidenceGraph *CreateWithBorder(SimplexList &simplexList, const VertsSet &borderVerts, const Params &params);
-    static IncidenceGraph *CreateWithBorder(SimplexPtrList &simplexPtrList, const VertsSet &borderVerts, const Params &params);
-    static IncidenceGraph *CreateAndCalculateAcyclicSubset(SimplexList &simplexList, const Params &params, AcyclicTest<IntersectionFlags> *test);
-    static IncidenceGraph *CreateAndCalculateAcyclicSubsetWithBorder(SimplexList &simplexList, const VertsSet &borderVerts, const Params &params, AcyclicTest<IntersectionFlags> *test);
-    static IncidenceGraph *CreateAndCalculateAcyclicSubsetOnline(SimplexList &simplexList, const Params &params, AcyclicTest<IntersectionFlags> *test);
-    static IncidenceGraph *CreateAndCalculateAcyclicSubsetOnlineWithBorder(SimplexList &simplexList, const VertsSet &borderVerts, const Params &params, AcyclicTest<IntersectionFlags> *test);
-    static IncidenceGraph *CreateAndCalculateAcyclicSubsetOnlineWithBorder(SimplexPtrList &simplexPtrList, const VertsSet &borderVerts, const Params &params, AcyclicTest<IntersectionFlags> *test);
-    static IncidenceGraph *CreateAndCalculateAcyclicSubsetSpanningTree(SimplexList &simplexList, const Params &params, AcyclicTest<IntersectionFlags> *test);
-    static IncidenceGraph *CreateAndCalculateAcyclicSubsetSpanningTree(SimplexPtrList &simplexPtrList, const Params &params, AcyclicTest<IntersectionFlags> *test);
-    static IncidenceGraph *CreateAndCalculateAcyclicSubsetSpanningTreeWithBorder(SimplexList &simplexList, const VertsSet &borderVerts, const Params &params, AcyclicTest<IntersectionFlags> *test);
-    static IncidenceGraph *CreateAndCalculateAcyclicSubsetSpanningTreeWithBorder(SimplexPtrList &simplexPtrList, const VertsSet &borderVerts, const Params &params, AcyclicTest<IntersectionFlags> *test);
-    static IncidenceGraph *CreateAndCalculateAcyclicSubsetParallel(SimplexList &simplexList, const Params &params, const ParallelParams &parallelParams, AcyclicTest<IntersectionFlags> *test, bool local);
+    static IncidenceGraph *Create(SimplexList &simplexList);
+    static IncidenceGraph *CreateWithBorder(SimplexList &simplexList, const VertsSet &borderVerts);
+    static IncidenceGraph *CreateWithBorder(SimplexPtrList &simplexPtrList, const VertsSet &borderVerts);
+    static IncidenceGraph *CreateAndCalculateAcyclicSubset(SimplexList &simplexList, AcyclicTest<IntersectionFlags> *test);
+    static IncidenceGraph *CreateAndCalculateAcyclicSubsetWithBorder(SimplexList &simplexList, const VertsSet &borderVerts, AcyclicTest<IntersectionFlags> *test);
+    static IncidenceGraph *CreateAndCalculateAcyclicSubsetOnline(SimplexList &simplexList, AcyclicTest<IntersectionFlags> *test);
+    static IncidenceGraph *CreateAndCalculateAcyclicSubsetOnlineWithBorder(SimplexList &simplexList, const VertsSet &borderVerts, AcyclicTest<IntersectionFlags> *test);
+    static IncidenceGraph *CreateAndCalculateAcyclicSubsetOnlineWithBorder(SimplexPtrList &simplexPtrList, const VertsSet &borderVerts, AcyclicTest<IntersectionFlags> *test);
+    static IncidenceGraph *CreateAndCalculateAcyclicSubsetSpanningTree(SimplexList &simplexList, AcyclicTest<IntersectionFlags> *test);
+    static IncidenceGraph *CreateAndCalculateAcyclicSubsetSpanningTree(SimplexPtrList &simplexPtrList, AcyclicTest<IntersectionFlags> *test);
+    static IncidenceGraph *CreateAndCalculateAcyclicSubsetSpanningTreeWithBorder(SimplexList &simplexList, const VertsSet &borderVerts, AcyclicTest<IntersectionFlags> *test);
+    static IncidenceGraph *CreateAndCalculateAcyclicSubsetSpanningTreeWithBorder(SimplexPtrList &simplexPtrList, const VertsSet &borderVerts, AcyclicTest<IntersectionFlags> *test);
+    static IncidenceGraph *CreateAndCalculateAcyclicSubsetParallel(SimplexList &simplexList, const ParallelParams &parallelParams, AcyclicTest<IntersectionFlags> *test, bool local);
 
     ~IncidenceGraph();
 
@@ -253,7 +196,7 @@ public:
     
     void CalculateNodesIntersection(Node *a, Node *b, Edge &edgeAtoB);
     
-    Params params;
+    int dim;
     Nodes nodes;
     ConnectedComponents connectedComponents;
     VertsSet borderVerts;
@@ -262,8 +205,8 @@ public:
 
 private:
 
-    void CreateGraph(bool minimizeSimplices);
-    void CreateGraphWithBorder(bool minimizeSimplices);
+    void CreateGraph();
+    void CreateGraphWithBorder();
     
     void CreateGraphAndCalculateAcyclicSubset(AcyclicTest<IntersectionFlags> *test);
     void CreateGraphAndCalculateAcyclicSubsetWithBorder(AcyclicTest<IntersectionFlags> *test);

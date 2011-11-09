@@ -8,18 +8,10 @@
 #include <cstdio>
 #include <iostream>
 
-#ifdef DEBUG_MEMORY
-#include "../Helpers/DebugMemory.h"
-#endif
-
 ////////////////////////////////////////////////////////////////////////////////
 
 template <class FlagsType>
-#ifdef DEBUG_MEMORY
-class AcyclicTest : public DebugMemory<AcyclicTest<FlagsType> >
-#else
 class AcyclicTest
-#endif
 {
 
 public:
@@ -57,7 +49,7 @@ public:
         // generujemy wszystkie podsympleksy posortowane rosnaco wymiarami
         // w kolejnosci leksykograficznej i ustawiamy flagi
         SimplexList subsimplices;
-        GenerateSubsimplices(s, subsimplices);
+        GenerateProperFaces(s, subsimplices);
         std::map<Simplex, FlagsType> configurationsFlags;
         FlagsType flags = 1;
         for (SimplexList::iterator i = subsimplices.begin(); i != subsimplices.end(); i++)
@@ -72,7 +64,7 @@ public:
         for (int d = 2; d <= maxSimplexSize; d++)
         {
             subsimplices.clear();
-            GenerateSubsimplices(s, subsimplices);
+            GenerateProperFaces(s, subsimplices);
             FlagsType flags = 0;
             for (SimplexList::iterator i = subsimplices.begin(); i != subsimplices.end(); i++)
             {
@@ -163,7 +155,7 @@ public:
         // potem generujemy wszystkie podsympleksy posortowane rosnaco wymiarami
         // w kolejnosci leksykograficznej
         SimplexList subsimplices;
-        GenerateSubsimplices(s, subsimplices);
+        GenerateProperFaces(s, subsimplices);
         // i tworzymy hasha z flagami konfiguracji
         FlagsType flag = 1;
         for (SimplexList::iterator i = subsimplices.begin(); i != subsimplices.end(); i++)
@@ -173,7 +165,7 @@ public:
             // mozemy to zrobic w tym miejscu, bo flagi nizej wymiarowych konfiguracji
             // sa juz ustawione
             SimplexList subconfigurations;
-            GenerateSubsimplices((*i), subconfigurations);
+            GenerateProperFaces((*i), subconfigurations);
             for (SimplexList::iterator j = subconfigurations.begin(); j != subconfigurations.end(); j++)
             {
                 subFlags |= configurationsFlags[(*j)];
@@ -272,6 +264,11 @@ public:
 template <class FlagsType>
 AcyclicTest<FlagsType> *AcyclicTest<FlagsType>::Create(int acyclicTestNumber, int dim)
 {
+    if (dim < 2) dim = 2;
+    if (acyclicTestNumber == 0) // jezeli tablice, to gorne ograniczenie na wymiar == 4
+    {
+        if (dim > 4) dim = 4;
+    }
     if (acyclicTestNumber == 1) return new AcyclicTestCodim1<FlagsType>(dim);
     return new AcyclicTestTabs<FlagsType>(dim); // default
 }

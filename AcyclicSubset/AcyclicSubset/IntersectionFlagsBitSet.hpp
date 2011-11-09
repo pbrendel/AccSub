@@ -3,18 +3,10 @@
 
 #include <assert.h>
 
-#ifdef DEBUG_MEMORY
-#include "../Helpers/DebugMemory.h"
-#endif
-
 ////////////////////////////////////////////////////////////////////////////////
 
 template <int N>
-#ifdef DEBUG_MEMORY
-class IntersectionFlagsBitSet : public DebugMemory<IntersectionFlagsBitSet<N> >
-#else
 class IntersectionFlagsBitSet
-#endif
 {
 
     int data[N];

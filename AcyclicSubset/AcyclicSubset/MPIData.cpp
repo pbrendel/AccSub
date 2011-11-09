@@ -13,13 +13,10 @@ SimplexData::SimplexData(int* buffer, int size)
     this->size = size;
 }
 
-SimplexData::SimplexData(const SimplexPtrList& simplexPtrList, const std::set<Vertex>& borderVerts, const IncidenceGraph::Params &params, int acyclicSubsetAlgorithm, int simplexSize)
+SimplexData::SimplexData(const SimplexPtrList& simplexPtrList, const std::set<Vertex>& borderVerts, int acyclicityTestNumber, int useAcyclicSubsetOnlineAlgorithm, int simplexSize)
 {
     size = CalcBufferSize(simplexPtrList, borderVerts.size(), simplexSize);
     buffer = new int[size];
-#ifdef DEBUG_MEMORY
-    MemoryInfo::Alloc(size);
-#endif
 
     int index = 0;
 
@@ -29,10 +26,10 @@ SimplexData::SimplexData(const SimplexPtrList& simplexPtrList, const std::set<Ve
     buffer[index++] = simplexSize;
     // ilosc sympleksow
     buffer[index++] = simplexPtrList.size();
-    // parametry grafu
-    index += params.WriteData(&buffer[index]);
+    // numer testu acyklicznosci
+    buffer[index++] = acyclicityTestNumber;
     // typ redukcji
-    buffer[index++] = acyclicSubsetAlgorithm;
+    buffer[index++] = useAcyclicSubsetOnlineAlgorithm;
     // dane sympleksow
     if (simplexSize == 0)
     {
@@ -41,11 +38,7 @@ SimplexData::SimplexData(const SimplexPtrList& simplexPtrList, const std::set<Ve
             buffer[index++] = (*i)->size();
             for (Simplex::const_iterator v = (*i)->begin(); v != (*i)->end(); v++)
             {
-#ifdef DEBUG_MEMORY_VERTEX
-                buffer[index++] = *((int *)&(*v));
-#else
                 buffer[index++] = (*v);
-#endif
             }
         }
     }
@@ -55,30 +48,19 @@ SimplexData::SimplexData(const SimplexPtrList& simplexPtrList, const std::set<Ve
         {
             for (Simplex::const_iterator v = (*i)->begin(); v != (*i)->end(); v++)
             {
-#ifdef DEBUG_MEMORY_VERTEX
-                buffer[index++] = *((int *)&(*v));
-#else
                 buffer[index++] = (*v);
-#endif
             }
         }
     }
     buffer[index++] = borderVerts.size();
     for (std::set<Vertex>::const_iterator v = borderVerts.begin(); v != borderVerts.end(); v++)
     {
-#ifdef DEBUG_MEMORY_VERTEX
-        buffer[index++] = *((int *)&(*v));
-#else
         buffer[index++] = (*v);
-#endif
     }
 }
 
 SimplexData::~SimplexData()
 {
-#ifdef DEBUG_MEMORY
-    MemoryInfo::Dealloc(size);
-#endif
     delete [] buffer;
 }
 
@@ -100,17 +82,18 @@ int SimplexData::CalcBufferSize(const SimplexPtrList& simplexPtrList, int border
     // - wartosc simplexSize
     // - rozmiar simplexList
     // - rozmiar borderVerts
+    // - rodzaj testu acyklicznosci
     // - rodzaj algorytmu
-    return size + IncidenceGraph::Params::DataSize() + borderVertsCount + 4;
+    return size + borderVertsCount + 5;
 }
 
-void SimplexData::GetSimplexData(SimplexList& simplexList, std::set<Vertex>& borderVerts, IncidenceGraph::Params &params, int &acyclicSubsetAlgorithm)
+void SimplexData::GetSimplexData(SimplexList& simplexList, std::set<Vertex>& borderVerts, int &acyclicityTestNumber, int &useAcyclicSubsetOnlineAlgorithm)
 {
     int index = 0;
     int simplexSize = buffer[index++];
     int simplexCount = buffer[index++];
-    index += params.ReadData(&buffer[index]);
-    acyclicSubsetAlgorithm = buffer[index++];
+    acyclicityTestNumber = buffer[index++];
+    useAcyclicSubsetOnlineAlgorithm = buffer[index++];
     if (simplexSize == 0)
     {
         for (int i = 0; i < simplexCount; i++)
@@ -156,12 +139,9 @@ IncidenceGraphData::IncidenceGraphData(const IncidenceGraph* ig)
     size = CalcBufferSize(ig);
     std::vector<int> simplicesOnBorder;
     buffer = new int[size];
-#ifdef DEBUG_MEMORY
-    MemoryInfo::Alloc(size);
-#endif
     int index = 0;
     // wymiar
-    buffer[index++] = ig->params.dim;
+    buffer[index++] = ig->dim;
     // ilosc wierzcholkow grafu
     int nodesCount = 0;
     for (IncidenceGraph::Nodes::const_iterator node = ig->nodes.begin(); node != ig->nodes.end(); node++)
@@ -220,11 +200,7 @@ IncidenceGraphData::IncidenceGraphData(const IncidenceGraph* ig)
         buffer[index++] = i->size();
         for (VertsSet::const_iterator v = i->begin(); v != i->end(); v++)
         {
-#ifdef DEBUG_MEMORY_VERTEX
-            buffer[index++] = *((int *)&(*v));
-#else
             buffer[index++] = (*v);
-#endif
         }
     }
     for (std::vector<int>::const_iterator i = ig->connectedComponentsAcyclicSubsetSize.begin(); i != ig->connectedComponentsAcyclicSubsetSize.end(); i++)
@@ -235,9 +211,6 @@ IncidenceGraphData::IncidenceGraphData(const IncidenceGraph* ig)
 
 IncidenceGraphData::~IncidenceGraphData()
 {
-#ifdef DEBUG_MEMORY
-    MemoryInfo::Dealloc(size);
-#endif
     delete [] buffer;
 }
 
@@ -298,8 +271,8 @@ IncidenceGraph *IncidenceGraphData::GetIncidenceGraph(const SimplexPtrList &simp
 {
     int index = 0;
     
-    IncidenceGraph::Params params(buffer[index++], false, false);
-    IncidenceGraph *ig = new IncidenceGraph(params);
+    int dim = buffer[index++];
+    IncidenceGraph *ig = new IncidenceGraph(dim);
 
     // tworzymy node'y
     std::vector<std::vector<int> > edges;

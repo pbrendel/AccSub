@@ -51,16 +51,14 @@ private:
 
     // testType:
     // 0 - random
-    // 1 - "reverse" random
-    // 2 - single file
-    // 3 - acyclic tree
-    // 4 - list
-    static int              testType; 
+    // 1 - single file
+    // 2 - list
+    static int              testType;
     static std::string      inputFilename;
     static int              simplicesCount;
     static int              vertsCount;
-    static int              nodeSimplicesCount;
-    static int              nodesCount;
+    static int              simplicesDim;
+    static int              sortSimplices;
     static int              sortVerts;
     static std::string      logFilename;
     static std::ofstream    log;
@@ -70,7 +68,7 @@ private:
     static int              useAcyclicSubsetOnline;
     static int              useAcyclicSubsetSpanningTree;
     static int              useAcyclicSubsetParallel;
-    static IncidenceGraph::Params           incidenceGraphParams;
+    static int              acyclicTestNumber;
     static IncidenceGraph::ParallelParams   parallelParams;
 
     friend class MPITest;

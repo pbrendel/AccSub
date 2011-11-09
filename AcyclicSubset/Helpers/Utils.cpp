@@ -3,6 +3,8 @@
 #include <iostream>
 #include <algorithm>
 
+#include <sys/resource.h>
+
 #ifdef USE_MPI
 #include <mpi.h>
 #endif
@@ -255,6 +257,15 @@ void Timer::TimeStamp(const char* msg)
 #else
     std::cout<<msg<<" : "<<(float(clock() - timeStart) / CLOCKS_PER_SEC)<<std::endl;
 #endif
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+void MemoryInfo::Print()
+{
+    struct rusage usage;
+    getrusage(RUSAGE_SELF, &usage);
+    std::cout<<"memory usage: "<<(usage.ru_maxrss >> 10)<<" MB"<<std::endl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -9,18 +9,10 @@
 
 class IncidenceGraph;
 
-#ifdef DEBUG_MEMORY
-#include "../Helpers/DebugMemory.h"
-#endif
-
 namespace MPIData
 {
 
-#ifdef DEBUG_MEMORY
-class SimplexData : public DebugMemory<SimplexData>
-#else
 class SimplexData
-#endif
 {
     
     int *buffer;
@@ -31,21 +23,17 @@ class SimplexData
 public:
 
     SimplexData(int *buffer, int size);
-    SimplexData(const SimplexPtrList &simplexPtrList, const std::set<Vertex> &borderVerts, const IncidenceGraph::Params &params, int acyclicSubsetAlgorithm, int simplexSize = 0);
+    SimplexData(const SimplexPtrList &simplexPtrList, const std::set<Vertex> &borderVerts, int acyclicityTestNumber, int useAcyclicSubsetOnlineAlgorithm, int simplexSize = 0);
     ~SimplexData();
     
     int *GetBuffer() const { return buffer; }
     int GetSize() const { return size; }
 
-    void GetSimplexData(SimplexList &simplexList, std::set<Vertex> &borderVerts, IncidenceGraph::Params &params, int &acyclicSubsetAlgorithm);
+    void GetSimplexData(SimplexList &simplexList, std::set<Vertex> &borderVerts, int &acyclicityTestNumber, int &useAcyclicSubsetOnlineAlgorithm);
 
 };
 
-#ifdef DEBUG_MEMORY
-class IncidenceGraphData : public DebugMemory<IncidenceGraphData>
-#else
 class IncidenceGraphData
-#endif
 {
     int *buffer;
     int size;

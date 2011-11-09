@@ -6,7 +6,6 @@
 #include "MPITest.h"
 #include "../AcyclicSubset/ParallelGraph.h"
 #include "../Helpers/Utils.h"
-#include "DebugMemory.h"
 
 #ifdef USE_MPI
 #include <mpi.h>
@@ -58,12 +57,7 @@ void MPITest::StandardTest()
 
     delete ig;
 
-#ifdef DEBUG_MEMORY
-    ParallelGraph::CollectDebugMemoryInfo();
-    MemoryInfo::PrintSlavesMemoryInfo();
-    MemoryInfo::PrintInfo();
-    MemoryInfo::Reset();
-#endif
+    MemoryInfo::Print();
 
 #endif
 }
@@ -124,10 +118,7 @@ void MPITest::Master(int argc, char **argv)
     ParallelGraph::KillMPISlaves();
     Tests::CloseLog();
 
-#ifdef DEBUG_MEMORY
-    MemoryInfo::PrintInfo();
-    MemoryInfo::Reset();
-#endif
+    MemoryInfo::Print();
 
 #endif
 }
@@ -140,9 +131,7 @@ void MPITest::Slave(int processRank)
 
     ParallelGraph::MPISlave(processRank);
 
-#ifdef DEBUG_MEMORY
-    MemoryInfo::PrintInfo();
-#endif
+    MemoryInfo::Print();
 
 #endif
 }

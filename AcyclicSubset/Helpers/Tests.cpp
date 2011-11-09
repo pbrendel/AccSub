@@ -1,4 +1,5 @@
 #include "Tests.h"
+#include "../AcyclicSubset/SimplexUtils.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 // RedHom stuff
@@ -49,7 +50,6 @@ typedef int Id;
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "Utils.h"
-#include "DebugMemory.h"
 #include "../AcyclicSubset/Simplex.h"
 #include "../AcyclicSubset/IncidenceGraph.h"
 
@@ -59,10 +59,10 @@ typedef int Id;
 int Tests::testType = 0;
 std::string Tests::inputFilename = "tests.txt";
 int Tests::simplicesCount = 1000;
+int Tests::simplicesDim = 3;
 int Tests::vertsCount = 100;
-int Tests::nodeSimplicesCount = 32;
-int Tests::nodesCount = 8;
-int Tests::sortVerts = 1;
+int Tests::sortSimplices = 0;
+int Tests::sortVerts = 0;
 std::string Tests::logFilename = "tests_log.xml";
 std::ofstream Tests::log;
 int Tests::useAlgebraic = 0;
@@ -71,7 +71,7 @@ int Tests::useAcyclicSubset = 0;
 int Tests::useAcyclicSubsetSpanningTree = 1;
 int Tests::useAcyclicSubsetOnline = 0;
 int Tests::useAcyclicSubsetParallel = 0;
-IncidenceGraph::Params Tests::incidenceGraphParams(4, 0, true, false);
+int Tests::acyclicTestNumber = 0;
 IncidenceGraph::ParallelParams Tests::parallelParams(1000);
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -79,26 +79,20 @@ IncidenceGraph::ParallelParams Tests::parallelParams(1000);
 void Tests::PrintHelp()
 {
     std::cout<<"-input [[-r ilosc_sympleksow] | [-i nazwa_pliku] | [-l nazwa_pliku]] [-opcje]"<<std::endl;
-    std::cout<<"    -r ilosc_sympleksow - losowe zbiory okresonego rozmiaru"<<std::endl;
-    std::cout<<"    -rr ilosc_sympleksow - maksymalna ilosc sympleksow dla danego wymiaru minus okreslona ilosc"<<std::endl;
+    std::cout<<"    -r ilosc_sympleksow wymiar_sympleksow - losowe zbiory okresonego rozmiaru"<<std::endl;
     std::cout<<"    -i nazwa_pliku - pojedynczy zbior wczytany z okreslonego pliku"<<std::endl;
     std::cout<<"    -l nazwa_pliku - lista zbiorow okreslonych w podanym pliku"<<std::endl;
-    std::cout<<"    -act rozmiar_node ilosc_nodow - testy przy wykorzystaniu acyklicznego drzewa"<<std::endl;
     std::cout<<"  opcje:"<<std::endl;
     std::cout<<"    -verts vc - ilosc wierzcholkow z ktorych losujemy sympleksy"<<std::endl;
     std::cout<<"                (def. "<<vertsCount<<")"<<std::endl;
     std::cout<<"    -test numer - numer testu acyklicznosci: 0 - tablice 1 - test CoDim 1"<<std::endl;
-    std::cout<<"                  (def. "<<incidenceGraphParams.acyclicTestNumber<<")"<<std::endl;
-    std::cout<<"    -dim d - wymiar danych wejsciowych"<<std::endl;
-    std::cout<<"             (def. "<<incidenceGraphParams.dim<<")"<<std::endl;
+    std::cout<<"                  (def. "<<acyclicTestNumber<<")"<<std::endl;
     std::cout<<"    -ss [0|1] - sortuj sympleksy przed rozpoczeciem obliczen"<<std::endl;
-    std::cout<<"                (def. "<<incidenceGraphParams.sortNodes<<")"<<std::endl;
+    std::cout<<"                (def. "<<sortSimplices<<")"<<std::endl;
     std::cout<<"    -sv [0|1] - sortuj wierzcholki w kazdym sympleksie"<<std::endl;
     std::cout<<"                (def. "<<sortVerts<<")"<<std::endl;
-    std::cout<<"    -min [0|1] - minimalizuj sympleksy"<<std::endl;
-    std::cout<<"                (def. "<<incidenceGraphParams.minimizeSimplices<<")"<<std::endl;
     std::cout<<"    -log nazwa_pliku - zmien nazwe pliku z logami"<<std::endl;
-    std::cout<<"                (def. "<<incidenceGraphParams.minimizeSimplices<<")"<<std::endl;
+    std::cout<<"                (def. "<<logFilename<<")"<<std::endl;
     std::cout<<"    -ps size - wielkosc paczki dla obliczen rownoleglych"<<std::endl;
     std::cout<<"               (def. "<<parallelParams.packSize<<")"<<std::endl;
     std::cout<<"    -pc count - ilosc paczek dla obliczen rownoleglych"<<std::endl;
@@ -137,39 +131,24 @@ void Tests::ProcessArguments(int argc, char **argv)
         {
             testType = 0;
             simplicesCount = atoi(argv[index + 1]);
-            index += 2;
-        }
-        else if (CHECK_ARG_NEXT("-rr"))
-        {
-            testType = 1;
-            simplicesCount = atoi(argv[index + 1]);
-            index += 2;
+            simplicesDim = atoi(argv[index + 2]);
+            index += 3;
         }
         else if (CHECK_ARG_NEXT("-i"))
+        {
+            testType = 1;
+            inputFilename = argv[index + 1];
+            index += 2;
+        }
+        else if (CHECK_ARG_NEXT("-l"))
         {
             testType = 2;
             inputFilename = argv[index + 1];
             index += 2;
         }
-        else if (CHECK_ARG_NEXT("-act"))
-        {
-            testType = 3;
-            nodeSimplicesCount = atoi(argv[index + 1]);
-            nodesCount = atoi(argv[index + 2]);
-            index += 3;
-        }
-        else if (CHECK_ARG_NEXT("-l"))
-        {
-            testType = 4;
-            inputFilename = argv[index + 1];
-            index += 2;
-        }
         else if (CHECK_ARG_NEXT("-verts")) { vertsCount = atoi(argv[index + 1]); index += 2; }
-        else if (CHECK_ARG_NEXT("-test")) { incidenceGraphParams.acyclicTestNumber = atoi(argv[index + 1]); index += 2; }
-        else if (CHECK_ARG_NEXT("-dim")) { incidenceGraphParams.dim = atoi(argv[index + 1]); index += 2; }
-        else if (CHECK_ARG_NEXT("-ss")) { incidenceGraphParams.sortNodes = atoi(argv[index + 1]); index += 2; }
+        else if (CHECK_ARG_NEXT("-ss")) { sortSimplices = atoi(argv[index + 1]); index += 2; }
         else if (CHECK_ARG_NEXT("-sv")) { sortVerts = atoi(argv[index + 1]); index += 2; }
-        else if (CHECK_ARG_NEXT("-min")) { incidenceGraphParams.minimizeSimplices = atoi(argv[index + 1]); index += 2; }
         else if (CHECK_ARG_NEXT("-ps")) { parallelParams.packSize = atoi(argv[index + 1]); index += 2; }
         else if (CHECK_ARG_NEXT("-pc")) { parallelParams.packsCount = atoi(argv[index + 1]); index += 2; }
         else if (CHECK_ARG_NEXT("-ppd")) { parallelParams.prepareData = atoi(argv[index + 1]); index += 2; }
@@ -181,6 +160,7 @@ void Tests::ProcessArguments(int argc, char **argv)
         else if (CHECK_ARG_NEXT("-use_acsub_o")) { useAcyclicSubsetOnline = atoi(argv[index + 1]); index+= 2; }
         else if (CHECK_ARG_NEXT("-use_acsub_st")) { useAcyclicSubsetSpanningTree = atoi(argv[index + 1]); index+= 2; }
         else if (CHECK_ARG_NEXT("-use_acsub_p")) { useAcyclicSubsetParallel = atoi(argv[index + 1]); index+= 2; }
+        else if (CHECK_ARG_NEXT("-test")) { acyclicTestNumber = atoi(argv[index + 1]); index += 2; }
         else
         {
             std::cout<<"nieznany parametr: "<<argv[index]<<std::endl;
@@ -205,22 +185,20 @@ void Tests::GenerateData(SimplexList &simplexList)
     switch (testType)
     {
         case 0:
-            GenerateSimplexList(simplexList, simplicesCount, vertsCount, incidenceGraphParams.dim);
+            GenerateSimplexList(simplexList, simplicesCount, vertsCount, simplicesDim);
             break;
         case 1:
-            GenerateReverseSimplexList(simplexList, simplicesCount, vertsCount,  incidenceGraphParams.dim + 1);
-            break;
-        case 2:
             ReadSimplexList(simplexList, inputFilename.c_str(), sortVerts);
-            break;
-        case 3:
-            GenerateAcyclicTree(simplexList, nodeSimplicesCount, nodesCount);
             break;
         default:
             break;
     }
+    if (sortSimplices)
+    {
+        std::sort(simplexList.begin(), simplexList.end(), SimplexSorterSize);
+    }
     Timer::Update("data generated");
-    MemoryInfo::PrintInfo();
+    MemoryInfo::Print();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -233,37 +211,35 @@ void Tests::Test(SimplexList &simplexList, ReductionType reductionType)
     Timer::Update();
     Timer::Time timeStart = Timer::Now();
 
-    MemoryInfo::Reset();
-
-    AcyclicTest<IncidenceGraph::IntersectionFlags> *test = IsAcyclicSubsetReduction(reductionType) ? AcyclicTest<IncidenceGraph::IntersectionFlags>::Create(incidenceGraphParams.acyclicTestNumber, incidenceGraphParams.dim) : 0;
+    AcyclicTest<IncidenceGraph::IntersectionFlags> *test = IsAcyclicSubsetReduction(reductionType) ? AcyclicTest<IncidenceGraph::IntersectionFlags>::Create(acyclicTestNumber, GetDimension(simplexList)) : 0;
     IncidenceGraph *ig = 0;
     if (reductionType == RT_AcyclicSubset)
     {
-        ig = IncidenceGraph::CreateAndCalculateAcyclicSubset(simplexList, incidenceGraphParams, test);
+        ig = IncidenceGraph::CreateAndCalculateAcyclicSubset(simplexList, test);
     }
     else if (reductionType == RT_AcyclicSubsetOnline)
     {
-        ig = IncidenceGraph::CreateAndCalculateAcyclicSubsetOnline(simplexList, incidenceGraphParams, test);
+        ig = IncidenceGraph::CreateAndCalculateAcyclicSubsetOnline(simplexList, test);
     }
     else if (reductionType == RT_AcyclicSubsetSpanningTree)
     {
-        ig = IncidenceGraph::CreateAndCalculateAcyclicSubsetSpanningTree(simplexList, incidenceGraphParams, test);
+        ig = IncidenceGraph::CreateAndCalculateAcyclicSubsetSpanningTree(simplexList, test);
     }
     else if (reductionType == RT_AcyclicSubsetParallel)
     {
-        ig = IncidenceGraph::CreateAndCalculateAcyclicSubsetParallel(simplexList, incidenceGraphParams, parallelParams, test, true);
+        ig = IncidenceGraph::CreateAndCalculateAcyclicSubsetParallel(simplexList, parallelParams, test, true);
     }
     else // (reductionType == RT_Coreduction || reductionType == RT_None)
     {
-        ig = IncidenceGraph::Create(simplexList, incidenceGraphParams);
+        ig = IncidenceGraph::Create(simplexList);
     }
     if (test)
     {
         delete test;
     }
-    MemoryInfo::PrintInfo();
     Timer::Update();
     total = Timer::TimeFrom(timeStart, "total graph processing");
+    MemoryInfo::Print();
     Tests::Test(ig, reductionType, total);
     delete ig;
 }
@@ -279,30 +255,23 @@ void Tests::Test(IncidenceGraph *ig, ReductionType reductionType, float totalTim
 
     Timer::Update();
     OutputGraph *og = new OutputGraph(ig);
-    MemoryInfo::PrintInfo();
     float t = Timer::Update("creating output");
+    MemoryInfo::Print();
     log<<"\t\t\t<output_graph>"<<t<<"</output_graph>"<<std::endl;
     totalTime += t;
 
     totalTime += ComputeHomology(og, reductionType == RT_Coreduction);
     std::cout<<"total: "<<totalTime<<std::endl;
     log<<"\t\t\t<total>"<<totalTime<<"</total>"<<std::endl;
-    MemoryInfo::PrintInfo();
+    MemoryInfo::Print();
     
     delete og;
 }
 
 void Tests::TestAndCompare(SimplexList &simplexList)
 {
-    incidenceGraphParams.dim = simplexList[0].size() - 1;
-    if (incidenceGraphParams.dim < 2) incidenceGraphParams.dim = 2;
-    if (incidenceGraphParams.acyclicTestNumber == 0) // jezeli tablice, to gorne ograniczenie na wymiar == 4
-    {
-        if (incidenceGraphParams.dim > 4) incidenceGraphParams.dim = 4;
-    }
-
     std::cout<<"simplices count: "<<simplexList.size()<<std::endl;
-    std::cout<<"dim: "<<incidenceGraphParams.dim<<std::endl;
+    std::cout<<"dim: "<<GetDimension(simplexList)<<std::endl;
 
     if (useAlgebraic)
     {
@@ -371,13 +340,7 @@ void Tests::StandardTest()
             sprintf(buff, "random set of size: %d", (int)simplexList.size());
             break;
         case 1:
-            sprintf(buff, "random set of size %d, randomly removed %d simplices", (int)simplexList.size(), simplicesCount);
-            break;
-        case 2:
             sprintf(buff, "testing %s", inputFilename.c_str());
-            break;
-        case 3:
-            sprintf(buff, "acyclic tree of %d nodes %d simplices each, total: %d", nodesCount, nodeSimplicesCount, (int)simplexList.size());
             break;
         default:
             break;
@@ -385,6 +348,7 @@ void Tests::StandardTest()
 
     std::cout<<buff<<std::endl;
     log<<"<input_size>"<<simplexList.size()<<"</input_size>"<<std::endl;
+    log<<"<dim>"<<GetDimension(simplexList)<<"</dimension>"<<std::endl;
     log<<std::endl<<"\t<description>"<<buff<<"</description>"<<std::endl<<std::endl;
 
     TestAndCompare(simplexList);
@@ -440,16 +404,16 @@ void Tests::TestFromCommandLine(int argc, char **argv)
     }
 
     CloseLog();
-#ifdef DEBUG_MEMORY
-    MemoryInfo::PrintInfo();
-#endif
+
+    MemoryInfo::Print();
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 int Tests::GetBetti(SimplexList &simplexList, int n)
 {
-    IncidenceGraph *ig = IncidenceGraph::Create(simplexList, incidenceGraphParams);
+    IncidenceGraph *ig = IncidenceGraph::Create(simplexList);
     OutputGraph *og = new OutputGraph(ig);
 
     Complex::Dims dims;
@@ -527,7 +491,7 @@ float Tests::ComputeHomology(OutputGraph *g, bool doCoreduction)
         t = Timer::Update("coreduction");
         log<<"\t\t\t<coreduction>"<<t<<"</coreduction>"<<std::endl;
         total += t;
-        MemoryInfo::PrintInfo();
+        MemoryInfo::Print();
     }
 
     Timer::Update();
@@ -536,7 +500,7 @@ float Tests::ComputeHomology(OutputGraph *g, bool doCoreduction)
     t = Timer::Update("computing homology");
     log<<"\t\t\t<homology>"<<t<<"</homology>"<<std::endl;
     total += t;
-    MemoryInfo::PrintInfo();
+    MemoryInfo::Print();
     
 //    testsLog<<homSignCR();
     std::cout<<homSignCR();
@@ -550,12 +514,8 @@ void Tests::OpenLog()
 {
     log.open(logFilename.c_str());
     log<<"<tests>"<<std::endl<<std::endl;
-    log<<"<simplices_count>"<<simplicesCount<<"</simplices_count>"<<std::endl;
-    log<<"<vertices_count>"<<vertsCount<<"</vertices_count>"<<std::endl;
     log<<"<input>"<<inputFilename<<"</input>"<<std::endl;
-    log<<"<acyclic_test_number>"<<incidenceGraphParams.acyclicTestNumber<<"</acyclic_test_number>"<<std::endl;
-    log<<"<dim>"<<incidenceGraphParams.dim<<"</dim>"<<std::endl;
-    log<<"<minimalization>"<<incidenceGraphParams.minimizeSimplices<<"</minimalization>"<<std::endl;
+    log<<"<acyclic_test_number>"<<acyclicTestNumber<<"</acyclic_test_number>"<<std::endl;
 }
 
 void Tests::CloseLog()

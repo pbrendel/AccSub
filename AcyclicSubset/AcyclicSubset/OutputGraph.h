@@ -4,26 +4,14 @@
 #include "Simplex.h"
 #include "IncidenceGraph.h"
 
-#ifdef DEBUG_MEMORY
-#include "../Helpers/DebugMemory.h"
-#endif
-
 class IncidenceGraph;
 
-#ifdef DEBUG_MEMORY
-class OutputGraph : public DebugMemory<OutputGraph>
-#else
 class OutputGraph
-#endif
 {
 
 public:
 
-#ifdef DEBUG_MEMORY
-    struct Node : public DebugMemory<Node>
-#else
     struct Node
-#endif
     {        
         int                 index;
         Simplex             simplex;
@@ -56,11 +44,6 @@ private:
     Node *GenerateNode(IncidenceGraph::Node *baseNode, Simplex &baseSimplex, Nodes &generatedSubnodes, IncidenceGraph::IntersectionFlags &subnodesFlags);
     Node *AddNode(const Simplex &s);
     Node *FindOrAddNode(const Simplex &simplex);
-
-#ifdef DEBUG_MEMORY
-    // zeby rozmiar roznil sie od IncidenceGraph::Edge
-    int dummy;
-#endif
 
 };
 

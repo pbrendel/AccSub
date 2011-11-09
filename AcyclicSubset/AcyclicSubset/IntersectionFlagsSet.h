@@ -3,19 +3,11 @@
 
 #include <assert.h>
 
-#ifdef DEBUG_MEMORY
-#include "../Helpers/DebugMemory.h"
-#endif
-
 ////////////////////////////////////////////////////////////////////////////////
 
 const int N = 4;
 
-#ifdef DEBUG_MEMORY
-class IntersectionFlagsSet : public DebugMemory
-#else
 class IntersectionFlagsSet
-#endif
 {
     int data[N];
 
