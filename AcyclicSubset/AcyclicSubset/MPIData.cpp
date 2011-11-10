@@ -13,7 +13,7 @@ SimplexData::SimplexData(int* buffer, int size)
     this->size = size;
 }
 
-SimplexData::SimplexData(const SimplexPtrList& simplexPtrList, const std::set<Vertex>& borderVerts, int acyclicityTestNumber, int useAcyclicSubsetOnlineAlgorithm, int simplexSize)
+SimplexData::SimplexData(const SimplexPtrList& simplexPtrList, const std::set<Vertex>& borderVerts, int acyclicityTestNumber, int accSubAlgorithm, int simplexSize)
 {
     size = CalcBufferSize(simplexPtrList, borderVerts.size(), simplexSize);
     buffer = new int[size];
@@ -28,8 +28,8 @@ SimplexData::SimplexData(const SimplexPtrList& simplexPtrList, const std::set<Ve
     buffer[index++] = simplexPtrList.size();
     // numer testu acyklicznosci
     buffer[index++] = acyclicityTestNumber;
-    // typ redukcji
-    buffer[index++] = useAcyclicSubsetOnlineAlgorithm;
+    // typ algorytmu obliczania podzbioru acyklicznego
+    buffer[index++] = accSubAlgorithm;
     // dane sympleksow
     if (simplexSize == 0)
     {
@@ -87,13 +87,13 @@ int SimplexData::CalcBufferSize(const SimplexPtrList& simplexPtrList, int border
     return size + borderVertsCount + 5;
 }
 
-void SimplexData::GetSimplexData(SimplexList& simplexList, std::set<Vertex>& borderVerts, int &acyclicityTestNumber, int &useAcyclicSubsetOnlineAlgorithm)
+void SimplexData::GetSimplexData(SimplexList& simplexList, std::set<Vertex>& borderVerts, int &acyclicityTestNumber, int &accSubAlgorithm)
 {
     int index = 0;
     int simplexSize = buffer[index++];
     int simplexCount = buffer[index++];
     acyclicityTestNumber = buffer[index++];
-    useAcyclicSubsetOnlineAlgorithm = buffer[index++];
+    accSubAlgorithm = buffer[index++];
     if (simplexSize == 0)
     {
         for (int i = 0; i < simplexCount; i++)

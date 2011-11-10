@@ -10,7 +10,7 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void ComputationsLocalMPITest::Compute(ParallelGraph::DataNodes &nodes, const IncidenceGraph::ParallelParams &parallelParams, AcyclicTest<IncidenceGraph::IntersectionFlags> *test)
+void ComputationsLocalMPITest::Compute(ParallelGraph::DataNodes &nodes, AccSubAlgorithm accSubAlgorithm, AcyclicTest<IncidenceGraph::IntersectionFlags> *test)
 {
     Timer::TimeStamp("***** ComputationsLocalMPITest start");
     Timer::Time start = Timer::Now();
@@ -18,18 +18,18 @@ void ComputationsLocalMPITest::Compute(ParallelGraph::DataNodes &nodes, const In
     {
         ParallelGraph::DataNode *node = *i;
 
-        MPIData::SimplexData *simplexData = new MPIData::SimplexData(node->simplexPtrList, node->borderVerts, parallelParams.useAcyclicSubsetOnlineAlgorithm ? ASA_Online : ASA_SpanningTree, node->GetConstantSimplexSize());
+        MPIData::SimplexData *simplexData = new MPIData::SimplexData(node->simplexPtrList, node->borderVerts, test->GetID(), accSubAlgorithm, node->GetConstantSimplexSize());
         SimplexList simplexList;
         std::set<Vertex> borderVerts;
         int acyclicTestNumber;
-        int useAcyclicSubsetOnlineAlgorithm;
-        simplexData->GetSimplexData(simplexList, borderVerts, acyclicTestNumber, useAcyclicSubsetOnlineAlgorithm);
+        int accSubAlg;
+        simplexData->GetSimplexData(simplexList, borderVerts, acyclicTestNumber, accSubAlg);
         AcyclicTest<IncidenceGraph::IntersectionFlags> *test = AcyclicTest<IncidenceGraph::IntersectionFlags>::Create(acyclicTestNumber, GetDimension(simplexList));
 
         IncidenceGraph *ig = 0;
-        if (useAcyclicSubsetOnlineAlgorithm)
+        if (accSubAlg == ASA_AccIG)
         {
-           std::cout<<"using online algorihm"<<std::endl;
+           std::cout<<"using AccIG"<<std::endl;
            ig = IncidenceGraph::CreateAndCalculateAcyclicSubsetOnlineWithBorder(simplexList, borderVerts, test);
            ig->UpdateConnectedComponents();
            ig->RemoveAcyclicSubset();
@@ -38,7 +38,7 @@ void ComputationsLocalMPITest::Compute(ParallelGraph::DataNodes &nodes, const In
         }
         else
         {
-            std::cout<<"using spanning tree algorihm"<<std::endl;
+            std::cout<<"using AccST"<<std::endl;
             ig = IncidenceGraph::CreateAndCalculateAcyclicSubsetSpanningTreeWithBorder(simplexList, borderVerts, test);
             ig->UpdateConnectedComponents();
             ig->RemoveAcyclicSubset();

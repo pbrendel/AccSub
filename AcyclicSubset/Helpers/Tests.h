@@ -14,10 +14,10 @@ enum ReductionType
 {
     RT_None,
     RT_Coreduction,
-    RT_AcyclicSubset,
-    RT_AcyclicSubsetOnline,
-    RT_AcyclicSubsetSpanningTree,
-    RT_AcyclicSubsetParallel,
+    RT_Acc,
+    RT_AccIG,
+    RT_AccST,
+    RT_AccParallel
 };
 
 class Tests
@@ -54,22 +54,24 @@ private:
     // 1 - single file
     // 2 - list
     static int              testType;
+    static int              acyclicTestNumber;
     static std::string      inputFilename;
     static int              simplicesCount;
-    static int              vertsCount;
     static int              simplicesDim;
+    static int              vertsCount;
     static int              sortSimplices;
     static int              sortVerts;
     static std::string      logFilename;
     static std::ofstream    log;
     static int              useAlgebraic;
     static int              useCoreduction;
-    static int              useAcyclicSubset;
-    static int              useAcyclicSubsetOnline;
-    static int              useAcyclicSubsetSpanningTree;
-    static int              useAcyclicSubsetParallel;
-    static int              acyclicTestNumber;
-    static IncidenceGraph::ParallelParams   parallelParams;
+    static int              useAcc;
+    static int              useAccIG;
+    static int              useAccST;
+    static int              useParallel;
+    static int              packsCount;
+    static int              parallelAccSubAlgorithm;
+    static int              prepareData;
 
     friend class MPITest;
 };

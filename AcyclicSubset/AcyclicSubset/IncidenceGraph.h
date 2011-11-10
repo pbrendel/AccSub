@@ -13,11 +13,11 @@ class IncidenceGraph;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-enum AcSubAlgorithm
+enum AccSubAlgorithm
 {
-    ASA_Default,
-    ASA_Online,
-    ASA_SpanningTree,
+    ASA_Acc = 0,
+    ASA_AccIG,
+    ASA_AccST,
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -30,24 +30,6 @@ public:
     // to na parametry szablonu
     typedef unsigned int IntersectionFlags;
     // typedef IntersectionFlagsBitSet<4> IntersectionFlags;
-    
-    struct ParallelParams
-    {
-        int packSize;
-        int packsCount;
-        bool prepareData;
-        bool useAcyclicSubsetOnlineAlgorithm;
-        
-    public:
-        
-        ParallelParams(int packSize = 1000, int packsCount = -1, bool prepareData = false, bool useAcyclicSubsetOnlineAlgorithm = false)
-        {
-            this->packSize = packSize;
-            this->packsCount = packsCount;
-            this->prepareData = prepareData;
-            this->useAcyclicSubsetOnlineAlgorithm = useAcyclicSubsetOnlineAlgorithm;
-        }
-    };
 
     struct Node;
 
@@ -70,7 +52,7 @@ public:
     };
 
     typedef std::vector<Edge> Edges;
-    // listy dzialaja szybciej dla algorytmu online
+    // listy dzialaja szybciej dla algorytmu AccIG
     // typedef std::list<Edge> Edges;
 
     struct Node
@@ -178,7 +160,7 @@ public:
     static IncidenceGraph *CreateAndCalculateAcyclicSubsetSpanningTree(SimplexPtrList &simplexPtrList, AcyclicTest<IntersectionFlags> *test);
     static IncidenceGraph *CreateAndCalculateAcyclicSubsetSpanningTreeWithBorder(SimplexList &simplexList, const VertsSet &borderVerts, AcyclicTest<IntersectionFlags> *test);
     static IncidenceGraph *CreateAndCalculateAcyclicSubsetSpanningTreeWithBorder(SimplexPtrList &simplexPtrList, const VertsSet &borderVerts, AcyclicTest<IntersectionFlags> *test);
-    static IncidenceGraph *CreateAndCalculateAcyclicSubsetParallel(SimplexList &simplexList, const ParallelParams &parallelParams, AcyclicTest<IntersectionFlags> *test, bool local);
+    static IncidenceGraph *CreateAndCalculateAcyclicSubsetParallel(SimplexList &simplexList, int packsCount, AccSubAlgorithm accSubAlgorithm, AcyclicTest<IntersectionFlags> *test);
 
     ~IncidenceGraph();
 

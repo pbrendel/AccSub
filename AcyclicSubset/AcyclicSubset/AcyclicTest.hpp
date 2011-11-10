@@ -19,6 +19,7 @@ public:
     virtual ~AcyclicTest() { };
     virtual bool IsAcyclic(Simplex &simplex, SimplexList &intersection) = 0;
     virtual bool IsAcyclic(Simplex &simplex, FlagsType intersectionFlags, FlagsType intersectionFlagsMaximalFaces) = 0;
+    virtual int GetID() = 0;
 
     static AcyclicTest *Create(int acyclicTestNumber, int dim);
 
@@ -121,6 +122,8 @@ public:
         if ((intersectionFlagsMaximalFaces & (~flags)) != 0) return false;
         return true;
     }
+
+    int GetID() { return 1; }
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -219,6 +222,8 @@ public:
         return GetValue((int)intersectionFlags);
     }
 
+    int GetID() { return 0; }
+
 private:
 
     int dim;
@@ -256,6 +261,8 @@ public:
     {
         return false;
     }
+
+    int GetID() { return -1; }
 };
 
 

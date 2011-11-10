@@ -20,7 +20,7 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void ComputationsParallelMPI::Compute(ParallelGraph::DataNodes &nodes, const IncidenceGraph::ParallelParams &parallelParams, AcyclicTest<IncidenceGraph::IntersectionFlags> *acyclicTest)
+void ComputationsParallelMPI::Compute(ParallelGraph::DataNodes &nodes, AccSubAlgorithm accSubAlgorithm, AcyclicTest<IncidenceGraph::IntersectionFlags> *acyclicTest)
 {
 #ifdef USE_MPI
     int nodesCount = nodes.size();
@@ -39,7 +39,7 @@ void ComputationsParallelMPI::Compute(ParallelGraph::DataNodes &nodes, const Inc
     {
         std::cout<<"sending node "<<currentNode<<" to process: "<<rank<<std::endl;
         rankToNode[rank] = nodes[currentNode];
-        SendMPISimplexData(nodes[currentNode++], parallelParams, rank);
+        SendMPISimplexData(nodes[currentNode++], accSubAlgorithm, rank);
     }
 
     // potem czekamy na dane i wysylamy kolejne
@@ -58,7 +58,7 @@ void ComputationsParallelMPI::Compute(ParallelGraph::DataNodes &nodes, const Inc
         SetMPIIncidenceGraphData(rankToNode[status.MPI_SOURCE], buffer, size);
         std::cout<<"sending node "<<currentNode<<" to process: "<<status.MPI_SOURCE<<std::endl;
         rankToNode[status.MPI_SOURCE] = nodes[currentNode];
-        SendMPISimplexData(nodes[currentNode++], parallelParams, status.MPI_SOURCE);
+        SendMPISimplexData(nodes[currentNode++], accSubAlgorithm, status.MPI_SOURCE);
     }
 
     // na koncu odbieramy to co jeszcze jest liczone
@@ -81,14 +81,14 @@ void ComputationsParallelMPI::Compute(ParallelGraph::DataNodes &nodes, const Inc
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void ComputationsParallelMPI::SendMPISimplexData(ParallelGraph::DataNode *node, const IncidenceGraph::ParallelParams &parallelParams, int processRank)
+void ComputationsParallelMPI::SendMPISimplexData(ParallelGraph::DataNode *node, AccSubAlgorithm accSubAlgorithm, int processRank)
 {
 #ifdef USE_MPI
 #ifdef DEBUG_MPI
         std::cout<<"process 0 ";
         Timer::TimeStamp("packing data");
 #endif
-    MPIData::SimplexData *data = new MPIData::SimplexData(node->simplexPtrList, node->borderVerts, parallelParams.useAcyclicSubsetOnlineAlgorithm ? ASA_Online : ASA_SpanningTree, node->GetConstantSimplexSize());
+    MPIData::SimplexData *data = new MPIData::SimplexData(node->simplexPtrList, node->borderVerts, accSubAlgorithm, node->GetConstantSimplexSize());
     int dataSize = data->GetSize();
     MPI_Send(&dataSize, 1, MPI_INT, processRank, MPI_MY_DATASIZE_TAG, MPI_COMM_WORLD);
 #ifdef DEBUG_MPI
@@ -156,8 +156,8 @@ void ComputationsParallelMPI::Slave(int processRank)
         SimplexList simplexList;
         std::set<Vertex> borderVerts;
         int acyclicTestNumber;
-        int useAcyclicSubsetOnlineAlgorithm;
-        data->GetSimplexData(simplexList, borderVerts, acyclicTestNumber, useAcyclicSubsetOnlineAlgorithm);
+        int accSubAlgorithm;
+        data->GetSimplexData(simplexList, borderVerts, acyclicTestNumber, accSubAlgorithm, 0);
 #ifdef DEBUG_MPI
         std::cout<<"process "<<processRank<<" ";
         Timer::TimeStamp("upacked data");
@@ -166,7 +166,7 @@ void ComputationsParallelMPI::Slave(int processRank)
 
         // tworzymy graf incydencji z policzonym podzbiorem acyklicznym
         IncidenceGraph *ig = 0;
-        if (useAcyclicSubsetOnlineAlgorithm)
+        if (accSubAlgorithm == ASA_AccIG)
         {
             ig = IncidenceGraph::CreateAndCalculateAcyclicSubsetOnlineWithBorder(simplexList, borderVerts, test);
         }

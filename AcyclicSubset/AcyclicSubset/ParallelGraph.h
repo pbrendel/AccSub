@@ -1,3 +1,8 @@
+/*
+ * File:   ParallelGraph.h
+ * Author: Piotr Brendel
+ */
+
 #ifndef PARALLELGRAPH_H
 #define PARALLELGRAPH_H
 
@@ -132,24 +137,26 @@ public:
 
     void GetIntersection(std::vector<Vertex> &intersection, std::set<Vertex> &setA, std::set<Vertex> &setB);
     
-    ParallelGraph(IncidenceGraph *ig, SimplexList &simplexList, const IncidenceGraph::ParallelParams &parallelParams, AcyclicTest<IncidenceGraph::IntersectionFlags> *acyclicTest, bool local);
+    ParallelGraph(SimplexList &simplexList, int packsCount, AccSubAlgorithm accSubAlgorithm, AcyclicTest<IncidenceGraph::IntersectionFlags> *acyclicTest);
     ~ParallelGraph();
+
+    IncidenceGraph *GetIncidenceGraph() { return incidenceGraph; }
 
 private:
 
     IncidenceGraph *incidenceGraph;
-    bool local;
+    int initialSize;
 
-    IncidenceGraph::ParallelParams parallelParams;
+    AccSubAlgorithm accSubAlgorithm;
     AcyclicTest<IncidenceGraph::IntersectionFlags> *acyclicTest;
 
     DataNodes dataNodes;
     DataEdges dataEdges;
     DataNodes secondPhaseDataNodes;
+
     SpanningTreeNodes spanningTreeNodes;
     SpanningTreeEdges spanningTreeEdges;
 
-    void PrepareData(SimplexList &simplexList, int packSize);
     void DivideData(SimplexList &simplexList, int packSize);
     void CreateDataEdges();
     void CalculateIncidenceGraphs(DataNodes &sourceNodes);

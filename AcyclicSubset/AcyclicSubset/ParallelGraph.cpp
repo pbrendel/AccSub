@@ -1,23 +1,28 @@
+/*
+ * File:   ParallelGraph.cpp
+ * Author: Piotr Brendel
+ */
+
 #include "ParallelGraph.h"
 #include "IncidenceGraph.h"
 #include "IncidenceGraphUtils.h"
 #include "../Helpers/Utils.h"
-#include "redHom/complex/scomplex/SComplexBuilderFromSimplices.hpp"
+//#include "redHom/complex/scomplex/SComplexBuilderFromSimplices.hpp"
 
 #include <iostream>
 #include <algorithm>
 #include <set>
 #include <map>
 #include <list>
-#include <cstdlib>
+//#include <cstdlib>
 #include <cmath> // ceil()
-
 
 #include "ComputationsLocal.h"
 #include "ComputationsLocalMPITest.h"
 
 // test!!!
 #include "../Helpers/Tests.h"
+#include "PrepareDataBFS.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -394,22 +399,16 @@ void ParallelGraph::SpanningTreeEdge::UpdateAcyclicConnections()
 
 ////////////////////////////////////////////////////////////////////////////////
 
-ParallelGraph::ParallelGraph(IncidenceGraph *ig, SimplexList &simplexList, const IncidenceGraph::ParallelParams &parallelParams, AcyclicTest<IncidenceGraph::IntersectionFlags> *acyclicTest, bool local)
+ParallelGraph::ParallelGraph(SimplexList &simplexList, int packsCount, AccSubAlgorithm accSubAlgorithm, AcyclicTest<IncidenceGraph::IntersectionFlags> *acyclicTest)
 {
-    incidenceGraph = ig;
-    this->parallelParams = parallelParams;
+    this->incidenceGraph = new IncidenceGraph(GetDimension(simplexList));
+    this->initialSize = simplexList.size();
+    this->accSubAlgorithm = accSubAlgorithm;
     this->acyclicTest = acyclicTest;
-    int packSize = parallelParams.packSize;
-    if (parallelParams.packsCount != -1)
-    {
-        packSize = (int)ceil(float(simplexList.size()) / parallelParams.packsCount);
-    }
+    int packSize = (int)ceil(float(simplexList.size()) / packsCount);
     std::cout<<"pack size: "<<packSize<<std::endl;
-    if (parallelParams.prepareData)
-    {
-        PrepareData(simplexList, packSize);
-        Timer::Update("preparing data");
-    }
+    PrepareDataBFS::Prepare(simplexList, packSize);
+    Timer::Update("preparing data");
     DivideData(simplexList, packSize);
     Timer::Update("dividing data");
     CreateDataEdges();
@@ -450,84 +449,8 @@ ParallelGraph::~ParallelGraph()
 
 ////////////////////////////////////////////////////////////////////////////////
 
-struct SimplexDescriptor
-{
-    Simplex simplex;
-    bool added;
-
-    SimplexDescriptor()
-    {
-        added = false;
-    }
-};
-
-void ParallelGraph::PrepareData(SimplexList &simplexList, int packSize)
-{
-    int count = simplexList.size();
-    SimplexDescriptor *descriptors = new SimplexDescriptor[count];
-    int index = 0;
-    for (SimplexList::iterator i = simplexList.begin(); i != simplexList.end(); i++)
-    {
-        descriptors[index++].simplex = *i;
-    }
-    simplexList.clear();
-
-    std::map<Vertex, std::vector<SimplexDescriptor *> > H;
-    for (int i = 0; i < count; i++)
-    {
-        Simplex &s = descriptors[i].simplex;
-        for (Simplex::iterator v = s.begin(); v != s.end(); v++)
-        {
-            H[*v].push_back(&descriptors[i]);
-        }
-    }
-
-    index = 0;
-    for (int i = 0; i < count; i++)
-    {
-        if (descriptors[i].added)
-        {
-            continue;
-        }
-        std::queue<SimplexDescriptor *> L;
-        L.push(&descriptors[i]);
-        descriptors[i].added = true;
-        while (!L.empty())
-        {
-            SimplexDescriptor *sd = L.front();
-            L.pop();
-            simplexList.push_back(sd->simplex);
-            for (Simplex::iterator v = sd->simplex.begin(); v != sd->simplex.end(); v++)
-            {
-                std::vector<SimplexDescriptor *> neighbours = H[*v];
-//                if (neighbours.size() > 20)
-//                {
-//                    continue;
-//                }
-                for (std::vector<SimplexDescriptor *>::iterator n = neighbours.begin(); n != neighbours.end(); n++)
-                {
-                    if (!(*n)->added)
-                    {
-                        L.push(*n);
-                        (*n)->added = true;
-                    }                    
-                }
-            }
-        }
-    }
-    delete [] descriptors;
-}
-
-// test!!!
-int inputSize;
-
 void ParallelGraph::DivideData(SimplexList& simplexList, int packSize)
 {
-    // test!!!
-    // SimplexList tempSimplexList;
-
-    inputSize = simplexList.size();
-
     DataNode *currentNode =  new DataNode();
     int simplicesLeft = packSize;
     SimplexList::iterator it = simplexList.begin();
@@ -593,7 +516,7 @@ void ParallelGraph::CreateDataEdges()
 
 void ParallelGraph::CalculateIncidenceGraphs(DataNodes &sourceNodes)
 {
-    ComputationsLocalMPITest::Compute(sourceNodes, parallelParams, acyclicTest);
+    ComputationsLocalMPITest::Compute(sourceNodes, accSubAlgorithm, acyclicTest);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -820,7 +743,7 @@ void ParallelGraph::CombineGraphs()
     }
 
     std::cout<<"total simplices after connecting graphs: "<<incidenceGraph->nodes.size()<<std::endl;
-    std::cout<<"reduced acyclic subset size: "<<(inputSize - incidenceGraph->nodes.size())<<" ("<<((inputSize - incidenceGraph->nodes.size()) * 100 / inputSize)<<"%)"<<std::endl;
+    std::cout<<"reduced acyclic subset size: "<<(initialSize - incidenceGraph->nodes.size())<<" ("<<((initialSize - incidenceGraph->nodes.size()) * 100 / initialSize)<<"%)"<<std::endl;
 
     Timer::Update("moving simplices to single incidence graph");
 

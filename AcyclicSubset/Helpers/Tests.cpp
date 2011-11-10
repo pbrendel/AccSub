@@ -57,6 +57,7 @@ typedef int Id;
 // static variables
 
 int Tests::testType = 0;
+int Tests::acyclicTestNumber = 0;
 std::string Tests::inputFilename = "tests.txt";
 int Tests::simplicesCount = 1000;
 int Tests::simplicesDim = 3;
@@ -67,12 +68,13 @@ std::string Tests::logFilename = "tests_log.xml";
 std::ofstream Tests::log;
 int Tests::useAlgebraic = 0;
 int Tests::useCoreduction = 0;
-int Tests::useAcyclicSubset = 0;
-int Tests::useAcyclicSubsetSpanningTree = 1;
-int Tests::useAcyclicSubsetOnline = 0;
-int Tests::useAcyclicSubsetParallel = 0;
-int Tests::acyclicTestNumber = 0;
-IncidenceGraph::ParallelParams Tests::parallelParams(1000);
+int Tests::useAcc = 0;
+int Tests::useAccIG = 1;
+int Tests::useAccST = 0;
+int Tests::useParallel = 0;
+int Tests::packsCount = 6;
+int Tests::parallelAccSubAlgorithm = 0;
+int Tests::prepareData = 1;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -83,37 +85,38 @@ void Tests::PrintHelp()
     std::cout<<"    -i nazwa_pliku - pojedynczy zbior wczytany z okreslonego pliku"<<std::endl;
     std::cout<<"    -l nazwa_pliku - lista zbiorow okreslonych w podanym pliku"<<std::endl;
     std::cout<<"  opcje:"<<std::endl;
+    std::cout<<"    -test numer - numer testu acyklicznosci:"<<std::endl;
+    std::cout<<"                    - 0 - tablice"<<std::endl;
+    std::cout<<"                    - 1 - test CoDim 1"<<std::endl;
+    std::cout<<"                  (def. "<<acyclicTestNumber<<")"<<std::endl;
     std::cout<<"    -verts vc - ilosc wierzcholkow z ktorych losujemy sympleksy"<<std::endl;
     std::cout<<"                (def. "<<vertsCount<<")"<<std::endl;
-    std::cout<<"    -test numer - numer testu acyklicznosci: 0 - tablice 1 - test CoDim 1"<<std::endl;
-    std::cout<<"                  (def. "<<acyclicTestNumber<<")"<<std::endl;
     std::cout<<"    -ss [0|1] - sortuj sympleksy przed rozpoczeciem obliczen"<<std::endl;
     std::cout<<"                (def. "<<sortSimplices<<")"<<std::endl;
     std::cout<<"    -sv [0|1] - sortuj wierzcholki w kazdym sympleksie"<<std::endl;
     std::cout<<"                (def. "<<sortVerts<<")"<<std::endl;
     std::cout<<"    -log nazwa_pliku - zmien nazwe pliku z logami"<<std::endl;
     std::cout<<"                (def. "<<logFilename<<")"<<std::endl;
-    std::cout<<"    -ps size - wielkosc paczki dla obliczen rownoleglych"<<std::endl;
-    std::cout<<"               (def. "<<parallelParams.packSize<<")"<<std::endl;
-    std::cout<<"    -pc count - ilosc paczek dla obliczen rownoleglych"<<std::endl;
-    std::cout<<"                jezeli == -1 to obliczana na podstawie rozmiaru paczki"<<std::endl;
-    std::cout<<"                (def. "<<parallelParams.packsCount<<")"<<std::endl;
-    std::cout<<"    -ppd [0|1] - przetworz dane przed podzialem na paczki"<<std::endl;
-    std::cout<<"                 (def. "<<parallelParams.prepareData<<")"<<std::endl;
-    std::cout<<"    -paso [0|1] - uzyj algorytmu online do obliczania podzadan"<<std::endl;
-    std::cout<<"                  (def. "<<parallelParams.useAcyclicSubsetOnlineAlgorithm<<")"<<std::endl;
     std::cout<<"    -use_alg [0|1] - wykonaj obliczenia bez zadnych redukcji"<<std::endl;
     std::cout<<"                     (def. "<<useAlgebraic<<")"<<std::endl;
     std::cout<<"    -use_cored [0|1] - wykonaj obliczenia dla koredukcji"<<std::endl;
     std::cout<<"                       (def. "<<useCoreduction<<")"<<std::endl;
-    std::cout<<"    -use_acsub [0|1] - wykonaj obliczenia dla podzbioru acyklicznego"<<std::endl;
-    std::cout<<"                       (def. "<<useAcyclicSubset<<")"<<std::endl;
-    std::cout<<"    -use_acsub_o [0|1] - wykonaj obliczenia dla podzbioru acyklicznego (wersja online)"<<std::endl;
-    std::cout<<"                         (def. "<<useAcyclicSubsetOnline<<")"<<std::endl;
-    std::cout<<"    -use_acsub_st [0|1] - wykonaj obliczenia dla podzbioru acyklicznego (wersja z drzewem rozpinajacym)"<<std::endl;
-    std::cout<<"                         (def. "<<useAcyclicSubsetSpanningTree<<")"<<std::endl;
-    std::cout<<"    -use_acsub_p [0|1] - wykonaj rownolegle obliczenia dla podzbioru acyklicznego"<<std::endl;
-    std::cout<<"                         (def. "<<useAcyclicSubsetParallel<<")"<<std::endl;
+    std::cout<<"    -use_acc [0|1] - wykonaj obliczenia dla podzbioru acyklicznego uzywajac algorytmu Acc"<<std::endl;
+    std::cout<<"                       (def. "<<useAcc<<")"<<std::endl;
+    std::cout<<"    -use_accig [0|1] - wykonaj obliczenia dla podzbioru acyklicznegoo uzywajac algorytmu AccIG"<<std::endl;
+    std::cout<<"                         (def. "<<useAccIG<<")"<<std::endl;
+    std::cout<<"    -use_accst [0|1] - wykonaj obliczenia dla podzbioru acyklicznegoo uzywajac algorytmu AccST"<<std::endl;
+    std::cout<<"                         (def. "<<useAccST<<")"<<std::endl;
+    std::cout<<"    -parallel [0|1] pc alg pd - wykonaj rownolegle obliczenia dla podzbioru acyklicznego"<<std::endl;
+    std::cout<<"                                   - pc - ilosc paczek dla obliczen rownoleglych"<<std::endl;
+    std::cout<<"                                     (def. "<<packsCount<<")"<<std::endl;
+    std::cout<<"                                   - alg - numer algorytmu obliczajacego podzbior acykliczny"<<std::endl;
+    std::cout<<"                                       - 0 - Acc"<<std::endl;
+    std::cout<<"                                       - 1 - AccIG"<<std::endl;
+    std::cout<<"                                       - 2 - AccST"<<std::endl;
+    std::cout<<"                                     (def. "<<parallelAccSubAlgorithm<<")"<<std::endl;
+    std::cout<<"                                   - pd [0|1] - przetworz dane przed podzialem na paczki"<<std::endl;
+    std::cout<<"                                     (def. "<<prepareData<<")"<<std::endl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -146,21 +149,24 @@ void Tests::ProcessArguments(int argc, char **argv)
             inputFilename = argv[index + 1];
             index += 2;
         }
+        else if (CHECK_ARG_NEXT("-test")) { acyclicTestNumber = atoi(argv[index + 1]); index += 2; }
         else if (CHECK_ARG_NEXT("-verts")) { vertsCount = atoi(argv[index + 1]); index += 2; }
         else if (CHECK_ARG_NEXT("-ss")) { sortSimplices = atoi(argv[index + 1]); index += 2; }
         else if (CHECK_ARG_NEXT("-sv")) { sortVerts = atoi(argv[index + 1]); index += 2; }
-        else if (CHECK_ARG_NEXT("-ps")) { parallelParams.packSize = atoi(argv[index + 1]); index += 2; }
-        else if (CHECK_ARG_NEXT("-pc")) { parallelParams.packsCount = atoi(argv[index + 1]); index += 2; }
-        else if (CHECK_ARG_NEXT("-ppd")) { parallelParams.prepareData = atoi(argv[index + 1]); index += 2; }
-        else if (CHECK_ARG_NEXT("-paso")) { parallelParams.useAcyclicSubsetOnlineAlgorithm = atoi(argv[index + 1]); index += 2; }
-        else if (CHECK_ARG_NEXT("-log")) { logFilename = argv[index + 1]; index+= 2; }
-        else if (CHECK_ARG_NEXT("-use_alg")) { useAlgebraic = atoi(argv[index + 1]); index+= 2; }
-        else if (CHECK_ARG_NEXT("-use_cored")) { useCoreduction = atoi(argv[index + 1]); index+= 2; }
-        else if (CHECK_ARG_NEXT("-use_acsub")) { useAcyclicSubset = atoi(argv[index + 1]); index+= 2; }
-        else if (CHECK_ARG_NEXT("-use_acsub_o")) { useAcyclicSubsetOnline = atoi(argv[index + 1]); index+= 2; }
-        else if (CHECK_ARG_NEXT("-use_acsub_st")) { useAcyclicSubsetSpanningTree = atoi(argv[index + 1]); index+= 2; }
-        else if (CHECK_ARG_NEXT("-use_acsub_p")) { useAcyclicSubsetParallel = atoi(argv[index + 1]); index+= 2; }
-        else if (CHECK_ARG_NEXT("-test")) { acyclicTestNumber = atoi(argv[index + 1]); index += 2; }
+        else if (CHECK_ARG_NEXT("-log")) { logFilename = argv[index + 1]; index += 2; }
+        else if (CHECK_ARG_NEXT("-use_alg")) { useAlgebraic = atoi(argv[index + 1]); index += 2; }
+        else if (CHECK_ARG_NEXT("-use_cored")) { useCoreduction = atoi(argv[index + 1]); index += 2; }
+        else if (CHECK_ARG_NEXT("-use_acc")) { useAcc = atoi(argv[index + 1]); index += 2; }
+        else if (CHECK_ARG_NEXT("-use_accig")) { useAccIG = atoi(argv[index + 1]); index += 2; }
+        else if (CHECK_ARG_NEXT("-use_accst")) { useAccST = atoi(argv[index + 1]); index += 2; }
+        else if (CHECK_ARG_NEXT("-use_parallel"))
+        {
+            useParallel = atoi(argv[index + 1]);
+            packsCount = atoi(argv[index + 2]);
+            parallelAccSubAlgorithm = atoi(argv[index + 3]);
+            prepareData = atoi(argv[index + 4]);
+            index += 5;
+        }
         else
         {
             std::cout<<"nieznany parametr: "<<argv[index]<<std::endl;
@@ -175,7 +181,7 @@ void Tests::ProcessArguments(int argc, char **argv)
 
 bool Tests::IsAcyclicSubsetReduction(ReductionType rt)
 {
-    return (rt == RT_AcyclicSubset || rt == RT_AcyclicSubsetOnline || rt == RT_AcyclicSubsetSpanningTree || rt == RT_AcyclicSubsetParallel);
+    return (rt == RT_Acc || rt == RT_AccIG || rt == RT_AccST || rt == RT_AccParallel);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -213,21 +219,21 @@ void Tests::Test(SimplexList &simplexList, ReductionType reductionType)
 
     AcyclicTest<IncidenceGraph::IntersectionFlags> *test = IsAcyclicSubsetReduction(reductionType) ? AcyclicTest<IncidenceGraph::IntersectionFlags>::Create(acyclicTestNumber, GetDimension(simplexList)) : 0;
     IncidenceGraph *ig = 0;
-    if (reductionType == RT_AcyclicSubset)
+    if (reductionType == RT_Acc)
     {
         ig = IncidenceGraph::CreateAndCalculateAcyclicSubset(simplexList, test);
     }
-    else if (reductionType == RT_AcyclicSubsetOnline)
+    else if (reductionType == RT_AccIG)
     {
         ig = IncidenceGraph::CreateAndCalculateAcyclicSubsetOnline(simplexList, test);
     }
-    else if (reductionType == RT_AcyclicSubsetSpanningTree)
+    else if (reductionType == RT_AccST)
     {
         ig = IncidenceGraph::CreateAndCalculateAcyclicSubsetSpanningTree(simplexList, test);
     }
-    else if (reductionType == RT_AcyclicSubsetParallel)
+    else if (reductionType == RT_AccParallel)
     {
-        ig = IncidenceGraph::CreateAndCalculateAcyclicSubsetParallel(simplexList, parallelParams, test, true);
+        ig = IncidenceGraph::CreateAndCalculateAcyclicSubsetParallel(simplexList, packsCount, (AccSubAlgorithm)parallelAccSubAlgorithm, test);
     }
     else // (reductionType == RT_Coreduction || reductionType == RT_None)
     {
@@ -291,37 +297,37 @@ void Tests::TestAndCompare(SimplexList &simplexList)
         cout<<std::endl;
     }
 
-    if (useAcyclicSubset)
+    if (useAcc)
     {
-        std::cout<<"acyclic subset:"<<std::endl;
-        log<<"\t\t<acyclic_subset>"<<std::endl<<std::endl;
-        Test(simplexList, RT_AcyclicSubset);
-        log<<"\t\t</acyclic_subset>"<<std::endl<<std::endl;
+        std::cout<<"Acc:"<<std::endl;
+        log<<"\t\t<acc>"<<std::endl<<std::endl;
+        Test(simplexList, RT_Acc);
+        log<<"\t\t</acc>"<<std::endl<<std::endl;
     }
 
-    if (useAcyclicSubsetOnline)
+    if (useAccIG)
     {
-        std::cout<<std::endl<<"acyclic subset online:"<<std::endl;
-        log<<"\t\t<acyclic_subset_online>"<<std::endl<<std::endl;
-        Test(simplexList, RT_AcyclicSubsetOnline);
-        log<<"\t\t</acyclic_subset_online>"<<std::endl<<std::endl;
+        std::cout<<std::endl<<"AccIG:"<<std::endl;
+        log<<"\t\t<accig>"<<std::endl<<std::endl;
+        Test(simplexList, RT_AccIG);
+        log<<"\t\t</accig>"<<std::endl<<std::endl;
         cout<<std::endl<<std::endl;
     }
 
-    if (useAcyclicSubsetSpanningTree)
+    if (useAccST)
     {
-        std::cout<<std::endl<<"acyclic subset with spanning tree:"<<std::endl;
-        log<<"\t\t<acyclic_subset_with_spanning_tree>"<<std::endl<<std::endl;
-        Test(simplexList, RT_AcyclicSubsetSpanningTree);
-        log<<"\t\t</acyclic_subset_with_spanning_tree>"<<std::endl<<std::endl;
+        std::cout<<std::endl<<"AccST:"<<std::endl;
+        log<<"\t\t<accst>"<<std::endl<<std::endl;
+        Test(simplexList, RT_AccST);
+        log<<"\t\t</accst>"<<std::endl<<std::endl;
     }
 
-    if (useAcyclicSubsetParallel)
+    if (useParallel)
     {
-        std::cout<<std::endl<<"acyclic subset parallel:"<<std::endl;
-        log<<"\t\t<acyclic_subset_parallel>"<<std::endl<<std::endl;
-        Test(simplexList, RT_AcyclicSubsetParallel);
-        log<<"\t\t</acyclic_subset_parallel>"<<std::endl<<std::endl;
+        std::cout<<std::endl<<"parallel:"<<std::endl;
+        log<<"\t\t<parallel>"<<std::endl<<std::endl;
+        Test(simplexList, RT_AccParallel);
+        log<<"\t\t</parallel>"<<std::endl<<std::endl;
     }
 }
 
