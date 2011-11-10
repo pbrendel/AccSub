@@ -1,8 +1,11 @@
-#include "IncidenceGraph.h"
-#include "IncidenceGraphUtils.h"
-#include "ParallelGraph.h"
+/*
+ * File:   IncidenceGraph.cpp
+ * Author: Piotr Brendel
+ */
 
-#define USE_HELPERS
+#include "IncidenceGraph.h"
+#include "IncidenceGraphAlgorithms.h"
+#include "PartitionGraph.h"
 
 #ifdef USE_HELPERS
 #include "../Helpers/Utils.h"
@@ -59,231 +62,6 @@ IncidenceGraph::~IncidenceGraph()
 
 ////////////////////////////////////////////////////////////////////////////////
 
-IncidenceGraph *IncidenceGraph::Create(SimplexList& simplexList)
-{
-#ifdef USE_HELPERS
-    Timer::Update();
-    IncidenceGraph *ig = new IncidenceGraph(simplexList);
-    ig->CreateGraph();
-    Timer::Update("incidence graph created");
-    MemoryInfo::Print();
-#else
-    IncidenceGraph *ig = new IncidenceGraph(simplexList);
-    ig->CreateGraph(false);
-#endif
-    return ig;
-}
-
-IncidenceGraph *IncidenceGraph::CreateWithBorder(SimplexList& simplexList, const VertsSet& borderVerts)
-{
-#ifdef USE_HELPERS
-    Timer::Update();
-    IncidenceGraph *ig = new IncidenceGraph(simplexList);
-    ig->borderVerts = borderVerts;
-    ig->CreateGraphWithBorder();
-    Timer::Update("incidence graph created");
-    MemoryInfo::Print();
-#else
-    IncidenceGraph *ig = new IncidenceGraph(simplexList);
-    ig->borderVerts = borderVerts;
-    ig->CreateGraphWithBorder();
-#endif
-    return ig;
-}
-
-IncidenceGraph *IncidenceGraph::CreateWithBorder(SimplexPtrList& simplexPtrList, const VertsSet& borderVerts)
-{
-#ifdef USE_HELPERS
-    Timer::Update();
-    IncidenceGraph *ig = new IncidenceGraph(simplexPtrList);
-    ig->borderVerts = borderVerts;
-    ig->CreateGraphWithBorder();
-    Timer::Update("incidence graph created");
-    MemoryInfo::Print();
-#else
-    IncidenceGraph *ig = new IncidenceGraph(simplexPtrList);
-    ig->borderVerts = borderVerts;
-    ig->CreateGraphWithBorder();
-#endif
-    return ig;
-}
-
-IncidenceGraph *IncidenceGraph::CreateAndCalculateAcyclicSubset(SimplexList& simplexList, AcyclicTest<IntersectionFlags>* test)
-{
-#ifdef USE_HELPERS
-    Timer::Update();
-    IncidenceGraph *ig = new IncidenceGraph(simplexList);
-    ig->CreateGraph();
-    Timer::Update("incidence graph created");
-    MemoryInfo::Print();
-    ig->CalculateAcyclicSubset(test);
-    Timer::Update("acyclic subset calculated");
-    MemoryInfo::Print();
-#else
-    IncidenceGraph *ig = new IncidenceGraph(simplexList);
-    ig->CreateGraph();
-    ig->CalculateAcyclicSubset(test);
-#endif
-    return ig;
-}
-
-IncidenceGraph *IncidenceGraph::CreateAndCalculateAcyclicSubsetWithBorder(SimplexList& simplexList, const VertsSet &borderVerts, AcyclicTest<IntersectionFlags>* test)
-{
-#ifdef USE_HELPERS
-    Timer::Update();
-    IncidenceGraph *ig = new IncidenceGraph(simplexList);
-    ig->borderVerts = borderVerts;
-    ig->CreateGraphWithBorder();
-    Timer::Update("incidence graph created");
-    MemoryInfo::Print();
-    ig->CalculateAcyclicSubsetWithBorder(test);
-    Timer::Update("acyclic subset calculated");
-    MemoryInfo::Print();
-#else
-    IncidenceGraph *ig = new IncidenceGraph(simplexList, params);
-    ig->borderVerts = borderVerts;
-    ig->CreateGraphWithBorder();
-    ig->CalculateAcyclicSubsetWithBorder(test);
-#endif
-    return ig;
-}
-
-IncidenceGraph *IncidenceGraph::CreateAndCalculateAcyclicSubsetOnline(SimplexList& simplexList, AcyclicTest<IntersectionFlags>* test)
-{
-#ifdef USE_HELPERS
-    Timer::Update();
-    IncidenceGraph *ig = new IncidenceGraph(simplexList);
-    ig->CreateGraphAndCalculateAcyclicSubset(test);
-    Timer::Update("incidence graph created and acyclic subset calculated");
-    MemoryInfo::Print();
-#else
-    IncidenceGraph *ig = new IncidenceGraph(simplexList);
-    ig->CreateGraphAndCalculateAcyclicSubset(test);
-#endif
-    return ig;
-}
-
-IncidenceGraph *IncidenceGraph::CreateAndCalculateAcyclicSubsetOnlineWithBorder(SimplexList& simplexList, const VertsSet &borderVerts, AcyclicTest<IntersectionFlags>* test)
-{
-#ifdef USE_HELPERS
-    Timer::Update();
-    IncidenceGraph *ig = new IncidenceGraph(simplexList);
-    ig->borderVerts = borderVerts;
-    ig->CreateGraphAndCalculateAcyclicSubsetWithBorder(test);
-    Timer::Update("incidence graph created and acyclic subset calculated");
-    MemoryInfo::Print();
-#else
-    IncidenceGraph *ig = new IncidenceGraph(simplexList);
-    ig->borderVerts = borderVerts;
-    ig->CreateGraphAndCalculateAcyclicSubsetWithBorder(test);
-#endif
-    return ig;
-}
-
-IncidenceGraph *IncidenceGraph::CreateAndCalculateAcyclicSubsetOnlineWithBorder(SimplexPtrList& simplexPtrList, const VertsSet &borderVerts, AcyclicTest<IntersectionFlags>* test)
-{
-#ifdef USE_HELPERS
-    Timer::Update();
-    IncidenceGraph *ig = new IncidenceGraph(simplexPtrList);
-    ig->borderVerts = borderVerts;
-    ig->CreateGraphAndCalculateAcyclicSubsetWithBorder(test);
-    Timer::Update("incidence graph created and acyclic subset calculated");
-    MemoryInfo::Print();
-#else
-    IncidenceGraph *ig = new IncidenceGraph(simplexPtrList);
-    ig->borderVerts = borderVerts;
-    ig->CreateGraphAndCalculateAcyclicSubsetWithBorder(test);
-#endif
-    return ig;
-}
-
-IncidenceGraph *IncidenceGraph::CreateAndCalculateAcyclicSubsetSpanningTree(SimplexList& simplexList, AcyclicTest<IntersectionFlags>* test)
-{
-#ifdef USE_HELPERS
-    Timer::Update();
-    IncidenceGraph *ig = new IncidenceGraph(simplexList);
-    ig->CreateGraph();
-    Timer::Update("incidence graph created");
-    MemoryInfo::Print();
-    ig->CalculateAcyclicSubsetSpanningTree(test);
-    Timer::Update("acyclic subset calculated");
-    MemoryInfo::Print();
-#else
-    IncidenceGraph *ig = new IncidenceGraph(simplexList);
-    ig->CreateGraph();
-    ig->CalculateAcyclicSubsetSpanningTree(test);
-#endif
-    return ig;
-}
-
-IncidenceGraph *IncidenceGraph::CreateAndCalculateAcyclicSubsetSpanningTree(SimplexPtrList& simplexPtrList, AcyclicTest<IntersectionFlags>* test)
-{
-#ifdef USE_HELPERS
-    Timer::Update();
-    IncidenceGraph *ig = new IncidenceGraph(simplexPtrList);
-    ig->CreateGraph();
-    Timer::Update("incidence graph created");
-    MemoryInfo::Print();
-    ig->CalculateAcyclicSubsetSpanningTree(test);
-    Timer::Update("acyclic subset calculated");
-    MemoryInfo::Print();
-#else
-    IncidenceGraph *ig = new IncidenceGraph(simplexList);
-    ig->CreateGraph();
-    ig->CalculateAcyclicSubsetSpanningTree(test);
-#endif
-    return ig;
-}
-
-IncidenceGraph *IncidenceGraph::CreateAndCalculateAcyclicSubsetSpanningTreeWithBorder(SimplexList& simplexList, const VertsSet &borderVerts, AcyclicTest<IntersectionFlags>* test)
-{
-#ifdef USE_HELPERS
-    Timer::Update();
-    IncidenceGraph *ig = new IncidenceGraph(simplexList);
-    ig->borderVerts = borderVerts;
-    ig->CreateGraphWithBorder();
-    Timer::Update("incidence graph created");
-    MemoryInfo::Print();
-    ig->CalculateAcyclicSubsetSpanningTreeWithBorder(test);
-    Timer::Update("acyclic subset calculated");
-    MemoryInfo::Print();
-#else
-    IncidenceGraph *ig = new IncidenceGraph(simplexList);
-    ig->borderVerts = borderVerts;
-    ig->CreateGraphWithBorder();
-    ig->CalculateAcyclicSubsetSpanningTreeWithBorder(test);
-#endif
-    return ig;
-}
-
-IncidenceGraph *IncidenceGraph::CreateAndCalculateAcyclicSubsetSpanningTreeWithBorder(SimplexPtrList& simplexPtrList, const VertsSet &borderVerts, AcyclicTest<IntersectionFlags>* test)
-{
-#ifdef USE_HELPERS
-    Timer::Update();
-    IncidenceGraph *ig = new IncidenceGraph(simplexPtrList);
-    ig->borderVerts = borderVerts;
-    ig->CreateGraphWithBorder();
-    Timer::Update("incidence graph created");
-    MemoryInfo::Print();
-    ig->CalculateAcyclicSubsetSpanningTreeWithBorder(test);
-    Timer::Update("acyclic subset calculated");
-    MemoryInfo::Print();
-#else
-    IncidenceGraph *ig = new IncidenceGraph(simplexList);
-    ig->borderVerts = borderVerts;
-    ig->CreateGraphWithBorder();
-    ig->CalculateAcyclicSubsetSpanningTreeWithBorder(test);
-#endif
-    return ig;
-}
-
-IncidenceGraph *IncidenceGraph::CreateAndCalculateAcyclicSubsetParallel(SimplexList& simplexList, int packsCount, AccSubAlgorithm accSubAlgorithm, AcyclicTest<IntersectionFlags>* test)
-{
-    ParallelGraph *pg = new ParallelGraph(simplexList, packsCount, accSubAlgorithm, test);
-    IncidenceGraph *ig = pg->GetIncidenceGraph();
-    delete pg;
-    return ig;
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -972,6 +750,8 @@ void IncidenceGraph::UpdateConnectedComponents()
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
 void IncidenceGraph::RemoveAcyclicSubset()
 {
     Nodes newNodes;
@@ -1004,6 +784,8 @@ void IncidenceGraph::RemoveAcyclicSubset()
     nodes = newNodes;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
 void IncidenceGraph::AssignNewIndices(bool checkAcyclicity)
 {
     int index = 0;
@@ -1023,6 +805,48 @@ void IncidenceGraph::AssignNewIndices(bool checkAcyclicity)
         for (Nodes::iterator i = nodes.begin(); i != nodes.end(); i++)
         {
             (*i)->newIndex = index++;
+        }
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+void IncidenceGraph::RemoveConnectedComponentAndCopySimplexList(ConnectedComponent cc, SimplexPtrList& simplexPtrList)
+{
+    // przelatujemy cala spojna skladowa i zaznaczamy elementy do niej nalezace
+    // dodatkowo dodajemy do listy sympleksy z tej spojnej skladowej
+    std::queue<IncidenceGraph::Node *> L;
+    L.push(cc);
+    cc->IsHelperFlag2(true);
+    simplexPtrList.push_back(cc->simplex);
+    while (!L.empty())
+    {
+        IncidenceGraph::Node *n = L.front();
+        L.pop();
+        for (Edges::iterator edge = n->edges.begin(); edge != n->edges.end(); edge++)
+        {
+            if (edge->node->IsHelperFlag2())
+            {
+                continue;
+            }
+            edge->node->IsHelperFlag2(true);
+            L.push(edge->node);
+            simplexPtrList.push_back(edge->node->simplex);
+        }
+    }
+
+    // na koncu wszystkie zaznaczone node'y usuwamy z grafu
+    Nodes::iterator i = nodes.begin();
+    while (i != nodes.end())
+    {
+        if ((*i)->IsHelperFlag2())
+        {
+            delete *i;
+            i = nodes.erase(i);
+        }
+        else
+        {
+            i++;
         }
     }
 }
@@ -1062,12 +886,14 @@ void IncidenceGraph::CalculateNodesIntersection(Node *a, Node *b, Edge &edgeAtoB
         edgeAtoB.intersectionFlags = subconfigurationsFlags[a->Normalize(edgeAtoB.intersection)];
         b->SetIntersection(a, edgeAtoB.intersection);
     }
+#ifdef USE_HELPERS    
     else
     {
         Debug::Print(std::cout, a->simplex);
         Debug::Print(std::cout, b->simplex);
         assert(false);
     }
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -4,13 +4,12 @@
  */
 
 #include "MPITest.h"
-#include "../AcyclicSubset/ParallelGraph.h"
-#include "../Helpers/Utils.h"
+#include "Utils.h"
+#include "../AcyclicSubset/PartitionGraph.h"
 
 #ifdef USE_MPI
 #include <mpi.h>
 #include "../AcyclicSubset/MPIData.h"
-#include "Tests.h"
 #endif
 
 #include <assert.h>

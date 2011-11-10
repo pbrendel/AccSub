@@ -1,4 +1,9 @@
-#include "IncidenceGraphUtils.h"
+/*
+ * File:   IncidenceGraphAlgorithms.cpp
+ * Author: Piotr Brendel
+ */
+
+#include "IncidenceGraphAlgorithms.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -14,14 +19,14 @@ void CreateConfigurationsFlags(int maxDim, std::map<Simplex, IncidenceGraph::Int
 
     // potem generujemy wszystkie podsympleksy posortowane rosnaco wymiarami
     // w kolejnosci leksykograficznej
-    SimplexList subsimplices;
-    GenerateProperFaces(s, subsimplices);
+    SimplexList faces;
+    GenerateProperFaces(s, faces);
     // dodajemy caly sympleks
-    subsimplices.push_back(s);
+    faces.push_back(s);
 
     // i tworzymy hasha z flagami konfiguracji
     IncidenceGraph::IntersectionFlags flags = 1;
-    for (SimplexList::iterator i = subsimplices.begin(); i != subsimplices.end(); i++)
+    for (SimplexList::iterator i = faces.begin(); i != faces.end(); i++)
     {
         // ustawiamy flage konfiguracji
         configurationsFlags[(*i)] = flags;

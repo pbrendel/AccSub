@@ -18,6 +18,8 @@ typedef std::vector<SimplexPtr> SimplexPtrList;
 
 int GetDimension(const SimplexList &simplexList);
 int GetDimension(const SimplexPtrList &simplexPtrList);
+int GetConstantSimplexSize(const SimplexList &simplexList);
+int GetConstantSimplexSize(const SimplexPtrList &simplexPtrList);
 
 bool GetIntersection(Simplex *a, Simplex *b, Simplex &intersection);
 Vertex GetVertexFromIntersection(Simplex *a, Simplex *b);

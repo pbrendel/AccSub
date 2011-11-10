@@ -1,3 +1,8 @@
+/*
+ * File:   Utils.cpp
+ * Author: Piotr Brendel
+ */
+
 #include "Utils.h"
 
 #include <iostream>
@@ -162,22 +167,6 @@ void Debug::PrintIntersectionFromFlags(std::ostream &str, std::map<Simplex, Inci
             str<<"flags: "<<std::dec<<i->second<<std::endl<<std::endl;
         }
     }
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// Log
-
-std::fstream Log::stream;
-
-void Log::Init(const char *filename)
-{
-    stream.open(filename, std::ios::out);
-    stream<<" --- Log started --- "<<std::endl;
-}
-
-void Log::Close()
-{
-    stream<<" --- Log finished --- "<<std::endl;        
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -1,3 +1,8 @@
+/*
+ * File:   Tests.h
+ * Author: Piotr Brendel
+ */
+
 #ifndef TESTS_H
 #define	TESTS_H
 
@@ -31,19 +36,12 @@ public:
     static void GenerateData(SimplexList &);
 
     static void Test(SimplexList &, ReductionType);
-    static void Test(IncidenceGraph *, ReductionType, float);
     static void TestAndCompare(SimplexList &);
 
     static void StandardTest();
     static void TestFromList();
 
     static void TestFromCommandLine(int, char **);
-
-    static int GetBetti(SimplexList &, int);
-    static float ComputeHomology(OutputGraph *, bool);
-
-    static void OpenLog();
-    static void CloseLog();
 
 private:
     
@@ -61,8 +59,6 @@ private:
     static int              vertsCount;
     static int              sortSimplices;
     static int              sortVerts;
-    static std::string      logFilename;
-    static std::ofstream    log;
     static int              useAlgebraic;
     static int              useCoreduction;
     static int              useAcc;

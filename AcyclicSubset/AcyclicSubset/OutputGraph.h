@@ -1,3 +1,8 @@
+/*
+ * File:   OutputGraph.h
+ * Author: Piotr Brendel
+ */
+
 #ifndef OUTPUTGRAPH_H
 #define OUTPUTGRAPH_H
 

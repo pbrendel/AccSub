@@ -1,6 +1,14 @@
+/*
+ * File:   OutputGraph.cpp
+ * Author: Piotr Brendel
+ */
+
 #include "OutputGraph.h"
 #include "IncidenceGraph.h"
+
+#ifdef USE_HELPERS
 #include "../Helpers/Utils.h"
+#endif
 
 #include <queue>
 
@@ -188,9 +196,7 @@ OutputGraph::Node *OutputGraph::GenerateNode(IncidenceGraph::Node *baseNode, Sim
     IncidenceGraph::IntersectionFlags flags = incidenceGraph->configurationsFlags[baseNode->Normalize(baseSimplex)];
     if (flags == 0)
     {
-        Debug::Print(Log::stream, baseSimplex);
         baseSimplex = baseNode->Normalize(baseSimplex);
-        Debug::Print(Log::stream, baseSimplex);
     }
     assert(flags != 0);
 

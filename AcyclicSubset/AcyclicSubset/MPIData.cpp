@@ -1,7 +1,12 @@
-#include <set>
+/*
+ * File:   MPIData.cpp
+ * Author: Piotr Brendel
+ */
 
 #include "MPIData.h"
 #include "IncidenceGraph.h"
+
+#include <set>
 
 using namespace MPIData;
 
@@ -13,7 +18,7 @@ SimplexData::SimplexData(int* buffer, int size)
     this->size = size;
 }
 
-SimplexData::SimplexData(const SimplexPtrList& simplexPtrList, const std::set<Vertex>& borderVerts, int acyclicityTestNumber, int accSubAlgorithm, int simplexSize)
+SimplexData::SimplexData(const SimplexPtrList& simplexPtrList, const std::set<Vertex>& borderVerts, int accSubAlgorithm, int acyclicityTestNumber, int simplexSize)
 {
     size = CalcBufferSize(simplexPtrList, borderVerts.size(), simplexSize);
     buffer = new int[size];
@@ -26,10 +31,10 @@ SimplexData::SimplexData(const SimplexPtrList& simplexPtrList, const std::set<Ve
     buffer[index++] = simplexSize;
     // ilosc sympleksow
     buffer[index++] = simplexPtrList.size();
-    // numer testu acyklicznosci
-    buffer[index++] = acyclicityTestNumber;
     // typ algorytmu obliczania podzbioru acyklicznego
     buffer[index++] = accSubAlgorithm;
+    // numer testu acyklicznosci
+    buffer[index++] = acyclicityTestNumber;
     // dane sympleksow
     if (simplexSize == 0)
     {
@@ -87,13 +92,13 @@ int SimplexData::CalcBufferSize(const SimplexPtrList& simplexPtrList, int border
     return size + borderVertsCount + 5;
 }
 
-void SimplexData::GetSimplexData(SimplexList& simplexList, std::set<Vertex>& borderVerts, int &acyclicityTestNumber, int &accSubAlgorithm)
+void SimplexData::GetSimplexData(SimplexList& simplexList, std::set<Vertex>& borderVerts, int &accSubAlgorithm, int &acyclicityTestNumber)
 {
     int index = 0;
     int simplexSize = buffer[index++];
     int simplexCount = buffer[index++];
-    acyclicityTestNumber = buffer[index++];
     accSubAlgorithm = buffer[index++];
+    acyclicityTestNumber = buffer[index++];
     if (simplexSize == 0)
     {
         for (int i = 0; i < simplexCount; i++)

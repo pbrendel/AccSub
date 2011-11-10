@@ -1,3 +1,8 @@
+/*
+ * File:   Simplex.cpp
+ * Author: Piotr Brendel
+ */
+
 #include "Simplex.h"
 #include <algorithm>
 
@@ -11,6 +16,32 @@ int GetDimension(const SimplexList &simplexList)
 int GetDimension(const SimplexPtrList &simplexPtrList)
 {
     return (simplexPtrList.size() > 0) ? (int)simplexPtrList[0]->size() - 1 : 0;
+}
+
+int GetConstantSimplexSize(const SimplexList &simplexList)
+{
+   int size = simplexList[0].size();
+   for (SimplexList::const_iterator i = simplexList.begin(); i != simplexList.end(); i++)
+   {
+       if ((*i).size() != size)
+       {
+           return 0;
+       }
+   }
+   return size;
+}
+
+int GetConstantSimplexSize(const SimplexPtrList &simplexPtrList)
+{
+   int size = simplexPtrList[0]->size();
+   for (SimplexPtrList::const_iterator i = simplexPtrList.begin(); i != simplexPtrList.end(); i++)
+   {
+       if ((*i)->size() != size)
+       {
+           return 0;
+       }
+   }
+   return size;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

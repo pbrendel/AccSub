@@ -1,3 +1,8 @@
+/*
+ * File:   main.cpp
+ * Author: Piotr Brendel
+ */
+
 #include "Helpers/Utils.h"
 #include "Helpers/Tests.h"
 #include "Helpers/MPITest.h"

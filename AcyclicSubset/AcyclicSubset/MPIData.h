@@ -1,9 +1,13 @@
+/*
+ * File:   MPIData.h
+ * Author: Piotr Brendel
+ */
+
 #ifndef MPIDATA_H
 #define	MPIDATA_H
 
 #include "Simplex.h"
 #include "IncidenceGraph.h"
-//#include "IncidenceGraph.h"
 
 #include <set>
 
@@ -23,13 +27,13 @@ class SimplexData
 public:
 
     SimplexData(int *buffer, int size);
-    SimplexData(const SimplexPtrList &simplexPtrList, const std::set<Vertex> &borderVerts, int acyclicityTestNumber, int accSubAlgorithm, int simplexSize);
+    SimplexData(const SimplexPtrList &simplexPtrList, const std::set<Vertex> &borderVerts, int accSubAlgorithm, int acyclicityTestNumber, int simplexSize);
     ~SimplexData();
     
     int *GetBuffer() const { return buffer; }
     int GetSize() const { return size; }
 
-    void GetSimplexData(SimplexList &simplexList, std::set<Vertex> &borderVerts, int &acyclicityTestNumber, int &accSubAlgorithm);
+    void GetSimplexData(SimplexList &simplexList, std::set<Vertex> &borderVerts, int &accSubAlgorithm, int &acyclicityTestNumber);
 
 };
 

@@ -4,8 +4,11 @@
  */
 
 #include "ComputationsParallelMPI.h"
-#include "../Helpers/Utils.h"
 #include <map>
+
+#ifdef USE_HELPERS
+#include "../Helpers/Utils.h"
+#endif
 
 #ifdef USE_MPI
 #include <mpi.h>
@@ -20,7 +23,7 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void ComputationsParallelMPI::Compute(ParallelGraph::DataNodes &nodes, AccSubAlgorithm accSubAlgorithm, AcyclicTest<IncidenceGraph::IntersectionFlags> *acyclicTest)
+void ComputationsParallelMPI::Compute(PartitionGraph::Nodes &nodes, AccSubAlgorithm accSubAlgorithm, AcyclicTest<IncidenceGraph::IntersectionFlags> *acyclicTest)
 {
 #ifdef USE_MPI
     int nodesCount = nodes.size();
@@ -81,14 +84,14 @@ void ComputationsParallelMPI::Compute(ParallelGraph::DataNodes &nodes, AccSubAlg
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void ComputationsParallelMPI::SendMPISimplexData(ParallelGraph::DataNode *node, AccSubAlgorithm accSubAlgorithm, int processRank)
+void ComputationsParallelMPI::SendMPISimplexData(PartitionGraph::Node *node, AccSubAlgorithm accSubAlgorithm, int processRank)
 {
 #ifdef USE_MPI
 #ifdef DEBUG_MPI
         std::cout<<"process 0 ";
         Timer::TimeStamp("packing data");
 #endif
-    MPIData::SimplexData *data = new MPIData::SimplexData(node->simplexPtrList, node->borderVerts, accSubAlgorithm, node->GetConstantSimplexSize());
+    MPIData::SimplexData *data = new MPIData::SimplexData(node->simplexPtrList, node->borderVerts, accSubAlgorithm, test->GetID(), node->GetConstantSimplexSize());
     int dataSize = data->GetSize();
     MPI_Send(&dataSize, 1, MPI_INT, processRank, MPI_MY_DATASIZE_TAG, MPI_COMM_WORLD);
 #ifdef DEBUG_MPI
@@ -100,7 +103,7 @@ void ComputationsParallelMPI::SendMPISimplexData(ParallelGraph::DataNode *node, 
 #endif
 }
 
-void ComputationsParallelMPI::SetMPIIncidenceGraphData(ParallelGraph::DataNode *node, int* buffer, int size)
+void ComputationsParallelMPI::SetMPIIncidenceGraphData(PartitionGraph::Node *node, int* buffer, int size)
 {
 #ifdef USE_MPI
     MPIData::IncidenceGraphData *data = new MPIData::IncidenceGraphData(buffer, size);
@@ -155,9 +158,9 @@ void ComputationsParallelMPI::Slave(int processRank)
         MPIData::SimplexData *data = new MPIData::SimplexData(buffer, dataSize);
         SimplexList simplexList;
         std::set<Vertex> borderVerts;
-        int acyclicTestNumber;
         int accSubAlgorithm;
-        data->GetSimplexData(simplexList, borderVerts, acyclicTestNumber, accSubAlgorithm, 0);
+        int acyclicTestNumber;
+        data->GetSimplexData(simplexList, borderVerts, accSubAlgorithm, acyclicTestNumber);
 #ifdef DEBUG_MPI
         std::cout<<"process "<<processRank<<" ";
         Timer::TimeStamp("upacked data");

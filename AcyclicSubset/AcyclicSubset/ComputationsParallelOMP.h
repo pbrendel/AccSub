@@ -6,14 +6,14 @@
 #ifndef COMPUTATIONSPARALLELOMP_H
 #define	COMPUTATIONSPARALLELOMP_H
 
-#include "ParallelGraph.h"
+#include "PartitionGraph.h"
 
 class ComputationsParallelOMP
 {
 
 public:
 
-    static void Compute(ParallelGraph::DataNodes &nodes, AccSubAlgorithm accSubAlgorithm, AcyclicTest<IncidenceGraph::IntersectionFlags> *test);
+    static void Compute(PartitionGraph::Nodes &nodes, AccSubAlgorithm accSubAlgorithm, AcyclicTest<IncidenceGraph::IntersectionFlags> *test);
 
 };
 

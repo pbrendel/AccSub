@@ -1,3 +1,8 @@
+/*
+ * File:   IntersectionFlagsSet.h
+ * Author: Piotr Brendel
+ */
+
 #ifndef INTERSECTIONFLAGSSET_H
 #define	INTERSECTIONFLAGSSET_H
 

@@ -1,5 +1,10 @@
-#ifndef INCIDENCEGRAPHUTILS_H
-#define INCIDENCEGRAPHUTILS_H
+/*
+ * File:   IncidenceGraphAlgorithms.h
+ * Author: Piotr Brendel
+ */
+
+#ifndef INCIDENCEGRAPHALGORITHMS_H
+#define INCIDENCEGRAPHALGORITHMS_H
 
 #include "IncidenceGraph.h"
 #include <algorithm>
@@ -260,5 +265,5 @@ void GetIntersectionOfUnsortedSetAndSortedVector(std::set<Vertex> &intersection,
 
 ////////////////////////////////////////////////////////////////////////////////
 
-#endif /* INCIDENCEGRAPHUTILS_H */
+#endif /* INCIDENCEGRAPHALGORITHMS_H */
 

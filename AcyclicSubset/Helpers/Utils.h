@@ -1,3 +1,8 @@
+/*
+ * File:   Utils.h
+ * Author: Piotr Brendel
+ */
+
 #ifndef UTILS_H
 #define UTILS_H
 
@@ -35,22 +40,6 @@ public:
     static void Print(std::ostream &str, std::map<Simplex, IncidenceGraph::IntersectionFlags> &flags);
     static void Print(std::ostream &str, OutputGraph &graph);
     static void PrintIntersectionFromFlags(std::ostream &str, std::map<Simplex, IncidenceGraph::IntersectionFlags> &flagsMap, IncidenceGraph::IntersectionFlags flags);
-};
-
-////////////////////////////////////////////////////////////////////////////////
-// Log
-
-#define USE_LOG
-
-class Log
-{
-  
-public: 
-    
-    static std::fstream stream;    
-    static void Init(const char *);
-    static void Close();
-            
 };
 
 ////////////////////////////////////////////////////////////////////////////////

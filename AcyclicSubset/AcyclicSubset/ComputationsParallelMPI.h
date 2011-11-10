@@ -6,17 +6,17 @@
 #ifndef COMPUTATIONSPARALLELMPI_H
 #define	COMPUTATIONSPARALLELMPI_H
 
-#include "ParallelGraph.h"
+#include "PartitionGraph.h"
 
 class ComputationsParallelMPI
 {
 
-    static void SendMPISimplexData(ParallelGraph::DataNode *node, AccSubAlgorithm accSubAlgorithm, int processRank);
-    static void SetMPIIncidenceGraphData(ParallelGraph::DataNode *node, int *buffer, int size);
+    static void SendMPISimplexData(PartitionGraph::Node *node, AccSubAlgorithm accSubAlgorithm, int processRank);
+    static void SetMPIIncidenceGraphData(PartitionGraph::Node *node, int *buffer, int size);
 
 public:
 
-    static void Compute(ParallelGraph::DataNodes &nodes, AccSubAlgorithm accSubAlgorithm, AcyclicTest<IncidenceGraph::IntersectionFlags> *test);
+    static void Compute(PartitionGraph::Nodes &nodes, AccSubAlgorithm accSubAlgorithm, AcyclicTest<IncidenceGraph::IntersectionFlags> *test);
 
     static void Slave(int processRank);
 

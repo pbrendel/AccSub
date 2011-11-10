@@ -1,9 +1,17 @@
+/*
+ * File:   IncidenceGraphNode.cpp
+ * Author: Piotr Brendel
+ */
+
 #include "IncidenceGraph.h"
 #include "OutputGraph.h"
-#include "../Helpers/Utils.h"
 
 #include <map>
 #include <algorithm>
+
+#ifdef USE_HELPERS
+#include "../Helpers/Utils.h"
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 

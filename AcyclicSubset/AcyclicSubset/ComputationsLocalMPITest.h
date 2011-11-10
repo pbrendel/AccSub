@@ -6,14 +6,14 @@
 #ifndef COMPUTATIONSLOCALMPITEST_H
 #define	COMPUTATIONSLOCALMPITEST_H
 
-#include "ParallelGraph.h"
+#include "PartitionGraph.h"
 
 class ComputationsLocalMPITest
 {
 
 public:
 
-    static void Compute(ParallelGraph::DataNodes &nodes, AccSubAlgorithm accSubAlgorithm, AcyclicTest<IncidenceGraph::IntersectionFlags> *test);
+    static void Compute(PartitionGraph::Nodes &nodes, AccSubAlgorithm accSubAlgorithm, AcyclicTest<IncidenceGraph::IntersectionFlags> *test);
 
 };
 

@@ -1,3 +1,8 @@
+/*
+ * File:   IntersectionFlagsBitSet.hpp
+ * Author: Piotr Brendel
+ */
+
 #ifndef INTERSECTIONFLAGSBITSET_HPP
 #define	INTERSECTIONFLAGSBITSET_HPP
 

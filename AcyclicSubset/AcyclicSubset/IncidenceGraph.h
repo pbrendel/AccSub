@@ -1,3 +1,8 @@
+/*
+ * File:   IncidenceGraph.h
+ * Author: Piotr Brendel
+ */
+
 #ifndef INCIDENCEGRAPH_H
 #define INCIDENCEGRAPH_H
 
@@ -148,20 +153,6 @@ public:
     std::map<Simplex, IntersectionFlags> configurationsFlags;
     std::map<Simplex, IntersectionFlags> subconfigurationsFlags;
 
-    static IncidenceGraph *Create(SimplexList &simplexList);
-    static IncidenceGraph *CreateWithBorder(SimplexList &simplexList, const VertsSet &borderVerts);
-    static IncidenceGraph *CreateWithBorder(SimplexPtrList &simplexPtrList, const VertsSet &borderVerts);
-    static IncidenceGraph *CreateAndCalculateAcyclicSubset(SimplexList &simplexList, AcyclicTest<IntersectionFlags> *test);
-    static IncidenceGraph *CreateAndCalculateAcyclicSubsetWithBorder(SimplexList &simplexList, const VertsSet &borderVerts, AcyclicTest<IntersectionFlags> *test);
-    static IncidenceGraph *CreateAndCalculateAcyclicSubsetOnline(SimplexList &simplexList, AcyclicTest<IntersectionFlags> *test);
-    static IncidenceGraph *CreateAndCalculateAcyclicSubsetOnlineWithBorder(SimplexList &simplexList, const VertsSet &borderVerts, AcyclicTest<IntersectionFlags> *test);
-    static IncidenceGraph *CreateAndCalculateAcyclicSubsetOnlineWithBorder(SimplexPtrList &simplexPtrList, const VertsSet &borderVerts, AcyclicTest<IntersectionFlags> *test);
-    static IncidenceGraph *CreateAndCalculateAcyclicSubsetSpanningTree(SimplexList &simplexList, AcyclicTest<IntersectionFlags> *test);
-    static IncidenceGraph *CreateAndCalculateAcyclicSubsetSpanningTree(SimplexPtrList &simplexPtrList, AcyclicTest<IntersectionFlags> *test);
-    static IncidenceGraph *CreateAndCalculateAcyclicSubsetSpanningTreeWithBorder(SimplexList &simplexList, const VertsSet &borderVerts, AcyclicTest<IntersectionFlags> *test);
-    static IncidenceGraph *CreateAndCalculateAcyclicSubsetSpanningTreeWithBorder(SimplexPtrList &simplexPtrList, const VertsSet &borderVerts, AcyclicTest<IntersectionFlags> *test);
-    static IncidenceGraph *CreateAndCalculateAcyclicSubsetParallel(SimplexList &simplexList, int packsCount, AccSubAlgorithm accSubAlgorithm, AcyclicTest<IntersectionFlags> *test);
-
     ~IncidenceGraph();
 
     void CalculateAcyclicSubset(AcyclicTest<IntersectionFlags> *test);
@@ -172,6 +163,7 @@ public:
     void UpdateConnectedComponents();
     void RemoveAcyclicSubset();
     void AssignNewIndices(bool checkAcyclicity);
+    void RemoveConnectedComponentAndCopySimplexList(ConnectedComponent cc, SimplexPtrList &simplexPtrList);
     
     void GetAcyclicSubset(SimplexList &simplexList);
     int GetAcyclicSubsetSize();
@@ -185,7 +177,7 @@ public:
     std::vector<VertsSet> connectedComponentsBorders;
     std::vector<int> connectedComponentsAcyclicSubsetSize;
 
-private:
+public:
 
     void CreateGraph();
     void CreateGraphWithBorder();

@@ -1,3 +1,8 @@
+/*
+ * File:   AcyclicTest.hpp
+ * Author: Piotr Brendel
+ */
+
 #ifndef ACYCLICTEST_HPP
 #define ACYCLICTEST_HPP
 
