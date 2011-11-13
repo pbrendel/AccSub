@@ -36,29 +36,10 @@ public:
     typedef unsigned int IntersectionFlags;
     // typedef IntersectionFlagsBitSet<4> IntersectionFlags;
 
-    struct Node;
+    static int counter;
 
-    struct Edge
-    {
-        Node                *node;
-        Simplex             intersection;
-        IntersectionFlags   intersectionFlags;
-
-        Edge(Node *node)
-        {
-            this->node = node;
-            this->intersectionFlags = 0;
-        }
-
-        bool IntersectionCalculated()
-        {
-            return (intersectionFlags != 0);
-        }
-    };
-
-    typedef std::vector<Edge> Edges;
-    // listy dzialaja szybciej dla algorytmu AccIG
-    // typedef std::list<Edge> Edges;
+    struct Edge;
+    typedef std::vector<Edge *> Edges;
 
     struct Node
     {
@@ -87,14 +68,15 @@ public:
         
         Node(IncidenceGraph *graph, Simplex *simplex, int index);
 
-        void AddNeighbour(Node *neighbour);
+        void AddEdge(Edge *edge);
         bool HasNeighbour(Node *neighbour);
         void RemoveNeighbour(Node *neighbour);
-        void SetIntersection(Node *neighbour, const Simplex &intersection);
+        IntersectionFlags GetNormalizedIntersectionFlags(const Simplex &intersection);
         bool HasAcyclicIntersection(AcyclicTest<IntersectionFlags> *test);
         Vertex FindAcyclicVertex();
         Vertex FindAcyclicVertexNotEqual(Vertex vertex);
         Vertex FindAcyclicVertexNotIn(const VertsSet &vertsSet);
+        void UpdateAcyclicIntersectionWithSimplex(const Simplex &simplex);
         void UpdateAcyclicIntersectionWithVertex(Vertex v);
         void UpdateAcyclicIntersectionWithEdge(Vertex v1, Vertex v2);
         void UpdateNeighboursAcyclicIntersection();
@@ -124,6 +106,7 @@ public:
         int GetAcyclicSubsetID() const { return acyclicSubsetID; }
         void SetAcyclicSubsetID(int id) { acyclicSubsetID = id; }
         void SetParentGraph(IncidenceGraph *g) { graph = g; }
+        Flags GetPropertiesFlags() { return propertiesFlags; }
 
     private:
 
@@ -136,6 +119,53 @@ public:
 
     };
 
+    struct Edge
+    {
+        Node                *nodeA;
+        Node                *nodeB;
+        Simplex             intersection;
+        IntersectionFlags   intersectionFlagsA;
+        IntersectionFlags   intersectionFlagsB;
+
+        Edge(Node *na, Node *nb)
+        {
+            IncidenceGraph::counter++;
+            this->nodeA = na;
+            this->nodeB = nb;
+            this->intersectionFlagsA = 0;
+            this->intersectionFlagsB = 0;
+        }
+
+        Node *GetNeighbour(Node *node)
+        {
+            return (node == nodeA) ? nodeB : nodeA;
+        }
+
+        bool Contains(Node *node)
+        {
+            return (node == nodeA || node == nodeB);
+        }
+
+        bool IntersectionCalculated()
+        {
+            return (intersectionFlagsA != 0 && intersectionFlagsB != 0);
+        }
+
+        void CalculateIntersection()
+        {
+            if (GetIntersection(nodeA->simplex, nodeB->simplex, intersection))
+            {
+                intersectionFlagsA = nodeA->GetNormalizedIntersectionFlags(intersection);
+                intersectionFlagsB = nodeB->GetNormalizedIntersectionFlags(intersection);
+            }
+        }
+
+        IntersectionFlags GetIntersectionFlags(Node *node)
+        {
+            return (node == nodeA) ? intersectionFlagsA : intersectionFlagsB;
+        }
+    };
+
 public:
 
     IncidenceGraph(int dim);
@@ -145,10 +175,11 @@ public:
 public:
 
     typedef std::vector<Node *> Nodes;
+   //typedef std::list<Edge *> Edges;
     typedef std::list<Node *> Path;
     typedef Node *ConnectedComponent;
     typedef std::vector<ConnectedComponent> ConnectedComponents;
-    typedef std::map<Vertex, Nodes> VertexNodesMap;
+    typedef std::map<Vertex, Nodes> VertexHash;
 
     std::map<Simplex, IntersectionFlags> configurationsFlags;
     std::map<Simplex, IntersectionFlags> subconfigurationsFlags;
@@ -168,10 +199,9 @@ public:
     void GetAcyclicSubset(SimplexList &simplexList);
     int GetAcyclicSubsetSize();
     
-    void CalculateNodesIntersection(Node *a, Node *b, Edge &edgeAtoB);
-    
     int dim;
     Nodes nodes;
+    Edges edges;
     ConnectedComponents connectedComponents;
     VertsSet borderVerts;
     std::vector<VertsSet> connectedComponentsBorders;
@@ -179,14 +209,16 @@ public:
 
 public:
 
+    void CreateVertexHash(VertexHash &H);
+
     void CreateGraph();
     void CreateGraphWithBorder();
     
     void CreateGraphAndCalculateAcyclicSubset(AcyclicTest<IntersectionFlags> *test);
     void CreateGraphAndCalculateAcyclicSubsetWithBorder(AcyclicTest<IntersectionFlags> *test);
-    void AddNeighboursToListAndUpdateAcyclicIntersection(Node *node, VertexNodesMap &H, std::queue<Node *> &L);
-    void AddNodeToGraphAndNeighboursToList(Node *node, VertexNodesMap &H, std::queue<Node *> &L);
-    void RemoveNodeFromGraph(Node *node);
+    void EnqNeighboursAndUpdateAcyclicIntersection(Node *node, VertexHash &H, std::queue<Node *> &L);
+    void AddToGraphAndEnqNeighbours(Node *node, VertexHash &H, std::queue<Node *> &L);
+    void RemoveAcyclicEdges();
 
     void CreateAcyclicSpanningTree(std::vector<Path> &paths, int maxAcyclicSubsetID);
     

@@ -6,14 +6,14 @@
 #include "IncidenceGraphHelpers.h"
 #include "PartitionGraph.h"
 
-#ifdef USE_HELPERS
+#ifdef ACCSUB_TRACE
 #include "../Helpers/Utils.h"
 #endif
 ////////////////////////////////////////////////////////////////////////////////
 
 IncidenceGraph *IncidenceGraphHelpers::Create(SimplexList& simplexList)
 {
-#ifdef USE_HELPERS
+#ifdef ACCSUB_TRACE
     Timer::Update();
     IncidenceGraph *ig = new IncidenceGraph(simplexList);
     ig->CreateGraph();
@@ -28,7 +28,7 @@ IncidenceGraph *IncidenceGraphHelpers::Create(SimplexList& simplexList)
 
 IncidenceGraph *IncidenceGraphHelpers::CreateWithBorder(SimplexList& simplexList, const VertsSet& borderVerts)
 {
-#ifdef USE_HELPERS
+#ifdef ACCSUB_TRACE
     Timer::Update();
     IncidenceGraph *ig = new IncidenceGraph(simplexList);
     ig->borderVerts = borderVerts;
@@ -45,7 +45,7 @@ IncidenceGraph *IncidenceGraphHelpers::CreateWithBorder(SimplexList& simplexList
 
 IncidenceGraph *IncidenceGraphHelpers::CreateWithBorder(SimplexPtrList& simplexPtrList, const VertsSet& borderVerts)
 {
-#ifdef USE_HELPERS
+#ifdef ACCSUB_TRACE
     Timer::Update();
     IncidenceGraph *ig = new IncidenceGraph(simplexPtrList);
     ig->borderVerts = borderVerts;
@@ -64,7 +64,7 @@ IncidenceGraph *IncidenceGraphHelpers::CreateWithBorder(SimplexPtrList& simplexP
 
 IncidenceGraph *IncidenceGraphHelpers::CreateAndCalculateAcyclicSubset(SimplexList& simplexList, AcyclicTest<IncidenceGraph::IntersectionFlags>* test)
 {
-#ifdef USE_HELPERS
+#ifdef ACCSUB_TRACE
     Timer::Update();
     IncidenceGraph *ig = new IncidenceGraph(simplexList);
     ig->CreateGraph();
@@ -83,7 +83,7 @@ IncidenceGraph *IncidenceGraphHelpers::CreateAndCalculateAcyclicSubset(SimplexLi
 
 IncidenceGraph *IncidenceGraphHelpers::CreateAndCalculateAcyclicSubsetWithBorder(SimplexList& simplexList, const VertsSet &borderVerts, AcyclicTest<IncidenceGraph::IntersectionFlags>* test)
 {
-#ifdef USE_HELPERS
+#ifdef ACCSUB_TRACE
     Timer::Update();
     IncidenceGraph *ig = new IncidenceGraph(simplexList);
     ig->borderVerts = borderVerts;
@@ -106,7 +106,7 @@ IncidenceGraph *IncidenceGraphHelpers::CreateAndCalculateAcyclicSubsetWithBorder
 
 IncidenceGraph *IncidenceGraphHelpers::CreateAndCalculateAcyclicSubsetOnline(SimplexList& simplexList, AcyclicTest<IncidenceGraph::IntersectionFlags>* test)
 {
-#ifdef USE_HELPERS
+#ifdef ACCSUB_TRACE
     Timer::Update();
     IncidenceGraph *ig = new IncidenceGraph(simplexList);
     ig->CreateGraphAndCalculateAcyclicSubset(test);
@@ -121,7 +121,7 @@ IncidenceGraph *IncidenceGraphHelpers::CreateAndCalculateAcyclicSubsetOnline(Sim
 
 IncidenceGraph *IncidenceGraphHelpers::CreateAndCalculateAcyclicSubsetOnlineWithBorder(SimplexList& simplexList, const VertsSet &borderVerts, AcyclicTest<IncidenceGraph::IntersectionFlags>* test)
 {
-#ifdef USE_HELPERS
+#ifdef ACCSUB_TRACE
     Timer::Update();
     IncidenceGraph *ig = new IncidenceGraph(simplexList);
     ig->borderVerts = borderVerts;
@@ -138,7 +138,7 @@ IncidenceGraph *IncidenceGraphHelpers::CreateAndCalculateAcyclicSubsetOnlineWith
 
 IncidenceGraph *IncidenceGraphHelpers::CreateAndCalculateAcyclicSubsetOnlineWithBorder(SimplexPtrList& simplexPtrList, const VertsSet &borderVerts, AcyclicTest<IncidenceGraph::IntersectionFlags>* test)
 {
-#ifdef USE_HELPERS
+#ifdef ACCSUB_TRACE
     Timer::Update();
     IncidenceGraph *ig = new IncidenceGraph(simplexPtrList);
     ig->borderVerts = borderVerts;
@@ -157,7 +157,7 @@ IncidenceGraph *IncidenceGraphHelpers::CreateAndCalculateAcyclicSubsetOnlineWith
 
 IncidenceGraph *IncidenceGraphHelpers::CreateAndCalculateAcyclicSubsetSpanningTree(SimplexList& simplexList, AcyclicTest<IncidenceGraph::IntersectionFlags>* test)
 {
-#ifdef USE_HELPERS
+#ifdef ACCSUB_TRACE
     Timer::Update();
     IncidenceGraph *ig = new IncidenceGraph(simplexList);
     ig->CreateGraph();
@@ -176,7 +176,7 @@ IncidenceGraph *IncidenceGraphHelpers::CreateAndCalculateAcyclicSubsetSpanningTr
 
 IncidenceGraph *IncidenceGraphHelpers::CreateAndCalculateAcyclicSubsetSpanningTree(SimplexPtrList& simplexPtrList, AcyclicTest<IncidenceGraph::IntersectionFlags>* test)
 {
-#ifdef USE_HELPERS
+#ifdef ACCSUB_TRACE
     Timer::Update();
     IncidenceGraph *ig = new IncidenceGraph(simplexPtrList);
     ig->CreateGraph();
@@ -195,7 +195,7 @@ IncidenceGraph *IncidenceGraphHelpers::CreateAndCalculateAcyclicSubsetSpanningTr
 
 IncidenceGraph *IncidenceGraphHelpers::CreateAndCalculateAcyclicSubsetSpanningTreeWithBorder(SimplexList& simplexList, const VertsSet &borderVerts, AcyclicTest<IncidenceGraph::IntersectionFlags>* test)
 {
-#ifdef USE_HELPERS
+#ifdef ACCSUB_TRACE
     Timer::Update();
     IncidenceGraph *ig = new IncidenceGraph(simplexList);
     ig->borderVerts = borderVerts;
@@ -216,7 +216,7 @@ IncidenceGraph *IncidenceGraphHelpers::CreateAndCalculateAcyclicSubsetSpanningTr
 
 IncidenceGraph *IncidenceGraphHelpers::CreateAndCalculateAcyclicSubsetSpanningTreeWithBorder(SimplexPtrList& simplexPtrList, const VertsSet &borderVerts, AcyclicTest<IncidenceGraph::IntersectionFlags>* test)
 {
-#ifdef USE_HELPERS
+#ifdef ACCSUB_TRACE
     Timer::Update();
     IncidenceGraph *ig = new IncidenceGraph(simplexPtrList);
     ig->borderVerts = borderVerts;

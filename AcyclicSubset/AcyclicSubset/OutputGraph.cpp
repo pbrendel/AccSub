@@ -6,7 +6,7 @@
 #include "OutputGraph.h"
 #include "IncidenceGraph.h"
 
-#ifdef USE_HELPERS
+#ifdef ACCSUB_TRACE
 #include "../Helpers/Utils.h"
 #endif
 
@@ -109,25 +109,26 @@ OutputGraph::OutputGraph(IncidenceGraph* ig)
             Nodes subnodes;
             for (IncidenceGraph::Edges::iterator edge = currentNode->edges.begin(); edge != currentNode->edges.end(); edge++)
             {
-                IncidenceGraph::Node *neighbour = edge->node;
+                IncidenceGraph::Node *neighbour = (*edge)->GetNeighbour(currentNode);
                 // jezeli jest acykliczny to znaczy, ze przeciecie napewno bylo
                 // wyliczone wczesniej, wiec aktualizujemy flagi przeciecia acyklicznego
                 if (!neighbour->IsAcyclic())
                 {
-                    if (!edge->IntersectionCalculated())
+                    if (!(*edge)->IntersectionCalculated())
                     {
-                        ig->CalculateNodesIntersection(currentNode, neighbour, *edge);
+                        (*edge)->CalculateIntersection();
                     }
                     // jezeli byl juz dodany do wyjscia
                     if (neighbour->IsAddedToOutput())
                     {
                         // jezeli przeciecie nie jest w zbiorze acyklicznym
-                        if ((edge->intersectionFlags & currentNode->GetAcyclicIntersectionFlags()) != edge->intersectionFlags)
+                        IncidenceGraph::IntersectionFlags intersectionFlags = (*edge)->GetIntersectionFlags(currentNode);
+                        if ((intersectionFlags & currentNode->GetAcyclicIntersectionFlags()) != intersectionFlags)
                         {
-                            Node *outputNode = ((Node *)neighbour->outputData)->FindNodeWithSimplex(edge->intersection);
+                            Node *outputNode = ((Node *)neighbour->outputData)->FindNodeWithSimplex((*edge)->intersection);
                             assert(outputNode != 0);
                             outputNode->GetSubnodes(subnodes);
-                            subnodesFlags |= edge->intersectionFlags;
+                            subnodesFlags |= intersectionFlags;
                         }
                     }
                     // wpp. dodajemy sasiada do listy

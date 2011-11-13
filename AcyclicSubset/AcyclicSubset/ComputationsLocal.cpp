@@ -6,7 +6,7 @@
 #include "ComputationsLocal.h"
 #include "IncidenceGraphHelpers.h"
 
-#ifdef USE_HELPERS
+#ifdef ACCSUB_TRACE
 #include "../Helpers/Utils.h"
 #endif
 
@@ -14,7 +14,7 @@
 
 void ComputationsLocal::Compute(PartitionGraph::Nodes &nodes, AccSubAlgorithm accSubAlgorithm, AcyclicTest<IncidenceGraph::IntersectionFlags> *test)
 {
-#ifdef USE_HELPERS
+#ifdef ACCSUB_TRACE
     Timer::TimeStamp("***** ComputationsLocal start");
     Timer::Time start = Timer::Now();
     if (accSubAlgorithm == ASA_AccIG)
@@ -29,11 +29,11 @@ void ComputationsLocal::Compute(PartitionGraph::Nodes &nodes, AccSubAlgorithm ac
     for (PartitionGraph::Nodes::iterator i = nodes.begin(); i != nodes.end(); i++)
     {
         CreateIncidenceGraph(*i, accSubAlgorithm, test);
-#ifdef USE_HELPERS
+#ifdef ACCSUB_TRACE
         Timer::TimeStamp("***** incidence graph calculated");
 #endif    
     }
-#ifdef USE_HELPERS
+#ifdef ACCSUB_TRACE
     Timer::TimeStamp("***** ComputationsLocal end");
     Timer::TimeFrom(start, "total parallel computations");
 #endif

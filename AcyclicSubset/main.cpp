@@ -16,18 +16,10 @@ int main(int argc, char *argv[])
 {               
     try
     {
-#ifdef USE_LOG
-        Log::Init("log.txt");
-#endif
-
 #ifdef USE_MPI
     MPITest::Test(argc, argv);
 #else
     Tests::TestFromCommandLine(argc, argv);
-#endif
-
-#ifdef USE_LOG
-        Log::Close();
 #endif
     }
     catch (std::string s)

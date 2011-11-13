@@ -8,7 +8,7 @@
 #include "MPIData.h"
 #include "IncidenceGraphHelpers.h"
 
-#ifdef USE_HELPERS
+#ifdef ACCSUB_TRACE
 #include "../Helpers/Utils.h"
 #endif
 
@@ -16,7 +16,7 @@
 
 void ComputationsLocalMPITest::Compute(PartitionGraph::Nodes &nodes, AccSubAlgorithm accSubAlgorithm, AcyclicTest<IncidenceGraph::IntersectionFlags> *test)
 {
-#ifdef USE_HELPERS
+#ifdef ACCSUB_TRACE
     Timer::TimeStamp("***** ComputationsLocalMPITest start");
     Timer::Time start = Timer::Now();
     if (accSubAlgorithm == ASA_AccIG)
@@ -62,11 +62,11 @@ void ComputationsLocalMPITest::Compute(PartitionGraph::Nodes &nodes, AccSubAlgor
         delete igData;
         delete simplexData;
 
-#ifdef USE_HELPERS
+#ifdef ACCSUB_TRACE
         Timer::TimeStamp("***** incidence graph calculated");
 #endif        
     }
-#ifdef USE_HELPERS
+#ifdef ACCSUB_TRACE
     Timer::TimeStamp("***** ComputationsLocalMPITest end");
     Timer::TimeFrom(start, "total parallel computations");
 #endif

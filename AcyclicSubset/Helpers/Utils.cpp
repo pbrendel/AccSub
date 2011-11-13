@@ -88,7 +88,7 @@ void Debug::Print(std::ostream &str, IncidenceGraph::Path &path)
     }
 }
 
-void Debug::Print(std::ostream &str, IncidenceGraph::VertexNodesMap &m)
+void Debug::Print(std::ostream &str, IncidenceGraph::VertexHash &m)
 {
 #ifdef DEBUG
     for (IncidenceGraph::VertexNodesMap::iterator i = m.begin(); i != m.end(); i++)

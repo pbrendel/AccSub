@@ -157,6 +157,7 @@ IncidenceGraphData::IncidenceGraphData(const IncidenceGraph* ig)
         }
     }
     buffer[index++] = nodesCount;
+    // wierzcholki grafu
     for (IncidenceGraph::Nodes::const_iterator node = ig->nodes.begin(); node != ig->nodes.end(); node++)
     {
          // nie zapisujemy sympleksow ze zbioru acyklicznego
@@ -171,35 +172,42 @@ IncidenceGraphData::IncidenceGraphData(const IncidenceGraph* ig)
         buffer[index++] = (*node)->index;
         buffer[index++] = (*node)->newIndex;
         buffer[index++] = (*node)->GetAcyclicIntersectionFlags();
-        // zaspiujemy tylko krawedzie do sympleksow nie bedacych w zbiorze
-        // acyklicznym
-        int edgesCount = 0;
-        for (IncidenceGraph::Edges::iterator edge = (*node)->edges.begin(); edge != (*node)->edges.end(); edge++)
+    }
+    // ilosc krawedzi grafu
+    int edgesCount = 0;
+    for (IncidenceGraph::Edges::const_iterator edge = ig->edges.begin(); edge != ig->edges.end(); edge++)
+    {
+        if (!(*edge)->nodeA->IsAcyclic() && !(*edge)->nodeB->IsAcyclic())
         {
-            if (!edge->node->IsAcyclic())
-            {
-                edgesCount++;
-            }
-        }
-        buffer[index++] = edgesCount;
-        for (IncidenceGraph::Edges::const_iterator edge = (*node)->edges.begin(); edge != (*node)->edges.end(); edge++)
-        {
-            if (!edge->node->IsAcyclic())
-            {
-                buffer[index++] = edge->node->newIndex;
-            }
+            edgesCount++;
         }
     }
+    buffer[index++] = edgesCount;
+    // krawedzie grafu
+    for (IncidenceGraph::Edges::const_iterator edge = ig->edges.begin(); edge != ig->edges.end(); edge++)
+    {
+        // nie zapisujemy krawedzi pomiedzy wierzcholkami
+        // ktore znajduja sie w zbiorze acyklicznym
+        if ((*edge)->nodeA->IsAcyclic() || (*edge)->nodeB->IsAcyclic())
+        {
+            continue;
+        }
+        buffer[index++] = (*edge)->nodeA->newIndex;
+        buffer[index++] = (*edge)->nodeB->newIndex;
+    }
+    // sympleksy brzegowe
     buffer[index++] = simplicesOnBorder.size();
     for (std::vector<int>::iterator i = simplicesOnBorder.begin(); i != simplicesOnBorder.end(); i++)
     {
         buffer[index++] = (*i);
     }
+    // spojne skladowe
     buffer[index++] = ig->connectedComponents.size();
     for (IncidenceGraph::ConnectedComponents::const_iterator i = ig->connectedComponents.begin(); i != ig->connectedComponents.end(); i++)
     {
         buffer[index++] = (*i)->newIndex;
     }
+    // wierzcholki brzegowe dla spojnych skladowych
     for (std::vector<VertsSet>::const_iterator i = ig->connectedComponentsBorders.begin(); i != ig->connectedComponentsBorders.end(); i++)
     {
         buffer[index++] = i->size();
@@ -208,6 +216,7 @@ IncidenceGraphData::IncidenceGraphData(const IncidenceGraph* ig)
             buffer[index++] = (*v);
         }
     }
+    // rozmiary podzbiorow acyklicznych w spojnych skladowych
     for (std::vector<int>::const_iterator i = ig->connectedComponentsAcyclicSubsetSize.begin(); i != ig->connectedComponentsAcyclicSubsetSize.end(); i++)
     {
         buffer[index++] = (*i);
@@ -236,21 +245,18 @@ int IncidenceGraphData::CalcBufferSize(const IncidenceGraph* ig)
         {
             size++;
         }
-        // zaspiujemy tylko krawedzie do sympleksow nie bedacych w zbiorze 
-        // acyklicznym
-        for (IncidenceGraph::Edges::iterator edge = (*node)->edges.begin(); edge != (*node)->edges.end(); edge++)
-        {
-            if (!edge->node->IsAcyclic())
-            {
-                size++;
-            }
-        }
         // 4 inty to:
         // - index
         // - newIndex
         // - acyclicIntersectionFlags
-        // - edgesCount
-        size += 4;
+        size += 3;
+    }
+    for (IncidenceGraph::Edges::const_iterator edge = ig->edges.begin(); edge != ig->edges.end(); edge++)
+    {
+        if (!(*edge)->nodeA->IsAcyclic() && !(*edge)->nodeB->IsAcyclic())
+        {
+            size += 2;
+        }
     }
     int connectedComponentsCount = ig->connectedComponents.size();
     for (std::vector<VertsSet>::const_iterator i = ig->connectedComponentsBorders.begin(); i != ig->connectedComponentsBorders.end(); i++)
@@ -261,13 +267,14 @@ int IncidenceGraphData::CalcBufferSize(const IncidenceGraph* ig)
     // dodatkowe inty to:
     // - wymiar
     // - ilosc wierzcholkow grafu
+    // - ilosc krawedzi grafu
     // - ilosc sympleksow na brzegu
     // - ilosc sympleksow w zbiorze acyklicznym
     // - ilosc skladowych spojnych
     // connectedComponentsCount mnozymy razy 2 bo bedziemy zapisywali
     // dla kazdej skladowej indeks jej reprezentanta i rozmiar podzbioru
     // acyklicznego
-    return size + connectedComponentsCount * 2 + 5;
+    return size + connectedComponentsCount * 2 + 6;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -275,41 +282,32 @@ int IncidenceGraphData::CalcBufferSize(const IncidenceGraph* ig)
 IncidenceGraph *IncidenceGraphData::GetIncidenceGraph(const SimplexPtrList &simplexPtrList)
 {
     int index = 0;
-    
+ 
     int dim = buffer[index++];
     IncidenceGraph *ig = new IncidenceGraph(dim);
 
     // tworzymy node'y
-    std::vector<std::vector<int> > edges;
     int nodesCount = buffer[index++];
     for (int i = 0; i < nodesCount; i++)
     {
         int ind = buffer[index++];
         int newIndex = buffer[index++];
         int acyclicIntersectionFlags = buffer[index++];
-        int edgesCount = buffer[index++];
         IncidenceGraph::Node *node = new IncidenceGraph::Node(ig, const_cast<Simplex *>(simplexPtrList.at(ind)), newIndex);
         node->UpdateAcyclicIntersectionFlags(acyclicIntersectionFlags, 0);
         ig->nodes.push_back(node);
-        std::vector<int> e;
-        for (int j = 0; j < edgesCount; j++)
-        {
-            e.push_back(buffer[index++]);
-        }
-        edges.push_back(e);
     }
-
     // tworzymy krawedzie
-    std::vector<std::vector<int> >::iterator e = edges.begin();
-    for (IncidenceGraph::Nodes::iterator node = ig->nodes.begin(); node != ig->nodes.end(); node++)
+    int edgesCount = buffer[index++];
+    for (int i = 0; i < edgesCount; i++)
     {
-        for (std::vector<int>::iterator i = e->begin(); i != e->end(); i++)
-        {
-            (*node)->AddNeighbour(ig->nodes.at(*i));
-        }
-        e++;
+        IncidenceGraph::Node *nodeA = ig->nodes[buffer[index++]];
+        IncidenceGraph::Node *nodeB = ig->nodes[buffer[index++]];
+        IncidenceGraph::Edge *edge = new IncidenceGraph::Edge(nodeA, nodeB);
+        ig->edges.push_back(edge);
+        nodeA->AddEdge(edge);
+        nodeB->AddEdge(edge);
     }
-
     // zaznaczamy sympleksy brzegu
     int simplicesOnBorderCount = buffer[index++];
     for (int i = 0; i < simplicesOnBorderCount; i++)
@@ -339,7 +337,6 @@ IncidenceGraph *IncidenceGraphData::GetIncidenceGraph(const SimplexPtrList &simp
     {
         ig->connectedComponentsAcyclicSubsetSize.push_back(buffer[index++]);
     }
-
     return ig;
 }
 

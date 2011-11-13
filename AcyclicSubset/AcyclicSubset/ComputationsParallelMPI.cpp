@@ -6,7 +6,7 @@
 #include "ComputationsParallelMPI.h"
 #include <map>
 
-#ifdef USE_HELPERS
+#ifdef ACCSUB_TRACE
 #include "../Helpers/Utils.h"
 #endif
 

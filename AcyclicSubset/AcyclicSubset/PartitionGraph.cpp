@@ -13,13 +13,13 @@
 
 #include <cmath> // ceil()
 
-#ifdef USE_HELPERS
+#ifdef ACCSUB_TRACE
 #include "../Helpers/Utils.h"
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void PartitionGraph::Node::CreateIntNodesMapWithBorderNodes()
+void PartitionGraph::Node::CreateVertexHashForBorderNodes()
 {
     if (H.size() > 0)
     {
@@ -47,28 +47,28 @@ PartitionGraph::PartitionGraph(SimplexList &simplexList, int packsCount, AccSubA
     this->accSubAlgorithm = accSubAlgorithm;
     this->acyclicTest = acyclicTest;
     int packSize = (int)ceil(float(simplexList.size()) / packsCount);
-#ifdef USE_HELPERS
+#ifdef ACCSUB_TRACE
     std::cout<<"pack size: "<<packSize<<std::endl;
 #endif
     PrepareDataBFS::Prepare(simplexList, packSize);
-#ifdef USE_HELPERS
+#ifdef ACCSUB_TRACE
     Timer::Update("preparing data");
 #endif
     DivideData(simplexList, packSize);
-#ifdef USE_HELPERS
+#ifdef ACCSUB_TRACE
     Timer::Update("dividing data");
 #endif
     CreateDataEdges();
-#ifdef USE_HELPERS
+#ifdef ACCSUB_TRACE
     Timer::Update("creating data connections");
 #endif
     CalculateIncidenceGraphs(nodes);
-#ifdef USE_HELPERS
+#ifdef ACCSUB_TRACE
     Timer::Update("creating incidence graphs");
 #endif
     AccSpanningTree *ast = new AccSpanningTree(this);
     CalculateIncidenceGraphs(isolatedNodes);
-#ifdef USE_HELPERS
+#ifdef ACCSUB_TRACE
     Timer::Update("creating isolated incidence graphs");
 #endif
     CombineGraphs();
@@ -101,11 +101,8 @@ void PartitionGraph::DivideData(SimplexList& simplexList, int packSize)
     Node *currentNode = new Node();
     int simplicesLeft = packSize;
     SimplexList::iterator it = simplexList.begin();
-
     while (it != simplexList.end())
     {
-        // tempSimplexList.push_back(*it);
-
         currentNode->simplexPtrList.push_back(&(*it));
         for (Simplex::const_iterator i = it->begin(); i != it->end(); i++)
         {
@@ -119,9 +116,6 @@ void PartitionGraph::DivideData(SimplexList& simplexList, int packSize)
             simplicesLeft = packSize;
         }
         it++;
-
-        // test!!!
-    //    if (tempSimplexList.size() > 27500) break;
     }
     if (currentNode->simplexPtrList.size() > 0)
     {
@@ -131,9 +125,6 @@ void PartitionGraph::DivideData(SimplexList& simplexList, int packSize)
     {
         delete currentNode;
     }
-
-     // std::cout<<"temp simplex list ("<<tempSimplexList.size()<<") homology:"<<std::endl;
-     // Tests::Test(tempSimplexList, RT_Coreduction);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -155,12 +146,6 @@ void PartitionGraph::CreateDataEdges()
             }
         }
     }
-
-//    for (DataNodes::iterator i = dataNodes.begin(); i != dataNodes.end(); i++)
-//    {
-//        DataNode *node = *i;
-//        std::cout<<"border verts: "<<node->borderVerts.size()<<" verts size: "<<node->verts.size()<<std::endl;
-//    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -178,8 +163,8 @@ void PartitionGraph::CombineGraphs()
     for (Edges::iterator edge = edges.begin(); edge != edges.end(); edge++)
     {
         IncidenceGraph::Nodes nodesA = (*edge)->nodeA->ig->nodes;
-        (*edge)->nodeB->CreateIntNodesMapWithBorderNodes();
-        IncidenceGraph::VertexNodesMap HB = (*edge)->nodeB->H;
+        (*edge)->nodeB->CreateVertexHashForBorderNodes();
+        IncidenceGraph::VertexHash HB = (*edge)->nodeB->H;
 
         for (IncidenceGraph::Nodes::iterator node = nodesA.begin(); node != nodesA.end(); node++)
         {
@@ -190,38 +175,40 @@ void PartitionGraph::CombineGraphs()
             for (Simplex::iterator v = (*node)->simplex->begin(); v != (*node)->simplex->end(); v++)
             {
                 IncidenceGraph::Nodes neighbours = HB[*v];
-                if (neighbours.size() == 0)
-                {
-                    continue;
-                }
                 for (IncidenceGraph::Nodes::iterator neighbour = neighbours.begin(); neighbour != neighbours.end(); neighbour++)
-                {                    
+                {
                     if (!(*node)->HasNeighbour(*neighbour))
                     {
-                        (*node)->AddNeighbour(*neighbour);
-                        (*neighbour)->AddNeighbour(*node);
+                        IncidenceGraph::Edge *edge = new IncidenceGraph::Edge(*node, *neighbour);
+                        incidenceGraph->edges.push_back(edge);
+                        (*node)->AddEdge(edge);
+                        (*neighbour)->AddEdge(edge);
                     }
                 }
             }
         }
     }
 
-#ifdef USE_HELPERS
+#ifdef ACCSUB_TRACE
     Timer::Update("connecting simplices on border");
 #endif
     
     // przenosimy wszystkie sympleksy do jednego grafu
     for (Nodes::iterator i = nodes.begin(); i != nodes.end(); i++)
     {
-         incidenceGraph->nodes.insert(incidenceGraph->nodes.end(), (*i)->ig->nodes.begin(), (*i)->ig->nodes.end());
+        incidenceGraph->nodes.insert(incidenceGraph->nodes.end(), (*i)->ig->nodes.begin(), (*i)->ig->nodes.end());
         (*i)->ig->nodes.clear();
+        incidenceGraph->edges.insert(incidenceGraph->edges.end(), (*i)->ig->edges.begin(), (*i)->ig->edges.end());
+        (*i)->ig->edges.clear();
     }
 
     // to samo ze spojnymi skladowymi z drugiej fazy obliczen
     for (Nodes::iterator i = isolatedNodes.begin(); i != isolatedNodes.end(); i++)
     {
-         incidenceGraph->nodes.insert(incidenceGraph->nodes.end(), (*i)->ig->nodes.begin(), (*i)->ig->nodes.end());
+        incidenceGraph->nodes.insert(incidenceGraph->nodes.end(), (*i)->ig->nodes.begin(), (*i)->ig->nodes.end());
         (*i)->ig->nodes.clear();
+        incidenceGraph->edges.insert(incidenceGraph->edges.end(), (*i)->ig->edges.begin(), (*i)->ig->edges.end());
+        (*i)->ig->edges.clear();
     }
 
     // przypisywanie nowego grafu do nodow
@@ -230,7 +217,7 @@ void PartitionGraph::CombineGraphs()
         (*i)->SetParentGraph(incidenceGraph);
     }
 
-#ifdef USE_HELPERS
+#ifdef ACCSUB_TRACE
     std::cout<<"total simplices after connecting graphs: "<<incidenceGraph->nodes.size()<<std::endl;
     std::cout<<"reduced acyclic subset size: "<<(initialSize - incidenceGraph->nodes.size())<<" ("<<((initialSize - incidenceGraph->nodes.size()) * 100 / initialSize)<<"%)"<<std::endl;
     Timer::Update("moving simplices to single incidence graph");

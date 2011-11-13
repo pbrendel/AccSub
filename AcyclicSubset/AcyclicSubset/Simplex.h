@@ -21,7 +21,7 @@ int GetDimension(const SimplexPtrList &simplexPtrList);
 int GetConstantSimplexSize(const SimplexList &simplexList);
 int GetConstantSimplexSize(const SimplexPtrList &simplexPtrList);
 
-bool GetIntersection(Simplex *a, Simplex *b, Simplex &intersection);
+bool GetIntersection(const Simplex *a, const Simplex *b, Simplex &intersection);
 Vertex GetVertexFromIntersection(Simplex *a, Simplex *b);
 Vertex GetVertexFromIntersectionNotEqual(Simplex *a, Simplex *b, Vertex vertex);
 Vertex GetVertexFromIntersectionNotIn(Simplex *a, Simplex *b, const VertsSet &vertsSet);

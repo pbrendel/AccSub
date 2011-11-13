@@ -9,7 +9,7 @@
 #include <map>
 #include <algorithm>
 
-#ifdef USE_HELPERS
+#ifdef ACCSUB_TRACE
 #include "../Helpers/Utils.h"
 #endif
 
@@ -33,19 +33,19 @@ IncidenceGraph::Node::Node(IncidenceGraph *graph, Simplex *simplex, int index)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void IncidenceGraph::Node::AddNeighbour(IncidenceGraph::Node *neighbour)
+void IncidenceGraph::Node::AddEdge(IncidenceGraph::Edge *edge)
 {
     // mozemy w ramach debugowania sprawdzic, czy krawedz nie zostala juz dodana
     // w rzeczywistosci taka sytuacja nie moze miec miejsca (sprawdzamy to
     // przed wywolaniem AddNeighbour)
-    edges.push_back(Edge(neighbour));
+    edges.push_back(edge);
 }
 
 bool IncidenceGraph::Node::HasNeighbour(IncidenceGraph::Node *neighbour)
 {
     for (Edges::iterator i = edges.begin(); i != edges.end(); i++)
     {
-        if (i->node == neighbour) return true;
+        if ((*i)->GetNeighbour(this) == neighbour) return true;
     }
     return false;
 }
@@ -54,7 +54,7 @@ void IncidenceGraph::Node::RemoveNeighbour(IncidenceGraph::Node *neighbour)
 {
     for (Edges::iterator i = edges.begin(); i != edges.end(); i++)
     {
-        if (i->node == neighbour)
+        if ((*i)->GetNeighbour(this) == neighbour)
         {
             edges.erase(i);
             return;
@@ -62,17 +62,9 @@ void IncidenceGraph::Node::RemoveNeighbour(IncidenceGraph::Node *neighbour)
     }
 }
 
-void IncidenceGraph::Node::SetIntersection(IncidenceGraph::Node *neighbour, const Simplex &intersection)
+IncidenceGraph::IntersectionFlags IncidenceGraph::Node::GetNormalizedIntersectionFlags(const Simplex &intersection)
 {
-    for (Edges::iterator i = edges.begin(); i != edges.end(); i++)
-    {
-        if (i->node == neighbour)
-        {
-            i->intersection = intersection;
-            i->intersectionFlags = graph->subconfigurationsFlags[Normalize(intersection)];
-            return;
-        }
-    }
+    return graph->subconfigurationsFlags[Normalize(intersection)];
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -138,24 +130,52 @@ Vertex IncidenceGraph::Node::FindAcyclicVertexNotIn(const VertsSet &vertsSet)
     return Vertex(-1);
 }
 
+void IncidenceGraph::Node::UpdateAcyclicIntersectionWithSimplex(const Simplex &simplex)
+{
+    for (Edges::iterator edge = edges.begin(); edge != edges.end(); edge++)
+    {
+        if ((*edge)->GetNeighbour(this)->IsAcyclic())
+        {
+            continue;
+        }
+        if (!(*edge)->IntersectionCalculated())
+        {
+            (*edge)->CalculateIntersection();
+        }
+        // obliczamy czesc wspolna (przeciecie) krawedzi i przeciecia z sasiadem
+        Simplex s;
+        GetIntersection(&(*edge)->intersection, &simplex, s);
+        // jezeli przeciecie to jest niepuste (maja wspolne punkty)
+        // to aktualizujemy jego acyclic flags
+        if (s.size() > 0)
+        {
+            Node *neighbour = (*edge)->GetNeighbour(this);
+            s = neighbour->Normalize(s);
+            neighbour->UpdateAcyclicIntersectionFlags(graph->subconfigurationsFlags[s], graph->configurationsFlags[s]);
+        }
+    }
+    acyclicIntersectionFlags |= graph->subconfigurationsFlags[Normalize(simplex)];
+}
+
 void IncidenceGraph::Node::UpdateAcyclicIntersectionWithVertex(Vertex v)
 {
     Simplex s(1);
     s[0] = v;
     for (Edges::iterator edge = edges.begin(); edge != edges.end(); edge++)
     {
-        if (edge->node->IsAcyclic())
+        if ((*edge)->GetNeighbour(this)->IsAcyclic())
         {
             continue;
         }
-        if (!edge->IntersectionCalculated())
+        if (!(*edge)->IntersectionCalculated())
         {
-            graph->CalculateNodesIntersection(this, edge->node, *edge);
+            (*edge)->CalculateIntersection();
         }
-        if (ContainsVertex(&edge->intersection, v))
+        if (ContainsVertex(&(*edge)->intersection, v))
         {
-            Simplex s1 = edge->node->Normalize(s);
-            edge->node->UpdateAcyclicIntersectionFlags(graph->subconfigurationsFlags[s1], graph->configurationsFlags[s1]);
+            Node *neighbour = (*edge)->GetNeighbour(this);
+            Simplex s1 = neighbour->Normalize(s);
+            neighbour->UpdateAcyclicIntersectionFlags(graph->subconfigurationsFlags[s1], graph->configurationsFlags[s1]);
         }
     }
     acyclicIntersectionFlags |= graph->subconfigurationsFlags[Normalize(s)];
@@ -163,8 +183,9 @@ void IncidenceGraph::Node::UpdateAcyclicIntersectionWithVertex(Vertex v)
 
 void IncidenceGraph::Node::UpdateAcyclicIntersectionWithEdge(Vertex v1, Vertex v2)
 {
+    // todo!!!
+    // Simplex(v1, v2)
     assert (v1 != v2);
-
     Simplex s(2);
     if (v1 < v2)
     {
@@ -176,28 +197,7 @@ void IncidenceGraph::Node::UpdateAcyclicIntersectionWithEdge(Vertex v1, Vertex v
         s[0] = v2;
         s[1] = v1;
     }
-    for (Edges::iterator edge = edges.begin(); edge != edges.end(); edge++)
-    {
-        if (edge->node->IsAcyclic())
-        {
-            continue;
-        }
-        if (!edge->IntersectionCalculated())
-        {
-            graph->CalculateNodesIntersection(this, edge->node, *edge);
-        }
-        // obliczamy czesc wspolna (przeciecie) krawedzi i przeciecia z sasiadem
-        Simplex s1;
-        GetIntersection(&edge->intersection, &s, s1);
-        // jezeli przeciecie to jest niepuste (maja wspolne punkty)
-        // to aktualizujemy jego acyclic flags
-        if (s1.size() > 0)
-        {
-            s1 = edge->node->Normalize(s1);
-            edge->node->UpdateAcyclicIntersectionFlags(graph->subconfigurationsFlags[s1], graph->configurationsFlags[s1]);
-        }
-    }
-    acyclicIntersectionFlags |= graph->subconfigurationsFlags[Normalize(s)];
+    UpdateAcyclicIntersectionWithSimplex(s);
 }
 
 void IncidenceGraph::Node::UpdateAcyclicIntersectionFlags(IntersectionFlags flags, IntersectionFlags flagsMaximalFaces)
@@ -220,7 +220,7 @@ void IncidenceGraph::Node::UpdateNeighboursAcyclicIntersection()
     Simplex intersection;
     for (Edges::iterator edge = edges.begin(); edge != edges.end(); edge++)
     {
-        Node *neighbour = edge->node;
+        Node *neighbour = (*edge)->GetNeighbour(this);
         if (neighbour->IsAcyclic())
         {
             continue;

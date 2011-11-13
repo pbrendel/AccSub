@@ -26,7 +26,7 @@ public:
         std::vector<Edge *> edges;
 
         IncidenceGraph *ig;
-        IncidenceGraph::VertexNodesMap H;
+        IncidenceGraph::VertexHash H;
 
         int processRank;
 
@@ -57,7 +57,7 @@ public:
             borderVerts.insert(verts.begin(), verts.end());
         }
 
-        void CreateIntNodesMapWithBorderNodes();
+        void CreateVertexHashForBorderNodes();
     };
 
     struct Edge

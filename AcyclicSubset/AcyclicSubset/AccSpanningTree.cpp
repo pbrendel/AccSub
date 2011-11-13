@@ -6,7 +6,7 @@
 #include "AccSpanningTree.h"
 #include "IncidenceGraphAlgorithms.h"
 
-#ifdef USE_HELPERS
+#ifdef ACCSUB_TRACE
 #include "../Helpers/Utils.h"
 #endif
 
@@ -324,7 +324,7 @@ AccSpanningTree::AccSpanningTree(PartitionGraph *pg)
         }
     }
 
-#ifdef USE_HELPERS 
+#ifdef ACCSUB_TRACE 
     Timer::Update("creating acyclic tree nodes");
 #endif
 
@@ -356,7 +356,7 @@ AccSpanningTree::AccSpanningTree(PartitionGraph *pg)
         }
     }
 
-#ifdef USE_HELPERS 
+#ifdef ACCSUB_TRACE 
     Timer::Update("creating acyclic tree edges");
 #endif
 
@@ -390,7 +390,7 @@ AccSpanningTree::AccSpanningTree(PartitionGraph *pg)
         }
     }
 
-#ifdef USE_HELPERS 
+#ifdef ACCSUB_TRACE 
     Timer::Update("creating spanning tree");
 #endif
 
@@ -438,7 +438,7 @@ AccSpanningTree::AccSpanningTree(PartitionGraph *pg)
         pg->isolatedNodes.push_back(new PartitionGraph::Node(i->second));
     }
 
-#ifdef USE_HELPERS 
+#ifdef ACCSUB_TRACE 
     Timer::Update("finding isolated data nodes");
 #endif
     
@@ -451,7 +451,7 @@ AccSpanningTree::AccSpanningTree(PartitionGraph *pg)
         if ((*i)->isInSpanningTree) (*i)->FindAcyclicConnections();
     }
 
-#ifdef USE_HELPERS 
+#ifdef ACCSUB_TRACE 
     Timer::Update("searching paths from acyclic subsets to border");    
 #endif
 }
@@ -480,7 +480,7 @@ void AccSpanningTree::JoinAcyclicSubsets()
         if ((*i)->isInSpanningTree) (*i)->UpdateAcyclicConnections();
     }
 
-#ifdef USE_HELPERS    
+#ifdef ACCSUB_TRACE    
     Timer::Update("adding paths to acyclic subset");    
 #endif
     

@@ -6,7 +6,7 @@
 #include "ComputationsParallelOMP.h"
 #include "ComputationsLocal.h"
 
-#ifdef USE_HELPERS
+#ifdef ACCSUB_TRACE
 #include "../Helpers/Utils.h"
 #endif
 
@@ -14,7 +14,7 @@
 
 void ComputationsParallelOMP::Compute(PartitionGraph::Nodes &nodes, AccSubAlgorithm accSubAlgorithm, AcyclicTest<IncidenceGraph::IntersectionFlags> *acyclicTest)
 {
-#ifdef USE_HELPERS
+#ifdef ACCSUB_TRACE
     Timer::TimeStamp("***** ComputationsParallelOMP start");
     Timer::Time start = Timer::Now();
     if (accSubAlgorithm == ASA_AccIG)
@@ -30,11 +30,11 @@ void ComputationsParallelOMP::Compute(PartitionGraph::Nodes &nodes, AccSubAlgori
     for (PartitionGraph::Nodes::iterator i = nodes.begin(); i != nodes.end(); i++)
     {
         ComputationsLocal::CreateIncidenceGraph(*i, accSubAlgorithm, acyclicTest);
-#ifdef USE_HELPERS
+#ifdef ACCSUB_TRACE
         Timer::TimeStamp("***** incidence graph calculated");
 #endif    
     }
-#ifdef USE_HELPERS
+#ifdef ACCSUB_TRACE
     Timer::TimeStamp("***** ComputationsParallelOMP end");
     Timer::TimeFrom(start, "total parallel computations");
 #endif

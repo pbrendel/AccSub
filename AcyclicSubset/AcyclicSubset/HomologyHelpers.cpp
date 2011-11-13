@@ -8,7 +8,7 @@
 #include "IncidenceGraphHelpers.h"
 #include "OutputGraph.h"
 
-#ifdef USE_HELPERS
+#ifdef ACCSUB_TRACE
 #include "../Helpers/Utils.h"
 #endif
 
@@ -47,14 +47,14 @@ void HomologyHelpers::ComputeHomology(OutputGraph *og, bool performCoreductions)
     Complex::KappaMap kappaMap;
     GetDimsAndKappaMap(og, dims, kappaMap);
     Complex complex(3, dims, kappaMap, 1);    
-#ifdef USE_HELPERS
+#ifdef ACCSUB_TRACE
     Timer::Update("creating complex");
 #endif    
     
     if (performCoreductions)
     {
         (*CoreductionAlgorithmFactory<Complex>::createDefault(complex))();
-#ifdef USE_HELPERS
+#ifdef ACCSUB_TRACE
         Timer::Update("performing coreductions");  
         MemoryInfo::Print();
 #endif
@@ -63,7 +63,7 @@ void HomologyHelpers::ComputeHomology(OutputGraph *og, bool performCoreductions)
     CRef<ReducibleFreeChainComplexType> RFCComplexCR = (ReducibleFreeChainComplexOverZFromSComplexAlgorithm<SComplex<SComplexDefaultTraits>, ReducibleFreeChainComplexType>(complex))();
     CRef<HomologySignature<int> > homSignCR = HomAlgFunctors<FreeModuleType>::homSignViaAR_Random(RFCComplexCR);
 
-#ifdef USE_HELPERS
+#ifdef ACCSUB_TRACE
     Timer::Update("computing homology");
 #endif
     

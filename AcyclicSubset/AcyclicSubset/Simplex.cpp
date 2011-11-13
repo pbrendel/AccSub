@@ -46,14 +46,14 @@ int GetConstantSimplexSize(const SimplexPtrList &simplexPtrList)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-bool GetIntersection(Simplex *a, Simplex *b, Simplex &intersection)
+bool GetIntersection(const Simplex *a, const Simplex *b, Simplex &intersection)
 {
     if (intersection.size() > 0)
     {
         intersection.clear();
     }
-    Simplex::iterator i = a->begin();
-    Simplex::iterator j = b->begin();
+    Simplex::const_iterator i = a->begin();
+    Simplex::const_iterator j = b->begin();
     while (i != a->end() && j != b->end())
     {
         if ((*i) < (*j)) i++;

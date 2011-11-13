@@ -68,11 +68,12 @@ IncidenceGraph::Node *FindNode(IncidenceGraph::ConnectedComponent connectedCompo
         {
             for (IncidenceGraph::Edges::iterator edge = currentNode->edges.begin(); edge != currentNode->edges.end(); edge++)
             {
-                if (!edge->node->IsHelperFlag1())
+                IncidenceGraph::Node *neighbour = (*edge)->GetNeighbour(currentNode);
+                if (!neighbour->IsHelperFlag1())
                 {
-                    tmp.push_back(edge->node);
-                    edge->node->IsHelperFlag1(true);
-                    L.push(edge->node);
+                    tmp.push_back(neighbour);
+                    neighbour->IsHelperFlag1(true);
+                    L.push(neighbour);
                 }
             }
         }
@@ -224,12 +225,13 @@ IncidenceGraph::Path FindPath(IncidenceGraph::Node *firstNode, FindOptions findO
         {
             for (IncidenceGraph::Edges::iterator edge = node->edges.begin(); edge != node->edges.end(); edge++)
             {
-                if (!edge->node->IsHelperFlag1() && findOptions.IsValidNeighbour(edge->node))
+                IncidenceGraph::Node *neighbour = (*edge)->GetNeighbour(node);
+                if (!neighbour->IsHelperFlag1() && findOptions.IsValidNeighbour(neighbour))
                 {
-                    L.push(edge->node);
-                    tmp.push_back(edge->node);
-                    edge->node->IsHelperFlag1(true);
-                    pred[edge->node] = node;
+                    L.push(neighbour);
+                    tmp.push_back(neighbour);
+                    neighbour->IsHelperFlag1(true);
+                    pred[neighbour] = node;
                 }
             }
         }
@@ -254,6 +256,57 @@ IncidenceGraph::Path FindPath(IncidenceGraph::Node *firstNode, FindOptions findO
         }
     }
     return path;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+class RemoveNodesWithFlags
+{
+    IncidenceGraph::Node::Flags flags;
+
+public:
+
+    RemoveNodesWithFlags(IncidenceGraph::Node::Flags f)
+    {
+        flags = f;
+    }
+
+    bool IsTrue(IncidenceGraph::Node *node)
+    {
+        return (node->GetPropertiesFlags() & flags) != 0;
+    }
+};
+
+template <typename RemovePredicate>
+void RemoveNodesWithPredicate(IncidenceGraph *graph, RemovePredicate predicate)
+{
+    // na koncu wszystkie zaznaczone node'y i krawedzie usuwamy z grafu
+    IncidenceGraph::Edges newEdges;
+    for (IncidenceGraph::Edges::iterator i = graph->edges.begin(); i != graph->edges.end(); i++)
+    {
+        if (predicate.IsTrue((*i)->nodeA) || predicate.IsTrue((*i)->nodeB))
+        {
+            delete *i;
+        }
+        else
+        {
+            newEdges.push_back(*i);
+        }
+    }
+    graph->edges = newEdges;
+    IncidenceGraph::Nodes newNodes;
+    for (IncidenceGraph::Nodes::iterator i = graph->nodes.begin(); i != graph->nodes.end(); i++)
+    {
+        if (predicate.IsTrue(*i))
+        {
+            delete *i;
+        }
+        else
+        {
+            newNodes.push_back(*i);
+        }
+    }
+    graph->nodes = newNodes;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
