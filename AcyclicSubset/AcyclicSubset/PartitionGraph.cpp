@@ -42,7 +42,7 @@ void PartitionGraph::Node::CreateVertexHashForBorderNodes()
 
 PartitionGraph::PartitionGraph(SimplexList &simplexList, int packsCount, AccSubAlgorithm accSubAlgorithm, AcyclicTest<IncidenceGraph::IntersectionFlags> *acyclicTest)
 {
-    this->incidenceGraph = new IncidenceGraph(GetDimension(simplexList));
+    this->incidenceGraph = new IncidenceGraph(Simplex::GetSimplexListDimension(simplexList));
     this->initialSize = simplexList.size();
     this->accSubAlgorithm = accSubAlgorithm;
     this->acyclicTest = acyclicTest;

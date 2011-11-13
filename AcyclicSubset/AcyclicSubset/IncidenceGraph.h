@@ -153,7 +153,7 @@ public:
 
         void CalculateIntersection()
         {
-            if (GetIntersection(nodeA->simplex, nodeB->simplex, intersection))
+            if (Simplex::GetIntersection(nodeA->simplex, nodeB->simplex, intersection))
             {
                 intersectionFlagsA = nodeA->GetNormalizedIntersectionFlags(intersection);
                 intersectionFlagsB = nodeB->GetNormalizedIntersectionFlags(intersection);

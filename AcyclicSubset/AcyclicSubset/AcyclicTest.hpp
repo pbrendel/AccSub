@@ -52,13 +52,13 @@ public:
             s.push_back(i);
         }
 
-        // generujemy wszystkie podsympleksy posortowane rosnaco wymiarami
+        // generujemy wszystkie sciany posortowane rosnaco wymiarami
         // w kolejnosci leksykograficznej i ustawiamy flagi
-        SimplexList subsimplices;
-        GenerateProperFaces(s, subsimplices);
+        SimplexList faces;
+        s.GenerateProperFaces(faces);
         std::map<Simplex, FlagsType> configurationsFlags;
         FlagsType flags = 1;
-        for (SimplexList::iterator i = subsimplices.begin(); i != subsimplices.end(); i++)
+        for (SimplexList::iterator i = faces.begin(); i != faces.end(); i++)
         {
             configurationsFlags[(*i)] = flags;
             flags = flags << 1;
@@ -69,10 +69,10 @@ public:
         s.push_back(1);
         for (int d = 2; d <= maxSimplexSize; d++)
         {
-            subsimplices.clear();
-            GenerateProperFaces(s, subsimplices);
+            faces.clear();
+            s.GenerateProperFaces(faces);
             FlagsType flags = 0;
-            for (SimplexList::iterator i = subsimplices.begin(); i != subsimplices.end(); i++)
+            for (SimplexList::iterator i = faces.begin(); i != faces.end(); i++)
             {
                 if ((*i).size() == d - 1)
                 {
@@ -160,26 +160,26 @@ public:
         {
             s.push_back(i);
         }
-        // potem generujemy wszystkie podsympleksy posortowane rosnaco wymiarami
+        // potem generujemy wszystkie sciany posortowane rosnaco wymiarami
         // w kolejnosci leksykograficznej
-        SimplexList subsimplices;
-        GenerateProperFaces(s, subsimplices);
+        SimplexList faces;
+        s.GenerateProperFaces(faces);
         // i tworzymy hasha z flagami konfiguracji
         FlagsType flag = 1;
-        for (SimplexList::iterator i = subsimplices.begin(); i != subsimplices.end(); i++)
+        for (SimplexList::iterator i = faces.begin(); i != faces.end(); i++)
         {
             FlagsType subFlags = flag;
             // teraz generujemy wszystkie podkonfiguracje i aktualizujemy flagi
             // mozemy to zrobic w tym miejscu, bo flagi nizej wymiarowych konfiguracji
             // sa juz ustawione
             SimplexList subconfigurations;
-            GenerateProperFaces((*i), subconfigurations);
+            i->GenerateProperFaces(subconfigurations);
             for (SimplexList::iterator j = subconfigurations.begin(); j != subconfigurations.end(); j++)
             {
                 subFlags |= configurationsFlags[(*j)];
             }
             configurationsFlags[(*i)] = subFlags;
-
+            
             flag = flag << 1;
         }
 

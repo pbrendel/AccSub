@@ -79,7 +79,7 @@ void AccSpanningTree::Node::UpdatePathFromBorderToAcyclicSubset(Vertex borderVer
     vertsOnPath.insert(lastVertex);
     for (; i != path.end(); i++)
     {
-        Vertex vertex = GetVertexFromIntersection(prevNode->simplex, (*i)->simplex);
+        Vertex vertex = Simplex::GetVertexFromIntersection(prevNode->simplex, (*i)->simplex);
         if (vertex == lastVertex)
         {
             prevNode = *i;
@@ -141,7 +141,7 @@ void AccSpanningTree::Node::UpdatePathFromAcyclicSubsetToBorder(Vertex borderVer
     assert(lastVertex != -1);
     for (; i != path.end(); i++)
     {
-        Vertex vertex = GetVertexFromIntersection(prevNode->simplex, (*i)->simplex);
+        Vertex vertex = Simplex::GetVertexFromIntersection(prevNode->simplex, (*i)->simplex);
         if (vertex == lastVertex)
         {
             prevNode = *i;
@@ -221,7 +221,7 @@ void AccSpanningTree::Node::UpdateBorderVerts()
         vertsOnPath.insert(lastVertex);
         for (; i != path.rend(); i++)
         {
-            Vertex vertex = GetVertexFromIntersection(prevNode->simplex, (*i)->simplex);
+            Vertex vertex = Simplex::GetVertexFromIntersection(prevNode->simplex, (*i)->simplex);
             if (vertex == lastVertex)
             {
                 prevNode = *i;

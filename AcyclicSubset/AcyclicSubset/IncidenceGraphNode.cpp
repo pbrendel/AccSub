@@ -144,7 +144,7 @@ void IncidenceGraph::Node::UpdateAcyclicIntersectionWithSimplex(const Simplex &s
         }
         // obliczamy czesc wspolna (przeciecie) krawedzi i przeciecia z sasiadem
         Simplex s;
-        GetIntersection(&(*edge)->intersection, &simplex, s);
+        Simplex::GetIntersection((*edge)->intersection, simplex, s);
         // jezeli przeciecie to jest niepuste (maja wspolne punkty)
         // to aktualizujemy jego acyclic flags
         if (s.size() > 0)
@@ -159,8 +159,7 @@ void IncidenceGraph::Node::UpdateAcyclicIntersectionWithSimplex(const Simplex &s
 
 void IncidenceGraph::Node::UpdateAcyclicIntersectionWithVertex(Vertex v)
 {
-    Simplex s(1);
-    s[0] = v;
+    Simplex s = Simplex::FromVertex(v);
     for (Edges::iterator edge = edges.begin(); edge != edges.end(); edge++)
     {
         if ((*edge)->GetNeighbour(this)->IsAcyclic())
@@ -171,7 +170,7 @@ void IncidenceGraph::Node::UpdateAcyclicIntersectionWithVertex(Vertex v)
         {
             (*edge)->CalculateIntersection();
         }
-        if (ContainsVertex(&(*edge)->intersection, v))
+        if ((*edge)->intersection.ContainsVertex(v))
         {
             Node *neighbour = (*edge)->GetNeighbour(this);
             Simplex s1 = neighbour->Normalize(s);
@@ -183,21 +182,8 @@ void IncidenceGraph::Node::UpdateAcyclicIntersectionWithVertex(Vertex v)
 
 void IncidenceGraph::Node::UpdateAcyclicIntersectionWithEdge(Vertex v1, Vertex v2)
 {
-    // todo!!!
-    // Simplex(v1, v2)
     assert (v1 != v2);
-    Simplex s(2);
-    if (v1 < v2)
-    {
-        s[0] = v1;
-        s[1] = v2;
-    }
-    else
-    {
-        s[0] = v2;
-        s[1] = v1;
-    }
-    UpdateAcyclicIntersectionWithSimplex(s);
+    UpdateAcyclicIntersectionWithSimplex(Simplex::FromVertices(v1, v2));
 }
 
 void IncidenceGraph::Node::UpdateAcyclicIntersectionFlags(IntersectionFlags flags, IntersectionFlags flagsMaximalFaces)
@@ -225,7 +211,7 @@ void IncidenceGraph::Node::UpdateNeighboursAcyclicIntersection()
         {
             continue;
         }
-        GetIntersection(this->simplex, neighbour->simplex, intersection);
+        Simplex::GetIntersection(this->simplex, neighbour->simplex, intersection);
         intersection = neighbour->Normalize(intersection);
         neighbour->UpdateAcyclicIntersectionFlags(graph->subconfigurationsFlags[intersection], graph->configurationsFlags[intersection]);
     }
@@ -235,7 +221,7 @@ void IncidenceGraph::Node::UpdateNeighboursAcyclicIntersection()
 
 Simplex IncidenceGraph::Node::Normalize(const Simplex &simplex)
 {
-    Simplex s(simplex.size());
+    Simplex s = Simplex::WithSize(simplex.size());
     int index = 0;
     for (Simplex::const_iterator i = simplex.begin(); i != simplex.end(); i++)
     {

@@ -133,7 +133,7 @@ void GenerateAcyclicTree(SimplexList &simplexList, int simplicesCount, int nodes
     int nodeBase = 1;
     int nodeBaseOffset = (n + 1) * (n + 1) + nodesCount * 2 + 2;
     int nc = nodesCount;
-    Simplex s(3);
+    Simplex s = Simplex::WithSize(3);
 
     // najpierw generujemy wszystkie "node'y"
     while (nc > 0)

@@ -147,7 +147,7 @@ void Tests::GenerateData(SimplexList &simplexList)
     }
     if (sortSimplices)
     {
-        std::sort(simplexList.begin(), simplexList.end(), SimplexSorterSize);
+        std::sort(simplexList.begin(), simplexList.end(), Simplex::SortBySize);
     }
     Timer::Update("data generated");
     MemoryInfo::Print();
@@ -169,7 +169,7 @@ void Tests::Test(SimplexList &simplexList, ReductionType reductionType)
     Timer::Update();
     Timer::Time timeStart = Timer::Now();
 
-    AcyclicTest<IncidenceGraph::IntersectionFlags> *test = IsAcyclicSubsetReduction(reductionType) ? AcyclicTest<IncidenceGraph::IntersectionFlags>::Create(acyclicTestNumber, GetDimension(simplexList)) : 0;
+    AcyclicTest<IncidenceGraph::IntersectionFlags> *test = IsAcyclicSubsetReduction(reductionType) ? AcyclicTest<IncidenceGraph::IntersectionFlags>::Create(acyclicTestNumber, Simplex::GetSimplexListDimension(simplexList)) : 0;
     IncidenceGraph *ig = 0;
     if (reductionType == RT_Acc)
     {
@@ -221,7 +221,7 @@ void Tests::Test(SimplexList &simplexList, ReductionType reductionType)
 void Tests::TestAndCompare(SimplexList &simplexList)
 {
     std::cout<<"simplices count: "<<simplexList.size()<<std::endl;
-    std::cout<<"dim: "<<GetDimension(simplexList)<<std::endl;
+    std::cout<<"dim: "<<Simplex::GetSimplexListDimension(simplexList)<<std::endl;
 
     if (useAlgebraic)
     {

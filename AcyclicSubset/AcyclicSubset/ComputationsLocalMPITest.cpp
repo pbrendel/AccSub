@@ -32,13 +32,13 @@ void ComputationsLocalMPITest::Compute(PartitionGraph::Nodes &nodes, AccSubAlgor
     {
         PartitionGraph::Node *node = *i;
 
-        MPIData::SimplexData *simplexData = new MPIData::SimplexData(node->simplexPtrList, node->borderVerts, accSubAlgorithm, test->GetID(), GetConstantSimplexSize(node->simplexPtrList));
+        MPIData::SimplexData *simplexData = new MPIData::SimplexData(node->simplexPtrList, node->borderVerts, accSubAlgorithm, test->GetID(), Simplex::GetSimplexListConstantSize(node->simplexPtrList));
         SimplexList simplexList;
         std::set<Vertex> borderVerts;
         int acyclicTestNumber;
         int accSubAlg;
         simplexData->GetSimplexData(simplexList, borderVerts, accSubAlg, acyclicTestNumber);
-        AcyclicTest<IncidenceGraph::IntersectionFlags> *test = AcyclicTest<IncidenceGraph::IntersectionFlags>::Create(acyclicTestNumber, GetDimension(simplexList));
+        AcyclicTest<IncidenceGraph::IntersectionFlags> *test = AcyclicTest<IncidenceGraph::IntersectionFlags>::Create(acyclicTestNumber, Simplex::GetSimplexListDimension(simplexList));
 
         IncidenceGraph *ig = 0;
         if (accSubAlg == ASA_AccIG)

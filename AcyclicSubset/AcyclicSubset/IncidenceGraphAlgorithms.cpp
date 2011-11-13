@@ -20,7 +20,7 @@ void CreateConfigurationsFlags(int maxDim, std::map<Simplex, IncidenceGraph::Int
     // potem generujemy wszystkie podsympleksy posortowane rosnaco wymiarami
     // w kolejnosci leksykograficznej
     SimplexList faces;
-    GenerateProperFaces(s, faces);
+    s.GenerateProperFaces(faces);
     // dodajemy caly sympleks
     faces.push_back(s);
 
@@ -36,7 +36,7 @@ void CreateConfigurationsFlags(int maxDim, std::map<Simplex, IncidenceGraph::Int
         // mozemy to zrobic w tym miejscu, bo flagi nizej wymiarowych konfiguracji
         // sa juz ustawione
         SimplexList subconfigurations;
-        GenerateProperFaces((*i), subconfigurations);
+        i->GenerateProperFaces(subconfigurations);
         for (SimplexList::iterator j = subconfigurations.begin(); j != subconfigurations.end(); j++)
         {
             subFlags |= configurationsFlags[(*j)];

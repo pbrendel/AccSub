@@ -37,7 +37,7 @@ IncidenceGraph::IncidenceGraph(SimplexList &simplexList)
         nodes.push_back(new Node(this, &(*i), index++));
     }
 
-    dim = GetDimension(simplexList);
+    dim = Simplex::GetSimplexListDimension(simplexList);
     CreateConfigurationsFlags(dim, configurationsFlags, subconfigurationsFlags);
 }
 
@@ -50,7 +50,7 @@ IncidenceGraph::IncidenceGraph(SimplexPtrList &simplexPtrList)
         nodes.push_back(new Node(this, (*i), index++));
     }
 
-    dim = GetDimension(simplexPtrList);
+    dim = Simplex::GetSimplexListDimension(simplexPtrList);
     CreateConfigurationsFlags(dim, configurationsFlags, subconfigurationsFlags);
 }
 
@@ -376,7 +376,7 @@ void IncidenceGraph::EnqNeighboursAndUpdateAcyclicIntersection(Node* node, Verte
             {
                 continue;
             }
-            GetIntersection(node->simplex, (*neighbour)->simplex, intersection);
+            Simplex::GetIntersection(node->simplex, (*neighbour)->simplex, intersection);
             intersection = (*neighbour)->Normalize(intersection);
             (*neighbour)->UpdateAcyclicIntersectionFlags(subconfigurationsFlags[intersection], configurationsFlags[intersection]);
             if (!(*neighbour)->IsAddedToList())
@@ -687,7 +687,7 @@ void IncidenceGraph::CreateAcyclicSpanningTree(std::vector<IncidenceGraph::Path>
         Path::reverse_iterator current = path.rbegin();
         Path::reverse_iterator next = current;
         next++;
-        Vertex lastVertex = GetVertexFromIntersection((*current)->simplex, (*next)->simplex);
+        Vertex lastVertex = Simplex::GetVertexFromIntersection((*current)->simplex, (*next)->simplex);
         current = next;
         next++;
         while (next != path.rend())
@@ -695,7 +695,7 @@ void IncidenceGraph::CreateAcyclicSpanningTree(std::vector<IncidenceGraph::Path>
             Node *n = *next;
 
             // sprawdzamy przeciecie z nastepnym sympleksem
-            Vertex vertex = GetVertexFromIntersection((*current)->simplex, n->simplex);
+            Vertex vertex = Simplex::GetVertexFromIntersection((*current)->simplex, n->simplex);
 
             // jezeli wierzcholek jest w zbiorze acyklicznym -> konczymy
             // przy sprawdzaniu warunku korzystamy z faktu, ze flaga podsciany
