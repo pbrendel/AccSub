@@ -9,6 +9,7 @@
 #include "AccSpanningTree.h"
 #include "ComputationsLocal.h"
 #include "ComputationsLocalMPITest.h"
+#include "PrepareDataNone.h"
 #include "PrepareDataBFS.h"
 
 #include <cmath> // ceil()
@@ -152,7 +153,7 @@ void PartitionGraph::CreateDataEdges()
 
 void PartitionGraph::CalculateIncidenceGraphs(Nodes &sourceNodes)
 {
-    ComputationsLocalMPITest::Compute(sourceNodes, accSubAlgorithm, acyclicTest);
+    ComputationsLocal::Compute(sourceNodes, accSubAlgorithm, acyclicTest);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -19,6 +19,8 @@
 
 // test!!!
 int IncidenceGraph::counter = 0;
+#include "../Helpers/Utils.h"
+#include <fstream>
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -160,6 +162,8 @@ void IncidenceGraph::CreateGraphWithBorder()
     vectorBorderVerts.assign(borderVerts.begin(), borderVerts.end());
     std::sort(vectorBorderVerts.begin(), vectorBorderVerts.end());
 
+    int border = 0;
+
     std::queue<Node *> L;
     for (Nodes::iterator i = nodes.begin(); i != nodes.end(); i++)
     {
@@ -183,6 +187,7 @@ void IncidenceGraph::CreateGraphWithBorder()
             currentNode->IsAddedToGraph(true);
             if (currentNode->IsOnBorder())
             {
+                border++;
                 connectedComponentBorderVerts.insert(currentNode->simplex->begin(), currentNode->simplex->end());
             }
             // sprawdzamy wszytkie punkty nalezace do sympleksu w tym wierzcholku
@@ -223,6 +228,9 @@ void IncidenceGraph::CreateGraphWithBorder()
     #ifdef USE_LOG
     Log::stream<<"number of connected components: "<<connectedComponents.size()<<std::endl;
     #endif
+
+    std::cout<<"border: "<<border<<" total: "<<nodes.size()<<std::endl;
+
 //    std::cout<<"number of connected components: "<<connectedComponents.size()<<std::endl;
 }
 
@@ -273,6 +281,18 @@ void IncidenceGraph::CreateGraphAndCalculateAcyclicSubset(AcyclicTest<Intersecti
     RemoveAcyclicEdges();
 }
 
+void WriteDebugInfo(IncidenceGraph *ig, std::string algName, int index)
+{
+    char buff[256] = { 0 };
+    sprintf(buff, "log_%s_%d.txt", algName.c_str(), index);
+    std::ofstream log(buff);
+    Debug::PrintGraph(log, ig->nodes);    
+    log<<"sfsd"<<std::endl;
+   // Debug::PrintAcyclicSet(log, ig->nodes);
+    log<<"sasdadsfsd"<<std::endl;
+    log.close();
+}
+
 void IncidenceGraph::CreateGraphAndCalculateAcyclicSubsetWithBorder(AcyclicTest<IntersectionFlags> *test)
 {
     VertexHash H;
@@ -290,6 +310,8 @@ void IncidenceGraph::CreateGraphAndCalculateAcyclicSubsetWithBorder(AcyclicTest<
     std::vector<Vertex> vectorBorderVerts;
     vectorBorderVerts.assign(borderVerts.begin(), borderVerts.end());
     std::sort(vectorBorderVerts.begin(), vectorBorderVerts.end());
+
+    int border = 0;
 
     std::queue<Node *> L;
     for (Nodes::iterator i = nodes.begin(); i != nodes.end(); i++)
@@ -315,6 +337,11 @@ void IncidenceGraph::CreateGraphAndCalculateAcyclicSubsetWithBorder(AcyclicTest<
                 currentNode->IsAcyclic(true);
                 EnqNeighboursAndUpdateAcyclicIntersection(currentNode, H, L);
                 acyclicSubsetSize = 1;
+                if (currentNode->IsAddedToGraph())
+                {
+                    currentNode->IsAddedToGraph(false);
+                    currentNode->edges.clear();
+                }
                 continue;
             }
 
@@ -322,6 +349,7 @@ void IncidenceGraph::CreateGraphAndCalculateAcyclicSubsetWithBorder(AcyclicTest<
             {
                 if (!currentNode->IsAddedToGraph())
                 {
+                    border++;
                     connectedComponentBorderVerts.insert(currentNode->simplex->begin(), currentNode->simplex->end());
                     connectedComponent = currentNode;
                     AddToGraphAndEnqNeighbours(currentNode, H, L);
@@ -351,14 +379,25 @@ void IncidenceGraph::CreateGraphAndCalculateAcyclicSubsetWithBorder(AcyclicTest<
         }
         if (connectedComponent != 0)
         {
+        //    assert(acyclicSubsetSize > 0);
             connectedComponents.push_back(connectedComponent);
             VertsSet tempSet;
             GetIntersectionOfUnsortedSetAndSortedVector(tempSet, connectedComponentBorderVerts, vectorBorderVerts);
             connectedComponentsBorders.push_back(tempSet);
             connectedComponentsAcyclicSubsetSize.push_back(acyclicSubsetSize);
         }
+        else
+        {
+            assert(false);
+        }
     }
     RemoveAcyclicEdges();
+
+    std::cout<<"border: "<<border<<" total: "<<nodes.size()<<std::endl;
+    std::cout<<"acyclic subset size: "<<GetAcyclicSubsetSize()<<std::endl;
+    
+    static int logIndex = 1;
+    WriteDebugInfo(this, "ig", logIndex++);
 }
 
 void IncidenceGraph::EnqNeighboursAndUpdateAcyclicIntersection(Node* node, VertexHash &H, std::queue<Node*> &L)
@@ -648,6 +687,10 @@ void IncidenceGraph::CalculateAcyclicSubsetSpanningTreeWithBorder(AcyclicTest<In
             CreateAcyclicSpanningTree(paths, ++acyclicSubsetID);
         }
     }
+    
+    static int logIndex = 1;
+    WriteDebugInfo(this, "st", logIndex++);
+
 }
 
 void IncidenceGraph::CreateAcyclicSpanningTree(std::vector<IncidenceGraph::Path> &paths, int maxAcyclicSubsetID)

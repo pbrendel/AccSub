@@ -141,7 +141,7 @@ public:
         return GetVertexFromIntersectionNotEqual(*a, *b, vertex);
     }
 
-    template <template <typename> class VerticesSetT>
+    template <template <typename V, typename A = std::allocator<V> > class VerticesSetT>
     static VertexType GetVertexFromIntersectionNotIn(const SimplexT &a, const SimplexT &b, const VerticesSetT<VertexType> &verticesSet)
     {
         typename SimplexT::const_iterator i = a.begin();
@@ -163,25 +163,25 @@ public:
         return VertexType(-1);
     }
 
-    template <template <typename> class VerticesSetT>
+    template <template <typename V, typename A = std::allocator<V> > class VerticesSetT>
     static VertexType GetVertexFromIntersectionNotIn(const SimplexT *a, const SimplexT *b, const VerticesSetT<VertexType> &verticesSet)
     {
         return GetVertexFromIntersectionNotIn(*a, *b, verticesSet);
     }
 
-    template <template <typename> class SimplexListT>
+    template <template <typename S, typename A = std::allocator<S> > class SimplexListT>
     static int GetSimplexListDimension(const SimplexListT<SimplexT> &simplexList)
     {
         return (simplexList.size() > 0) ? (int)simplexList[0].size() - 1 : 0;
     }
 
-    template <template <typename> class SimplexListT>
+    template <template <typename S, typename A = std::allocator<S> > class SimplexListT>
     static int GetSimplexListDimension(const SimplexListT<SimplexT *> &simplexPtrList)
     {
         return (simplexPtrList.size() > 0) ? (int)simplexPtrList[0]->size() - 1 : 0;
     }
 
-    template <template <typename> class SimplexListT>
+    template <template <typename S, typename A = std::allocator<S> > class SimplexListT>
     static int GetSimplexListConstantSize(const SimplexListT<SimplexT> &simplexList)
     {
         int size = simplexList[0].size();
@@ -195,7 +195,7 @@ public:
         return size;
     }
 
-    template <template <typename> class SimplexListT>
+    template <template <typename S, typename A = std::allocator<S> > class SimplexListT>
     static int GetSimplexListConstantSize(const SimplexListT<SimplexT *> &simplexPtrList)
     {
         int size = simplexPtrList[0]->size();
@@ -210,7 +210,7 @@ public:
     }
 
 private:
-    template <template <typename> class SimplexListT>
+    template <template <typename S, typename A = std::allocator<S> > class SimplexListT>
     void GenerateProperFaces(int currentDim, int targetDim, int firstIndex, SimplexT face, SimplexListT<SimplexT> &faces)
     {
         face.push_back((*this)[firstIndex]);
@@ -228,7 +228,7 @@ private:
     }
 
 public:
-    template <template <typename> class SimplexListT>
+    template <template <typename S, typename A = std::allocator<S> > class SimplexListT>
     void GenerateProperFaces(SimplexListT<SimplexT> &faces)
     {
         SimplexT face;
@@ -241,7 +241,7 @@ public:
         }
     }
 
-    template <template <typename> class SimplexListT>
+    template <template <typename S, typename A = std::allocator<S> > class SimplexListT>
     void AddMissingProperFaces(SimplexListT<SimplexT> &faces)
     {
         // generujemy wszystkie podsympleksy
