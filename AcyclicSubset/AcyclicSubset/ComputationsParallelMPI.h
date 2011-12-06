@@ -10,8 +10,10 @@
 
 class ComputationsParallelMPI
 {
+    static AccSubAlgorithm accSubAlgorithm;
+    static AcyclicTest<IncidenceGraph::IntersectionFlags> *acyclicTest;
 
-    static void SendMPISimplexData(PartitionGraph::Node *node, AccSubAlgorithm accSubAlgorithm, int processRank);
+    static void SendMPISimplexData(PartitionGraph::Node *node, int processRank);
     static void SetMPIIncidenceGraphData(PartitionGraph::Node *node, int *buffer, int size);
 
 public:

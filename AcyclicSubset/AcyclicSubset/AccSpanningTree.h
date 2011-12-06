@@ -24,7 +24,8 @@ public:
         int acyclicSubsetSize;
         std::vector<Edge *> edges;
         IncidenceGraph::ConnectedComponent connectedComponent;
-        std::vector<Vertex> singleBorderVerts;
+        std::vector<Vertex> boundaryVertsToConnect;
+        std::vector<IncidenceGraph::Path> boundaryVertsConnectingPaths;
         bool isConnectedToAcyclicSubset;
 
         Node(PartitionGraph::Node *parent, int id, IncidenceGraph::ConnectedComponent connectedComponent, std::set<Vertex> &borderVerts, int acyclicSubsetSize)
@@ -46,7 +47,8 @@ public:
         void UpdateAcyclicSubsetToBorderConnection(Vertex borderVertex, IncidenceGraph::Path &path);
         void UpdatePathFromBorderToAcyclicSubset(Vertex borderVertex, IncidenceGraph::Path &path);
         void UpdatePathFromAcyclicSubsetToBorder(Vertex borderVertex, IncidenceGraph::Path &path);        
-        void UpdateBorderVerts();
+        void FindBoundaryVertsConnectingPaths();
+        void UpdateBoundaryVertsConnectingPaths();
     };
     
     struct Edge

@@ -44,17 +44,14 @@ void ComputationsLocalMPITest::Compute(PartitionGraph::Nodes &nodes, AccSubAlgor
         if (accSubAlg == ASA_AccIG)
         {
            ig = IncidenceGraphHelpers::CreateAndCalculateAcyclicSubsetOnlineWithBorder(simplexList, borderVerts, test);
-           ig->UpdateConnectedComponents();
-           ig->RemoveAcyclicSubset();
-           ig->AssignNewIndices(false);
         }
         else
         {
             ig = IncidenceGraphHelpers::CreateAndCalculateAcyclicSubsetSpanningTreeWithBorder(simplexList, borderVerts, test);
-            ig->UpdateConnectedComponents();
-            ig->RemoveAcyclicSubset();
-            ig->AssignNewIndices(false);
         }
+        ig->UpdateConnectedComponents();
+        ig->RemoveAcyclicSubset();
+        ig->AssignNewIndices(false);
 
         MPIData::IncidenceGraphData *igData = new MPIData::IncidenceGraphData(ig);
         node->ig = igData->GetIncidenceGraph(node->simplexPtrList);

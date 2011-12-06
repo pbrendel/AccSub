@@ -44,17 +44,14 @@ void ComputationsLocal::CreateIncidenceGraph(PartitionGraph::Node *node, AccSubA
     if (accSubAlgorithm == ASA_AccIG)
     {
         node->ig = IncidenceGraphHelpers::CreateAndCalculateAcyclicSubsetOnlineWithBorder(node->simplexPtrList, node->borderVerts, test);
-        node->ig->UpdateConnectedComponents();
-        node->ig->RemoveAcyclicSubset();
-        node->ig->AssignNewIndices(false);
     }
     else
     {
         node->ig = IncidenceGraphHelpers::CreateAndCalculateAcyclicSubsetSpanningTreeWithBorder(node->simplexPtrList, node->borderVerts, test);
-        node->ig->UpdateConnectedComponents();
-        node->ig->RemoveAcyclicSubset();
-        node->ig->AssignNewIndices(false);
     }
+    node->ig->UpdateConnectedComponents();
+    node->ig->RemoveAcyclicSubset();
+    node->ig->AssignNewIndices(false);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

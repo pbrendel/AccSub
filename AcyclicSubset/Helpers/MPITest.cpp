@@ -4,8 +4,13 @@
  */
 
 #include "MPITest.h"
+#include "Tests.h"
 #include "Utils.h"
 #include "../AcyclicSubset/PartitionGraph.h"
+#include "../AcyclicSubset/ComputationsParallelMPI.h"
+#include "../AcyclicSubset/AcyclicTest.hpp"
+#include "../AcyclicSubset/IncidenceGraphHelpers.h"
+#include "../AcyclicSubset/HomologyHelpers.h"
 
 #ifdef USE_MPI
 #include <mpi.h>
@@ -32,32 +37,37 @@ void MPITest::StandardTest()
             sprintf(buff, "random set of size: %d", (int)simplexList.size());
             break;
         case 1:
-            sprintf(buff, "random set of size %d, randomly removed %d simplices", (int)simplexList.size(), Tests::simplicesCount);
-            break;
-        case 2:
             sprintf(buff, "testing %s", Tests::inputFilename.c_str());
-            break;
-        case 3:
-            sprintf(buff, "acyclic tree of %d nodes %d simplices each, total: %d", Tests::nodesCount, Tests::nodeSimplicesCount, (int)simplexList.size());
             break;
         default:
             break;
     }
 
     std::cout<<buff<<std::endl;
-    Tests::log<<"<input_size>"<<simplexList.size()<<"</input_size>"<<std::endl;
-    Tests::log<<std::endl<<"\t<description>"<<buff<<"</description>"<<std::endl<<std::endl;
 
+    AcyclicTest<IncidenceGraph::IntersectionFlags> *test = AcyclicTest<IncidenceGraph::IntersectionFlags>::Create(Tests::acyclicTestNumber, Simplex::GetSimplexListDimension(simplexList));
     Timer::Time start = Timer::Now();
-    IncidenceGraph *ig = IncidenceGraph::CreateAndCalculateAcyclicSubsetParallel(simplexList, Tests::incidenceGraphParams, Tests::parallelParams, 0, false);
-    float totalTime = Timer::TimeFrom(start, "parallel computations");
 
-    Tests::Test(ig, RT_AcyclicSubset, totalTime);
+    IncidenceGraph *ig = IncidenceGraphHelpers::CreateAndCalculateAcyclicSubsetParallel(simplexList, Tests::packsCount, (AccSubAlgorithm)Tests::parallelAccSubAlgorithm, test);
+    delete test;
 
-    delete ig;
+    Timer::TimeFrom(start, "parallel computations");
 
+    std::cout<<"acyclic subset size: "<<ig->GetAcyclicSubsetSize()<<std::endl;
+
+    Timer::Update();
+    OutputGraph *og = new OutputGraph(ig);
+    Timer::Update("creating output");
     MemoryInfo::Print();
 
+    start = Timer::Now();
+    HomologyHelpers::ComputeHomology(og, false);
+    Timer::TimeFrom(start, "computing homology");
+    MemoryInfo::Print();
+
+    delete og;
+    delete ig;
+      
 #endif
 }
 
@@ -97,25 +107,20 @@ void MPITest::Master(int argc, char **argv)
 
     std::cout<<"Aby uzyskac wiecej informacji uruchom z parametrem -help"<<std::endl;
 
-    Tests::OpenLog();
-
     switch (Tests::testType)
     {
         case 0:
         case 1:
-        case 2:
-        case 3:
             StandardTest();
             break;
-        case 4:
+        case 2:
             TestFromList();
             break;
         default:
             break;
     }
 
-    ParallelGraph::KillMPISlaves();
-    Tests::CloseLog();
+    ComputationsParallelMPI::KillSlaves();
 
     MemoryInfo::Print();
 
@@ -128,9 +133,7 @@ void MPITest::Slave(int processRank)
 {
 #ifdef USE_MPI
 
-    ParallelGraph::MPISlave(processRank);
-
-    MemoryInfo::Print();
+    ComputationsParallelMPI::Slave(processRank);
 
 #endif
 }
@@ -146,6 +149,7 @@ void MPITest::Test(int argc, char **argv)
     
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     std::cout<<"starting process: "<<rank<<std::endl;
+    Timer::Time now = Timer::Now();
 
     if (rank == 0)
     {
@@ -157,6 +161,8 @@ void MPITest::Test(int argc, char **argv)
     }
 
     std::cout<<"terminating process: "<<rank<<std::endl;
+    Timer::TimeFrom(now, "total");
+    MemoryInfo::Print();
     MPI_Finalize();
 
 #endif

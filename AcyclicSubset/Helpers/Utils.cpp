@@ -252,9 +252,15 @@ void Timer::TimeStamp(const char* msg)
 
 void MemoryInfo::Print()
 {
+    std::cout<<"memory usage: "<<GetUsage()<<" MB"<<std::endl;
+}
+
+int MemoryInfo::GetUsage()
+{
     struct rusage usage;
     getrusage(RUSAGE_SELF, &usage);
-    std::cout<<"memory usage: "<<(usage.ru_maxrss >> 10)<<" MB"<<std::endl;
+    return (usage.ru_maxrss >> 10);
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////

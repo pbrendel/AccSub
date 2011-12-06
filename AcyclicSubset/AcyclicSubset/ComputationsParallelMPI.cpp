@@ -4,6 +4,7 @@
  */
 
 #include "ComputationsParallelMPI.h"
+#include "IncidenceGraphHelpers.h"
 #include <map>
 
 #ifdef ACCSUB_TRACE
@@ -21,17 +22,22 @@
 #define MPI_MY_DATA_TAG        4
 #define MPI_MY_MEMORY_INFO_TAG 5
 
+AccSubAlgorithm ComputationsParallelMPI::accSubAlgorithm = ASA_AccST;
+AcyclicTest<IncidenceGraph::IntersectionFlags> *ComputationsParallelMPI::acyclicTest = 0;
+
 ////////////////////////////////////////////////////////////////////////////////
 
 void ComputationsParallelMPI::Compute(PartitionGraph::Nodes &nodes, AccSubAlgorithm accSubAlgorithm, AcyclicTest<IncidenceGraph::IntersectionFlags> *acyclicTest)
 {
 #ifdef USE_MPI
+    ComputationsParallelMPI::accSubAlgorithm = accSubAlgorithm;
+    ComputationsParallelMPI::acyclicTest = acyclicTest;
     int nodesCount = nodes.size();
     int currentNode = 0;
     int tasksCount;
     int dataSize;
     MPI_Status status;
-    std::map<int, ParallelGraph::DataNode*> rankToNode;
+    std::map<int, PartitionGraph::Node *> rankToNode;
 
     MPI_Comm_size(MPI_COMM_WORLD, &tasksCount);
 
@@ -42,7 +48,7 @@ void ComputationsParallelMPI::Compute(PartitionGraph::Nodes &nodes, AccSubAlgori
     {
         std::cout<<"sending node "<<currentNode<<" to process: "<<rank<<std::endl;
         rankToNode[rank] = nodes[currentNode];
-        SendMPISimplexData(nodes[currentNode++], accSubAlgorithm, rank);
+        SendMPISimplexData(nodes[currentNode++], rank);
     }
 
     // potem czekamy na dane i wysylamy kolejne
@@ -61,7 +67,7 @@ void ComputationsParallelMPI::Compute(PartitionGraph::Nodes &nodes, AccSubAlgori
         SetMPIIncidenceGraphData(rankToNode[status.MPI_SOURCE], buffer, size);
         std::cout<<"sending node "<<currentNode<<" to process: "<<status.MPI_SOURCE<<std::endl;
         rankToNode[status.MPI_SOURCE] = nodes[currentNode];
-        SendMPISimplexData(nodes[currentNode++], accSubAlgorithm, status.MPI_SOURCE);
+        SendMPISimplexData(nodes[currentNode++], status.MPI_SOURCE);
     }
 
     // na koncu odbieramy to co jeszcze jest liczone
@@ -84,14 +90,14 @@ void ComputationsParallelMPI::Compute(PartitionGraph::Nodes &nodes, AccSubAlgori
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void ComputationsParallelMPI::SendMPISimplexData(PartitionGraph::Node *node, AccSubAlgorithm accSubAlgorithm, int processRank)
+void ComputationsParallelMPI::SendMPISimplexData(PartitionGraph::Node *node, int processRank)
 {
 #ifdef USE_MPI
 #ifdef DEBUG_MPI
         std::cout<<"process 0 ";
         Timer::TimeStamp("packing data");
 #endif
-    MPIData::SimplexData *data = new MPIData::SimplexData(node->simplexPtrList, node->borderVerts, accSubAlgorithm, test->GetID(), node->GetConstantSimplexSize());
+    MPIData::SimplexData *data = new MPIData::SimplexData(node->simplexPtrList, node->borderVerts, accSubAlgorithm, acyclicTest->GetID(), Simplex::GetSimplexListConstantSize(node->simplexPtrList));
     int dataSize = data->GetSize();
     MPI_Send(&dataSize, 1, MPI_INT, processRank, MPI_MY_DATASIZE_TAG, MPI_COMM_WORLD);
 #ifdef DEBUG_MPI
@@ -165,17 +171,17 @@ void ComputationsParallelMPI::Slave(int processRank)
         std::cout<<"process "<<processRank<<" ";
         Timer::TimeStamp("upacked data");
 #endif
-        AcyclicTest<IncidenceGraph::IntersectionFlags> *test = AcyclicTest<IncidenceGraph::IntersectionFlags>::Create(acyclicTestNumber, GetDimension(simplexList));
+        AcyclicTest<IncidenceGraph::IntersectionFlags> *test = AcyclicTest<IncidenceGraph::IntersectionFlags>::Create(acyclicTestNumber, Simplex::GetSimplexListDimension(simplexList));
 
         // tworzymy graf incydencji z policzonym podzbiorem acyklicznym
         IncidenceGraph *ig = 0;
         if (accSubAlgorithm == ASA_AccIG)
         {
-            ig = IncidenceGraph::CreateAndCalculateAcyclicSubsetOnlineWithBorder(simplexList, borderVerts, test);
+            ig = IncidenceGraphHelpers::CreateAndCalculateAcyclicSubsetOnlineWithBorder(simplexList, borderVerts, test);
         }
         else
         {
-            ig = IncidenceGraph::CreateAndCalculateAcyclicSubsetSpanningTreeWithBorder(simplexList, borderVerts, test);
+            ig = IncidenceGraphHelpers::CreateAndCalculateAcyclicSubsetSpanningTreeWithBorder(simplexList, borderVerts, test);
         }
         ig->UpdateConnectedComponents();
         ig->AssignNewIndices(true);

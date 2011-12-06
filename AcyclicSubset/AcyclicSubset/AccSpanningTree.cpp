@@ -22,7 +22,7 @@ void AccSpanningTree::Node::FindAcyclicSubsetToBorderConnection(Vertex borderVer
     }
     else
     {
-        singleBorderVerts.push_back(borderVertex);
+        boundaryVertsToConnect.push_back(borderVertex);
     }
 }
 
@@ -47,8 +47,9 @@ void AccSpanningTree::Node::UpdateAcyclicSubsetToBorderConnection(Vertex borderV
     else
     {
         // std::cout<<"updating border verts: "<<singleBorderVerts.size()<<std::endl;
-        UpdateBorderVerts();
-        singleBorderVerts.clear(); // zeby nie wykonalo sie drugi raz
+        UpdateBoundaryVertsConnectingPaths();
+        boundaryVertsConnectingPaths.clear();
+        isConnectedToAcyclicSubset = true;
     }
 }
 
@@ -178,34 +179,59 @@ void AccSpanningTree::Node::UpdatePathFromAcyclicSubsetToBorder(Vertex borderVer
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// ta funkcja bierze laczy wszystkie punkty na brzegu znajdujace sie w zbiorze
-// acyklicznym w drzewo. korzeniem drzewa jest pierwszy na liscie wierzcholek
-// jezeli w trakcie dodawania sciezki od nowego liscia do drzewa trafimy ma
-// zbior acykliczny to konczymy dodawanie sciezki => "podlaczylismy" nowy
-// pozdbior acykliczny do juz utworzonego
-void AccSpanningTree::Node::UpdateBorderVerts()
+// szukanie sciezek laczacych wszystkie punkty lezace na brzegu
+// docelowo powstaje drzewo, ktorego "korzeniem" jest pierwszy wierzcholek
+// na liscie
+
+void AccSpanningTree::Node::FindBoundaryVertsConnectingPaths()
 {
     // jezeli sa mniej niz dwa wierzcholki, to znaczy, ze ta czesc kompleksu
     // nie laczy zadnych zbiorow acyklicznych wiec mozna ja zignorowac
-    if (singleBorderVerts.size() < 2)
+    if (boundaryVertsToConnect.size() < 2)
     {
-        // std::cout<<"less than 2 -> finishing"<<std::endl;
         return;
     }
 
-//    std::cout<<"*";
-
-    std::vector<Vertex>::iterator vertex = singleBorderVerts.begin();
+    std::vector<Vertex>::iterator vertex = boundaryVertsToConnect.begin();
     Vertex firstVertex = *vertex;
     IncidenceGraph::Node *firstNode = FindNode(connectedComponent, FindNodeWithVertex(firstVertex));
-    // std::cout<<"first vertex: "<<firstVertex<<std::endl;
+//    firstNode->UpdateAcyclicIntersectionWithVertex(firstVertex);
     vertex++;
-    for (; vertex != singleBorderVerts.end(); vertex++)
+    for (; vertex != boundaryVertsToConnect.end(); vertex++)
     {
         // szukanie sciezki pomiedzy wierzcholkami
         IncidenceGraph::Path path = FindPath(firstNode, FindPathToVertex(*vertex));
         assert(path.size() > 0);
-        IncidenceGraph::Node *prevNode = path.back();
+        boundaryVertsConnectingPaths.push_back(path);
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// uprzednio wyliczone sciezki laczace poszczegolne punkty na brzegu
+// dodajemy do zbioru acyklicznego
+// jezeli w trakcie dodawania sciezki trafimy ma
+// zbior acykliczny to konczymy dodawanie sciezki => "podlaczylismy" nowy
+// pozdbior acykliczny do juz utworzonego
+
+void AccSpanningTree::Node::UpdateBoundaryVertsConnectingPaths()
+{
+    // jezeli sa mniej niz dwa wierzcholki, to znaczy, ze ta czesc kompleksu
+    // nie laczy zadnych zbiorow acyklicznych wiec mozna ja zignorowac
+    if (boundaryVertsConnectingPaths.size() < 1)
+    {
+        // std::cout<<"less than 1 -> finishing"<<std::endl;
+        return;
+    }
+
+    std::vector<Vertex>::iterator vertex = boundaryVertsToConnect.begin();
+    Vertex firstVertex = *vertex;
+    IncidenceGraph::Node *firstNode = FindNode(connectedComponent, FindNodeWithVertex(firstVertex));
+    firstNode->UpdateAcyclicIntersectionWithVertex(firstVertex);
+    vertex++;
+    for (std::vector<IncidenceGraph::Path>::iterator path = boundaryVertsConnectingPaths.begin(); path != boundaryVertsConnectingPaths.end(); path++, vertex++)
+    {
+        assert(vertex != boundaryVertsToConnect.end());
+        IncidenceGraph::Node *prevNode = path->back();
         // jezeli wierzcholek jest juz w zbiorze acyklicznym, to kontynuujemy
         // znaczy to, ze jakas wczesniejsza sciezka przeszla przez niego
         // i dolaczyla go do zbioru acyklicznego
@@ -215,11 +241,11 @@ void AccSpanningTree::Node::UpdateBorderVerts()
         }
         Vertex lastVertex = *vertex;
         // std::cout<<"vertex: "<<lastVertex<<std::endl;
-        IncidenceGraph::Path::reverse_iterator i = path.rbegin();
+        IncidenceGraph::Path::reverse_iterator i = path->rbegin();
         i++;
         VertsSet vertsOnPath;
         vertsOnPath.insert(lastVertex);
-        for (; i != path.rend(); i++)
+        for (; i != path->rend(); i++)
         {
             Vertex vertex = Simplex::GetVertexFromIntersection(prevNode->simplex, (*i)->simplex);
             if (vertex == lastVertex)
@@ -449,6 +475,10 @@ AccSpanningTree::AccSpanningTree(PartitionGraph *pg)
     for (Edges::iterator i = edges.begin(); i != edges.end(); i++)
     {
         if ((*i)->isInSpanningTree) (*i)->FindAcyclicConnections();
+    }
+    for (Nodes::iterator i = nodes.begin(); i != nodes.end(); i++)
+    {
+        (*i)->FindBoundaryVertsConnectingPaths();
     }
 
 #ifdef ACCSUB_TRACE 

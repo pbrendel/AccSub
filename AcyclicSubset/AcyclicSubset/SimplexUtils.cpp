@@ -120,7 +120,6 @@ int GenerateReverseSimplexList(SimplexList &simplexList, int simplicesCount, int
     Simplex simplex;
     for (int i = 0; i < dim; i++) simplex.push_back(0); // dodajemy dim elementow
     GenerateReverseSimplexList(simplexList, simplex, 1, vertsCount, 0, dim, index, excludedIndices);
-    // std::cout<<"total simplices: "<<totalSimplices<<" generated: "<<simplexList.size()<<std::endl;
     return totalSimplices;
 }
 
