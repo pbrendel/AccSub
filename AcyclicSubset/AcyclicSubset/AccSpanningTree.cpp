@@ -4,7 +4,7 @@
  */
 
 #include "AccSpanningTree.h"
-#include "IncidenceGraphAlgorithms.h"
+#include "IncidenceGraphAlgorithms.hpp"
 
 #ifdef ACCSUB_TRACE
 #include "../Helpers/Utils.h"

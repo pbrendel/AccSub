@@ -7,6 +7,7 @@
 #define INCIDENCEGRAPH_H
 
 #include "Simplex.h"
+#include "ConfigurationsFlags.hpp"
 #include "AcyclicTest.hpp"
 #include "IntersectionFlagsBitSet.hpp"
 
@@ -181,8 +182,8 @@ public:
     typedef std::vector<ConnectedComponent> ConnectedComponents;
     typedef std::map<Vertex, Nodes> VertexHash;
 
-    std::map<Simplex, IntersectionFlags> configurationsFlags;
-    std::map<Simplex, IntersectionFlags> subconfigurationsFlags;
+    ConfigurationsFlags<Simplex, IntersectionFlags> configurationsFlags;
+    ConfigurationsFlags<Simplex, IntersectionFlags> subconfigurationsFlags;
 
     ~IncidenceGraph();
 

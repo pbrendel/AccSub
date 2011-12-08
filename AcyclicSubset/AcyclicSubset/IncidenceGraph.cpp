@@ -4,7 +4,7 @@
  */
 
 #include "IncidenceGraph.h"
-#include "IncidenceGraphAlgorithms.h"
+#include "IncidenceGraphAlgorithms.hpp"
 #include "PartitionGraph.h"
 
 #ifdef ACCSUB_TRACE
@@ -27,7 +27,8 @@ int IncidenceGraph::counter = 0;
 IncidenceGraph::IncidenceGraph(int dim)
 {
     this->dim = dim;
-    CreateConfigurationsFlags(dim, configurationsFlags, subconfigurationsFlags);
+    configurationsFlags.Create(dim, false, true);
+    subconfigurationsFlags.Create(dim, true, true);
 }
 
 IncidenceGraph::IncidenceGraph(SimplexList &simplexList)
@@ -40,7 +41,8 @@ IncidenceGraph::IncidenceGraph(SimplexList &simplexList)
     }
 
     dim = Simplex::GetSimplexListDimension(simplexList);
-    CreateConfigurationsFlags(dim, configurationsFlags, subconfigurationsFlags);
+    configurationsFlags.Create(dim, false, true);
+    subconfigurationsFlags.Create(dim, true, true);
 }
 
 IncidenceGraph::IncidenceGraph(SimplexPtrList &simplexPtrList)
@@ -53,7 +55,8 @@ IncidenceGraph::IncidenceGraph(SimplexPtrList &simplexPtrList)
     }
 
     dim = Simplex::GetSimplexListDimension(simplexPtrList);
-    CreateConfigurationsFlags(dim, configurationsFlags, subconfigurationsFlags);
+    configurationsFlags.Create(dim, false, true);
+    subconfigurationsFlags.Create(dim, true, true);
 }
 
 IncidenceGraph::~IncidenceGraph()

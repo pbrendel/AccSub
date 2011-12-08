@@ -193,6 +193,7 @@ void Tests::Test(SimplexList &simplexList, ReductionType reductionType)
     }
     if (test)
     {
+        std::cout<<"acyclic test number: "<<test->GetID()<<std::endl;
         delete test;
     }
     total = Timer::TimeFrom(timeStart, "total graph processing");

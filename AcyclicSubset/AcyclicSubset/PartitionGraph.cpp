@@ -5,12 +5,11 @@
 
 #include "PartitionGraph.h"
 #include "IncidenceGraph.h"
-#include "IncidenceGraphAlgorithms.h"
+#include "IncidenceGraphAlgorithms.hpp"
 #include "AccSpanningTree.h"
 #include "ComputationsLocal.h"
 #include "ComputationsLocalMPITest.h"
-#include "PrepareDataNone.h"
-#include "PrepareDataBFS.h"
+#include "PrepareData.h"
 
 #include <cmath> // ceil()
 

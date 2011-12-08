@@ -1,10 +1,10 @@
 /*
- * File:   IncidenceGraphAlgorithms.h
+ * File:   IncidenceGraphAlgorithms.hpp
  * Author: Piotr Brendel
  */
 
-#ifndef INCIDENCEGRAPHALGORITHMS_H
-#define INCIDENCEGRAPHALGORITHMS_H
+#ifndef INCIDENCEGRAPHALGORITHMS_HPP
+#define INCIDENCEGRAPHALGORITHMS_HPP
 
 #include "IncidenceGraph.h"
 #include <algorithm>
@@ -311,12 +311,72 @@ void RemoveNodesWithPredicate(IncidenceGraph *graph, RemovePredicate predicate)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void CreateConfigurationsFlags(int maxDim, std::map<Simplex, IncidenceGraph::IntersectionFlags> &configurationsFlags, std::map<Simplex, IncidenceGraph::IntersectionFlags> &subconfigurationsFlags);
-void GetSortedIntersectionOfUnsortedSets(std::vector<Vertex> &intersection, const std::set<Vertex> &setA, const std::set<Vertex> &setB);
-void GetIntersectionOfUnsortedSets(std::set<Vertex> &intersection, const std::set<Vertex> &setA, const std::set<Vertex> &setB);
-void GetIntersectionOfUnsortedSetAndSortedVector(std::set<Vertex> &intersection, const std::set<Vertex> &setA, const std::vector<Vertex> &vb);
+template <typename VertexT>
+void GetSortedIntersectionOfUnsortedSets(std::vector<VertexT> &intersection, const std::set<VertexT> &setA, const std::set<VertexT> &setB)
+{
+    std::vector<VertexT> va;
+    va.assign(setA.begin(), setA.end());
+    std::sort(va.begin(), va.end());
+    std::vector<VertexT> vb;
+    vb.assign(setB.begin(), setB.end());
+    std::sort(vb.begin(), vb.end());
+
+    if (intersection.size() > 0)
+    {
+        intersection.clear();
+    }
+
+    if (va.size() == 0 || vb.size() == 0) return;
+    if (va.front() > vb.back()) return;
+    if (va.back() < vb.front()) return;
+
+    typename std::vector<VertexT>::iterator ia = va.begin();
+    typename std::vector<VertexT>::iterator ib = vb.begin();
+    while (ia != va.end() && ib != vb.end())
+    {
+        if (*ia < *ib) ia++;
+        else if (*ib < *ia) ib++;
+        else
+        {
+            intersection.push_back(*ia);
+            ia++;
+            ib++;
+        }
+    }
+}
+
+template <typename VertexT>
+void GetIntersectionOfUnsortedSetAndSortedVector(std::set<VertexT> &intersection, const std::set<VertexT> &setA, const std::vector<VertexT> &vb)
+{
+    std::vector<VertexT> va;
+    va.assign(setA.begin(), setA.end());
+    std::sort(va.begin(), va.end());
+
+    if (intersection.size() > 0)
+    {
+        intersection.clear();
+    }
+
+    if (va.size() == 0 || vb.size() == 0) return;
+    if (va.front() > vb.back()) return;
+    if (va.back() < vb.front()) return;
+
+    typename std::vector<VertexT>::iterator ia = va.begin();
+    typename std::vector<VertexT>::const_iterator ib = vb.begin();
+    while (ia != va.end() && ib != vb.end())
+    {
+        if (*ia < *ib) ia++;
+        else if (*ib < *ia) ib++;
+        else
+        {
+            intersection.insert(*ia);
+            ia++;
+            ib++;
+        }
+    }
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 
-#endif /* INCIDENCEGRAPHALGORITHMS_H */
+#endif /* INCIDENCEGRAPHALGORITHMS_HPP */
 

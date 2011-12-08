@@ -7,6 +7,7 @@
 #define ACYCLICTEST_HPP
 
 #include "Simplex.h"
+#include "ConfigurationsFlags.hpp"
 #include <map>
 #include <string>
 
@@ -15,7 +16,7 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template <class FlagsType>
+template <typename FlagsType>
 class AcyclicTest
 {
 
@@ -26,109 +27,61 @@ public:
     virtual bool IsAcyclic(Simplex &simplex, FlagsType intersectionFlags, FlagsType intersectionFlagsMaximalFaces) = 0;
     virtual int GetID() = 0;
 
+    int TrivialTest(Simplex &simplex, SimplexList &intersection)
+    {
+        if (intersection.size() == 0)
+        {
+            return -1;
+        }
+        if (intersection.size() == 1)
+        {
+            return 1;
+        }
+        if (simplex.size() < 2)
+        {
+            return 1;
+        }
+        return 0;
+    }
+
+    int TrivialTest(Simplex &simplex, FlagsType intersectionFlags, FlagsType intersectionFlagsMaximalFaces)
+    {
+        if (intersectionFlagsMaximalFaces == 0)
+        {
+            return -1;
+        }
+        if (simplex.size() < 2)
+        {
+            return 1;
+        }
+        return 0;
+    }
+
     static AcyclicTest *Create(int acyclicTestNumber, int dim);
 
 };
 
+#define TRIVIAL_TEST_I(s, i) int tt = this->TrivialTest(s, i); if (tt < 0) return false; else if (tt > 0) return true;
+#define TRIVIAL_TEST_F(s, i, im) int tt = this->TrivialTest(s, i, im); if (tt < 0) return false; else if (tt > 0) return true;
+
 ////////////////////////////////////////////////////////////////////////////////
 
-template <class FlagsType>
-class AcyclicTestCodim1 : public AcyclicTest<FlagsType>
+template <typename FlagsType>
+class AcyclicTestFalse : public AcyclicTest<FlagsType>
 {
-
-    int maxSimplexSize;
-    std::map<int, FlagsType> codim1flags;
 
 public:
 
-    AcyclicTestCodim1(int dim)
-    {
-        maxSimplexSize = dim + 1;
-
-        // uwaga: ponizszy kod jest identyczny z tym w klasie IncidenceGraph
-        Simplex s;
-        for (int i = 0; i < maxSimplexSize; i++)
-        {
-            s.push_back(i);
-        }
-
-        // generujemy wszystkie sciany posortowane rosnaco wymiarami
-        // w kolejnosci leksykograficznej i ustawiamy flagi
-        SimplexList faces;
-        s.GenerateProperFaces(faces);
-        std::map<Simplex, FlagsType> configurationsFlags;
-        FlagsType flags = 1;
-        for (SimplexList::iterator i = faces.begin(); i != faces.end(); i++)
-        {
-            configurationsFlags[(*i)] = flags;
-            flags = flags << 1;
-        }
-
-        s.clear();
-        s.push_back(0);
-        s.push_back(1);
-        for (int d = 2; d <= maxSimplexSize; d++)
-        {
-            faces.clear();
-            s.GenerateProperFaces(faces);
-            FlagsType flags = 0;
-            for (SimplexList::iterator i = faces.begin(); i != faces.end(); i++)
-            {
-                if ((*i).size() == d - 1)
-                {
-                    flags |= configurationsFlags[*i];
-                }
-            }
-            codim1flags[d] = flags;
-            s.push_back(d);
-        }
-    }
-    
     bool IsAcyclic(Simplex &simplex, SimplexList &intersection)
     {
-        // jezeli przeciecie jest puste
-        if (intersection.size() == 0)
-        {
-            return false;
-        }
-        // jezeli w przecieciu jest tylko jedna sciana -> jest acykliczne
-        if (intersection.size() == 1)
-        {
-            return true;
-        }
-        int d = simplex.size() - 1;
-        for (SimplexList::iterator i = intersection.begin(); i != intersection.end(); i++)
-        {
-            if (i->size() != d)
-            {
-                return false;
-            }
-        }
-        return intersection.size() < simplex.size();
+        return false;
     }
-    
     bool IsAcyclic(Simplex &simplex, FlagsType intersectionFlags, FlagsType intersectionFlagsMaximalFaces)
     {
-        // jezeli przeciecie jest puste
-        if (intersectionFlagsMaximalFaces == 0)
-        {
-            return false;
-        }
-        int d = simplex.size();
-        // dla sympleksow o liczbie wierzcholkow < 2 przeciecie
-        // zawsze jest acykliczne
-        if (d < 2) return true;
-        // dla rozmiarow wiekszych niz maxDim nie mamy danych
-        if (d > maxSimplexSize) return false;
-        FlagsType flags = codim1flags[d];
-        // w przecieciu sa wszystkie podsympleksy z codim == 1
-        if ((intersectionFlagsMaximalFaces & flags) == flags) return false;
-        // w przecieciu jest cos poza podsympleksami z codim == 1
-        if ((intersectionFlagsMaximalFaces & (~flags)) != 0) return false;
-        return true;
+        return false;
     }
 
-    int GetID() { return 1; }
+    int GetID() { return -1; }
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -137,7 +90,7 @@ public:
 #define TAB_3D  "tablica3bBin.txt"
 #define TAB_4D  "tab4d.txt"
 
-template <class FlagsType>
+template <typename FlagsType>
 class AcyclicTestTabs : public AcyclicTest<FlagsType>
 {
 
@@ -145,45 +98,13 @@ public:
 
     AcyclicTestTabs(int dim)
     {
-        this->dim = dim;
         if (dim < 2 || dim > 4)
         {
             throw std::string("dim < 2 || dim > 4");
         }
 
-        // uwaga: ponizszy kod jest identyczny z tym w klasie IncidenceGraph
-        // do tworzenia flag wszystkich podkonfiguracji
-        // generowanie hasha konfiguracja->flaga
-        // najpierw tworzymy "bazowy" sympleks maksymalne wymiarowy
-        Simplex s;
-        for (int i = 0; i <= dim; i++)
-        {
-            s.push_back(i);
-        }
-        // potem generujemy wszystkie sciany posortowane rosnaco wymiarami
-        // w kolejnosci leksykograficznej
-        SimplexList faces;
-        s.GenerateProperFaces(faces);
-        // i tworzymy hasha z flagami konfiguracji
-        FlagsType flag = 1;
-        for (SimplexList::iterator i = faces.begin(); i != faces.end(); i++)
-        {
-            FlagsType subFlags = flag;
-            // teraz generujemy wszystkie podkonfiguracje i aktualizujemy flagi
-            // mozemy to zrobic w tym miejscu, bo flagi nizej wymiarowych konfiguracji
-            // sa juz ustawione
-            SimplexList subconfigurations;
-            i->GenerateProperFaces(subconfigurations);
-            for (SimplexList::iterator j = subconfigurations.begin(); j != subconfigurations.end(); j++)
-            {
-                subFlags |= configurationsFlags[(*j)];
-            }
-            configurationsFlags[(*i)] = subFlags;
-            
-            flag = flag << 1;
-        }
+        configurationsFlags.Create(dim, true, false);
 
-        // wczytywanie tablicy
         std::string filename;
         if (dim == 2) filename = TAB_2D;
         else if (dim == 3) filename = TAB_3D;
@@ -231,8 +152,7 @@ public:
 
 private:
 
-    int dim;
-    std::map<Simplex, FlagsType> configurationsFlags;
+    ConfigurationsFlags<Simplex, FlagsType> configurationsFlags;
     long int dataSize;
     unsigned char *data;
 
@@ -247,33 +167,225 @@ private:
         int flag = 1 << (index % 8);
         return ((data[i] & flag) != 0);
     }
-
 };
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template <class FlagsType>
-class AcyclicTestFalse : public AcyclicTest<FlagsType>
+template <typename FlagsType>
+class AcyclicTestCodim1 : public AcyclicTest<FlagsType>
 {
+
+    int maxSimplexSize;
+    std::map<int, FlagsType> codim1flags;
 
 public:
 
+    AcyclicTestCodim1(int dim)
+    {
+        maxSimplexSize = dim + 1;
+
+        ConfigurationsFlags<Simplex, FlagsType> configurationsFlags(dim, false, false);
+
+        Simplex s = Simplex::FromVertices(0, 1);
+        for (int d = 2; d <= maxSimplexSize; d++)
+        {
+            SimplexList faces;
+            s.GenerateProperFaces(faces);
+            FlagsType flags = 0;
+            for (SimplexList::iterator i = faces.begin(); i != faces.end(); i++)
+            {
+                if ((*i).size() == d - 1)
+                {
+                    flags |= configurationsFlags[*i];
+                }
+            }
+            codim1flags[d] = flags;
+            s.push_back(d);
+        }
+    }
+
     bool IsAcyclic(Simplex &simplex, SimplexList &intersection)
     {
-        return false;
+        TRIVIAL_TEST_I(simplex, intersection);
+        int d = simplex.size() - 1;
+        for (SimplexList::iterator i = intersection.begin(); i != intersection.end(); i++)
+        {
+            if (i->size() != d)
+            {
+                return false;
+            }
+        }
+        return intersection.size() < simplex.size();
     }
+
     bool IsAcyclic(Simplex &simplex, FlagsType intersectionFlags, FlagsType intersectionFlagsMaximalFaces)
     {
-        return false;
+        TRIVIAL_TEST_F(simplex, intersectionFlags, intersectionFlagsMaximalFaces);
+        int d= simplex.size();
+        if (d > maxSimplexSize) return false;
+        FlagsType flags = codim1flags[d];
+        // w przecieciu sa wszystkie podsympleksy z codim == 1
+        if ((intersectionFlagsMaximalFaces & flags) == flags) return false;
+        // w przecieciu jest cos poza podsympleksami z codim == 1
+        if ((intersectionFlagsMaximalFaces & (~flags)) != 0) return false;
+        return true;
     }
 
-    int GetID() { return -1; }
+    int GetID() { return 1; }
 };
-
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template <class FlagsType>
+template <typename FlagsType>
+class AcyclicTestStar : public AcyclicTest<FlagsType>
+{
+    int firstMaximalFacePower;
+    int lastMaximalFacePower;
+    std::map<FlagsType, FlagsType> confToSubconf;
+
+public:
+
+    AcyclicTestStar(int dim)
+    {
+        firstMaximalFacePower = dim + 1;
+        lastMaximalFacePower = (1 << (dim + 1)) - 2;
+
+        ConfigurationsFlags<Simplex, FlagsType> configurationsFlags(dim, false, false);
+        ConfigurationsFlags<Simplex, FlagsType> subconfigurationsFlags(dim, true, false);
+
+        FlagsType flag = 1 << firstMaximalFacePower;
+        for (int i = firstMaximalFacePower; i < lastMaximalFacePower; i++)
+        {
+            Simplex s;
+            if (configurationsFlags.GetSimplex(flag, s))
+            {
+                confToSubconf[flag] = subconfigurationsFlags[s];
+            }
+            else
+            {
+                assert(false);
+            }
+            flag = flag << 1;
+        }
+    }
+
+    bool IsAcyclic(Simplex &simplex, SimplexList &intersection)
+    {
+        TRIVIAL_TEST_I(simplex, intersection);
+        int totalMaximalFaces = 0;
+        int vertsCount = 0;
+        for (SimplexList::iterator face = intersection.begin(); face != intersection.end(); face++)
+        {
+            if (face->size() > 1)
+            {
+                totalMaximalFaces++;
+            }
+            else
+            {
+                vertsCount++;
+                if (vertsCount > 1)
+                {
+                    return false;
+                }
+            }
+        }
+        if (totalMaximalFaces == 0)
+        {
+            return true;
+        }
+        else if (vertsCount > 0)
+        {
+            return false;
+        }
+        for (Simplex::iterator vertex = simplex.begin(); vertex != simplex.end(); vertex++)
+        {
+            int count = 0;
+            for (SimplexList::iterator face = intersection.begin(); face != intersection.end(); face++)
+            {
+                // omijamy wierzcholki
+                if (face->size() > 1 && std::find(face->begin(), face->end(), *vertex) != face->end())
+                {
+                    count++;
+                }
+            }
+            if (count == totalMaximalFaces)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool IsAcyclic(Simplex &simplex, FlagsType intersectionFlags, FlagsType intersectionFlagsMaximalFaces)
+    {
+        TRIVIAL_TEST_F(simplex, intersectionFlags, intersectionFlagsMaximalFaces);
+        // sprawdzamy liczbe wierzcholkow, ktore sa maksymalnymi podscianami
+        // jezeli wiecej niz 1 -> przeciecie nie jest acykliczne
+        FlagsType flag = 1;
+        int vertsCount = 0;
+        for (int i = 0; i < firstMaximalFacePower; i++)
+        {
+            if ((intersectionFlagsMaximalFaces & flag) == flag)
+            {
+                vertsCount++;
+                if (vertsCount > 1)
+                {
+                    return false;
+                }
+            }
+            flag = flag << 1;
+        }
+        // teraz obliczamy flagi przeciec dla wszystkich maksymalnych
+        // scian o wymiarze wiekszym niz 1
+        std::vector<FlagsType> maximalFacesFlags;
+        for (int i = firstMaximalFacePower; i < lastMaximalFacePower; i++)
+        {
+            if ((intersectionFlagsMaximalFaces & flag) == flag)
+            {
+                maximalFacesFlags.push_back(confToSubconf[flag]);
+            }
+            flag = flag << 1;
+        }
+        // jezeli nie ma scian o wymiarze wiekszym niz 1 -> przeciecie acykliczne
+        if (maximalFacesFlags.size() == 0)
+        {
+            return true;
+        }
+        // jezeli sa takie sciany, a jest co najmniej jeden wolnu wierzcholek
+        // to przeciecie nie jest acykliczne
+        else if (vertsCount > 0)
+        {
+            return false;
+        }
+        // teraz dla kazdego wierzcholka sprawdzamy do ilu scian nalezy
+        // jezeli nalezy do wszystkich z przeciecia -> przeciecie jest acykliczne
+        flag = 1;
+        for (int i = 0; i < firstMaximalFacePower; i++)
+        {
+            int count = 0;
+            for (typename std::vector<FlagsType>::iterator flags = maximalFacesFlags.begin(); flags != maximalFacesFlags.end(); flags++)
+            {
+                if (((*flags) & flag) == flag)
+                {
+                    count++;
+                }
+            }
+            if (count == maximalFacesFlags.size())
+            {
+                return true;
+            }
+            flag = flag << 1;
+        }
+        return false;
+    }
+
+    int GetID() { return 2; }
+
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+template <typename FlagsType>
 AcyclicTest<FlagsType> *AcyclicTest<FlagsType>::Create(int acyclicTestNumber, int dim)
 {
     if (dim < 2) dim = 2;
@@ -282,6 +394,7 @@ AcyclicTest<FlagsType> *AcyclicTest<FlagsType>::Create(int acyclicTestNumber, in
         if (dim > 4) dim = 4;
     }
     if (acyclicTestNumber == 1) return new AcyclicTestCodim1<FlagsType>(dim);
+    if (acyclicTestNumber == 2) return new AcyclicTestStar<FlagsType>(dim);
     return new AcyclicTestTabs<FlagsType>(dim); // default
 }
 
