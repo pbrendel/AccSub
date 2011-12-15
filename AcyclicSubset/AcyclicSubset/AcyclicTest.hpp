@@ -9,10 +9,12 @@
 #include "Simplex.h"
 #include "ConfigurationsFlags.hpp"
 #include <map>
+#include <queue>
 #include <string>
 
 #include <cstdio>
 #include <iostream>
+#include <cassert>
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -23,17 +25,17 @@ class AcyclicTest
 public:
 
     virtual ~AcyclicTest() { };
-    virtual bool IsAcyclic(Simplex &simplex, SimplexList &intersection) = 0;
-    virtual bool IsAcyclic(Simplex &simplex, FlagsType intersectionFlags, FlagsType intersectionFlagsMaximalFaces) = 0;
+    virtual bool IsAcyclic(Simplex &simplex, SimplexList &intersectionMF) = 0;
+    virtual bool IsAcyclic(Simplex &simplex, FlagsType intersectionFlags, FlagsType intersectionFlagsMF) = 0;
     virtual int GetID() = 0;
 
-    int TrivialTest(Simplex &simplex, SimplexList &intersection)
+    int TrivialTest(Simplex &simplex, SimplexList &intersectionMF)
     {
-        if (intersection.size() == 0)
+        if (intersectionMF.size() == 0)
         {
             return -1;
         }
-        if (intersection.size() == 1)
+        if (intersectionMF.size() == 1)
         {
             return 1;
         }
@@ -44,9 +46,9 @@ public:
         return 0;
     }
 
-    int TrivialTest(Simplex &simplex, FlagsType intersectionFlags, FlagsType intersectionFlagsMaximalFaces)
+    int TrivialTest(Simplex &simplex, FlagsType intersectionFlags, FlagsType intersectionFlagsMF)
     {
-        if (intersectionFlagsMaximalFaces == 0)
+        if (intersectionFlags == 0 || intersectionFlagsMF == 0)
         {
             return -1;
         }
@@ -72,11 +74,11 @@ class AcyclicTestFalse : public AcyclicTest<FlagsType>
 
 public:
 
-    bool IsAcyclic(Simplex &simplex, SimplexList &intersection)
+    bool IsAcyclic(Simplex &simplex, SimplexList &intersectionMF)
     {
         return false;
     }
-    bool IsAcyclic(Simplex &simplex, FlagsType intersectionFlags, FlagsType intersectionFlagsMaximalFaces)
+    bool IsAcyclic(Simplex &simplex, FlagsType intersectionFlags, FlagsType intersectionFlagsMF)
     {
         return false;
     }
@@ -127,23 +129,23 @@ public:
         delete [] data;
     }
 
-    bool IsAcyclic(Simplex &simplex, SimplexList &intersection)
+    bool IsAcyclic(Simplex &simplex, SimplexList &intersectionMF)
     {
         // jezeli w przecieciu jest tylko jedna sciana -> jest acykliczne
-        if (intersection.size() == 1)
+        if (intersectionMF.size() == 1)
         {
             return true;
         }
         // zakladamy, ze wejsciowe simpleksy sa w wersji "indeksowej"
         int index = 0;
-        for (SimplexList::iterator i = intersection.begin(); i != intersection.end(); i++)
+        for (SimplexList::iterator i = intersectionMF.begin(); i != intersectionMF.end(); i++)
         {
             index |= configurationsFlags[*i];
         }
         return GetValue(index);
     }
 
-    bool IsAcyclic(Simplex &simplex, FlagsType intersectionFlags, FlagsType intersectionFlagsMaximalFaces)
+    bool IsAcyclic(Simplex &simplex, FlagsType intersectionFlags, FlagsType intersectionFlagsMF)
     {
         return GetValue((int)intersectionFlags);
     }
@@ -204,30 +206,30 @@ public:
         }
     }
 
-    bool IsAcyclic(Simplex &simplex, SimplexList &intersection)
+    bool IsAcyclic(Simplex &simplex, SimplexList &intersectionMF)
     {
-        TRIVIAL_TEST_I(simplex, intersection);
+        TRIVIAL_TEST_I(simplex, intersectionMF);
         int d = simplex.size() - 1;
-        for (SimplexList::iterator i = intersection.begin(); i != intersection.end(); i++)
+        for (SimplexList::iterator i = intersectionMF.begin(); i != intersectionMF.end(); i++)
         {
             if (i->size() != d)
             {
                 return false;
             }
         }
-        return intersection.size() < simplex.size();
+        return intersectionMF.size() < simplex.size();
     }
 
-    bool IsAcyclic(Simplex &simplex, FlagsType intersectionFlags, FlagsType intersectionFlagsMaximalFaces)
+    bool IsAcyclic(Simplex &simplex, FlagsType intersectionFlags, FlagsType intersectionFlagsMF)
     {
-        TRIVIAL_TEST_F(simplex, intersectionFlags, intersectionFlagsMaximalFaces);
+        TRIVIAL_TEST_F(simplex, intersectionFlags, intersectionFlagsMF);
         int d= simplex.size();
         if (d > maxSimplexSize) return false;
         FlagsType flags = codim1flags[d];
         // w przecieciu sa wszystkie podsympleksy z codim == 1
-        if ((intersectionFlagsMaximalFaces & flags) == flags) return false;
+        if ((intersectionFlagsMF & flags) == flags) return false;
         // w przecieciu jest cos poza podsympleksami z codim == 1
-        if ((intersectionFlagsMaximalFaces & (~flags)) != 0) return false;
+        if ((intersectionFlagsMF & (~flags)) != 0) return false;
         return true;
     }
 
@@ -269,12 +271,12 @@ public:
         }
     }
 
-    bool IsAcyclic(Simplex &simplex, SimplexList &intersection)
+    bool IsAcyclic(Simplex &simplex, SimplexList &intersectionMF)
     {
-        TRIVIAL_TEST_I(simplex, intersection);
+        TRIVIAL_TEST_I(simplex, intersectionMF);
         int totalMaximalFaces = 0;
         int vertsCount = 0;
-        for (SimplexList::iterator face = intersection.begin(); face != intersection.end(); face++)
+        for (SimplexList::iterator face = intersectionMF.begin(); face != intersectionMF.end(); face++)
         {
             if (face->size() > 1)
             {
@@ -300,7 +302,7 @@ public:
         for (Simplex::iterator vertex = simplex.begin(); vertex != simplex.end(); vertex++)
         {
             int count = 0;
-            for (SimplexList::iterator face = intersection.begin(); face != intersection.end(); face++)
+            for (SimplexList::iterator face = intersectionMF.begin(); face != intersectionMF.end(); face++)
             {
                 // omijamy wierzcholki
                 if (face->size() > 1 && std::find(face->begin(), face->end(), *vertex) != face->end())
@@ -316,16 +318,16 @@ public:
         return false;
     }
 
-    bool IsAcyclic(Simplex &simplex, FlagsType intersectionFlags, FlagsType intersectionFlagsMaximalFaces)
+    bool IsAcyclic(Simplex &simplex, FlagsType intersectionFlags, FlagsType intersectionFlagsMF)
     {
-        TRIVIAL_TEST_F(simplex, intersectionFlags, intersectionFlagsMaximalFaces);
+        TRIVIAL_TEST_F(simplex, intersectionFlags, intersectionFlagsMF);
         // sprawdzamy liczbe wierzcholkow, ktore sa maksymalnymi podscianami
         // jezeli wiecej niz 1 -> przeciecie nie jest acykliczne
         FlagsType flag = 1;
         int vertsCount = 0;
         for (int i = 0; i < firstMaximalFacePower; i++)
         {
-            if ((intersectionFlagsMaximalFaces & flag) == flag)
+            if ((intersectionFlagsMF & flag) == flag)
             {
                 vertsCount++;
                 if (vertsCount > 1)
@@ -340,7 +342,7 @@ public:
         std::vector<FlagsType> maximalFacesFlags;
         for (int i = firstMaximalFacePower; i < lastMaximalFacePower; i++)
         {
-            if ((intersectionFlagsMaximalFaces & flag) == flag)
+            if ((intersectionFlagsMF & flag) == flag)
             {
                 maximalFacesFlags.push_back(confToSubconf[flag]);
             }
@@ -386,6 +388,257 @@ public:
 ////////////////////////////////////////////////////////////////////////////////
 
 template <typename FlagsType>
+class AcyclicTestRecursive : public AcyclicTest<FlagsType>
+{
+    struct MaximalFace;
+    
+    typedef MaximalFace *MaximalFacePtr;
+    
+    struct MaximalFace
+    {
+        FlagsType flag;
+        FlagsType subconfFlags;
+        FlagsType acyclicIntersectionFlags;
+        FlagsType acyclicIntersectionFlagsMF;
+        bool isAcyclic;
+        bool isAddedToQueue;
+        
+        MaximalFace(FlagsType f, FlagsType sf)
+        {
+            flag = f;
+            subconfFlags = sf;
+            acyclicIntersectionFlags = 0;
+            acyclicIntersectionFlagsMF = 0;
+            isAcyclic = false;
+            isAddedToQueue = false;
+        }
+        
+        void GetNotAcyclicNeighbours(const std::vector<MaximalFacePtr> &faces, std::vector<MaximalFacePtr> &neighbours)
+        {
+            neighbours.clear();
+            for (typename std::vector<MaximalFacePtr>::const_iterator f = faces.begin(); f != faces.end(); f++)
+            {
+                if ((*f) == this || (*f)->isAcyclic)
+                {
+                    continue;
+                }
+                if ((subconfFlags & (*f)->subconfFlags) != 0)
+                {
+                    neighbours.push_back((*f));
+                }
+            }
+        }        
+    };
+        
+    int lastMaximalFacePower;
+    std::map<FlagsType, FlagsType> confToSubconf;
+    
+public:
+
+    AcyclicTestRecursive(int dim)
+    {
+        lastMaximalFacePower = (1 << (dim + 1)) - 2;
+
+        ConfigurationsFlags<Simplex, FlagsType> configurationsFlags(dim, false, false);
+        ConfigurationsFlags<Simplex, FlagsType> subconfigurationsFlags(dim, true, false);
+
+        FlagsType flag = 1;
+        for (int i = 0; i < lastMaximalFacePower; i++)
+        {
+            Simplex s;
+            if (configurationsFlags.GetSimplex(flag, s))
+            {
+                confToSubconf[flag] = subconfigurationsFlags[s];
+            }
+            else
+            {
+                assert(false);
+            }
+            flag = flag << 1;
+        }
+    }        
+    
+    bool IsAcyclic(Simplex &simplex, SimplexList &intersectionMF)
+    {
+        TRIVIAL_TEST_I(simplex, intersectionMF);
+
+        std::queue<Simplex> L;
+        std::set<Simplex> enququedSimplices;
+        SimplexList acyclicSimplices;
+        Simplex s = intersectionMF[0];
+        acyclicSimplices.push_back(s);
+        L.push(s);
+        enququedSimplices.insert(s);
+        while (!L.empty())
+        {
+            s = L.front();
+            L.pop();
+            enququedSimplices.erase(s);
+            SimplexList neighbours;
+            GetNotAcyclicNeighbours(s, intersectionMF, acyclicSimplices, neighbours);
+            for (typename SimplexList::iterator n = neighbours.begin(); n != neighbours.end(); n++)
+            {
+                SimplexList intersection;
+                GetAcyclicIntersection(*n, acyclicSimplices, intersection);
+                if (IsAcyclic(simplex, intersection))
+                {
+                    acyclicSimplices.push_back(*n);
+                    if (enququedSimplices.find(*n) == enququedSimplices.end())
+                    {                      
+                        L.push(*n);
+                        enququedSimplices.insert(s);
+                    }
+                }
+            }
+        }
+
+        return (acyclicSimplices.size() == intersectionMF.size());
+    }
+    
+    bool IsAcyclic(Simplex &simplex, FlagsType intersectionFlags, FlagsType intersectionFlagsMF)
+    {
+        TRIVIAL_TEST_F(simplex, intersectionFlags, intersectionFlagsMF);
+        
+        FlagsType flag = 1;
+        std::vector<MaximalFacePtr> maximalFaces;
+        for (int i = 0; i < lastMaximalFacePower; i++)
+        {
+            if ((intersectionFlagsMF & flag) != 0)
+            {
+                maximalFaces.push_back(new MaximalFace(flag, confToSubconf[flag]));                
+            }
+            flag = flag << 1;
+        }
+        if (maximalFaces.size() == 1)
+        {
+            Clear(maximalFaces);
+            return true;
+        }
+
+        std::queue<MaximalFacePtr> L;
+        MaximalFacePtr mf = maximalFaces[0];
+        mf->isAddedToQueue = true;
+        L.push(mf);
+        int acyclicFaces = 1;
+        mf->isAcyclic = true;
+        UpdateNeighboursAccInt(mf, maximalFaces);
+        while (!L.empty())      
+        {
+            mf = L.front();
+            L.pop();
+            mf->isAddedToQueue = false;
+            std::vector<MaximalFacePtr> neighbours;
+            mf->GetNotAcyclicNeighbours(maximalFaces, neighbours);
+            for (typename std::vector<MaximalFacePtr>::iterator n = neighbours.begin(); n != neighbours.end(); n++)
+            {
+                if (IsAcyclic(simplex, (*n)->acyclicIntersectionFlags, (*n)->acyclicIntersectionFlagsMF))
+                {
+                    acyclicFaces++;
+                    (*n)->isAcyclic = true;
+                    UpdateNeighboursAccInt((*n), maximalFaces);
+                    if (!(*n)->isAddedToQueue)
+                    {
+                        (*n)->isAddedToQueue = true;
+                        L.push(*n);
+                    }
+                }
+            }
+        }
+        
+        Clear(maximalFaces);
+        return (acyclicFaces == maximalFaces.size());
+    }
+    
+    int GetID() { return 3; }
+    
+private:
+        
+    void UpdateNeighboursAccInt(const MaximalFacePtr &face, const std::vector<MaximalFacePtr> &maximalFaces)
+    {
+        std::vector<MaximalFacePtr> neighbours;
+        face->GetNotAcyclicNeighbours(maximalFaces, neighbours);
+        for (typename std::vector<MaximalFacePtr>::const_iterator f = neighbours.begin(); f != neighbours.end(); f++)
+        {
+            if ((*f) == face || (*f)->isAcyclic)
+            {
+                continue;
+            }
+            FlagsType intersection = (*f)->subconfFlags & face->subconfFlags;                        
+            // jezeli flagi juz sa ustawione to nic nie robimy
+            if (((*f)->acyclicIntersectionFlags & intersection) == intersection)
+            {
+                continue;
+            }
+            FlagsType flags = 1 << lastMaximalFacePower;
+            FlagsType intersectionMF = intersection;
+            for (int i = 0; i < lastMaximalFacePower; i++)
+            {
+                if ((intersectionMF & flags) != 0)
+                {
+                    FlagsType subconf = confToSubconf[flags];
+                    intersectionMF &= (~(subconf & (~flags)));
+                }
+                flags = flags >> 1;
+            }
+            (*f)->acyclicIntersectionFlags |= intersection;
+            (*f)->acyclicIntersectionFlagsMF |= intersectionMF;
+            FlagsType flagsSubfaces = intersection & (~intersectionMF);
+            (*f)->acyclicIntersectionFlagsMF &= (~flagsSubfaces);            
+        }
+    }        
+    
+    void Clear(const std::vector<MaximalFacePtr> &maximalFaces)
+    {
+        for (typename std::vector<MaximalFacePtr>::const_iterator f = maximalFaces.begin(); f != maximalFaces.end(); f++)
+        {
+            delete (*f);
+        }
+    }
+
+    void GetNotAcyclicNeighbours(const Simplex &s, const SimplexList &simplexList, const SimplexList &acyclicSimplices, SimplexList &neighbours)
+    {
+        if (neighbours.size() > 0)
+        {
+            neighbours.clear();
+        }
+        for (SimplexList::const_iterator i = simplexList.begin(); i != simplexList.end(); i++)
+        {
+            if (s == (*i) || std::find(acyclicSimplices.begin(), acyclicSimplices.end(), *i) != acyclicSimplices.end())
+            {
+                continue;
+            }
+            Simplex intersection;
+            if (Simplex::GetIntersection(s, *i, intersection))
+            {
+                neighbours.push_back(*i);
+            }
+        }
+    }
+
+    void GetAcyclicIntersection(const Simplex &s, const SimplexList &acyclicSimplices, SimplexList &acyclicIntersection)
+    {
+        if (acyclicIntersection.size() > 0)
+        {
+            acyclicIntersection.clear();
+        }
+        for (SimplexList::const_iterator i = acyclicSimplices.begin(); i != acyclicSimplices.end(); i++)
+        {
+            if (s == (*i))
+            {
+                continue;
+            }
+            Simplex intersection;
+            if (Simplex::GetIntersection(s, *i, intersection))
+            {
+                acyclicIntersection.push_back(intersection);
+            }
+        }
+    }
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+template <typename FlagsType>
 AcyclicTest<FlagsType> *AcyclicTest<FlagsType>::Create(int acyclicTestNumber, int dim)
 {
     if (dim < 2) dim = 2;
@@ -395,6 +648,7 @@ AcyclicTest<FlagsType> *AcyclicTest<FlagsType>::Create(int acyclicTestNumber, in
     }
     if (acyclicTestNumber == 1) return new AcyclicTestCodim1<FlagsType>(dim);
     if (acyclicTestNumber == 2) return new AcyclicTestStar<FlagsType>(dim);
+    if (acyclicTestNumber == 3) return new AcyclicTestRecursive<FlagsType>(dim);
     return new AcyclicTestTabs<FlagsType>(dim); // default
 }
 
