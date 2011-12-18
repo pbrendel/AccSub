@@ -12,12 +12,12 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void AccSpanningTree::Node::FindAcyclicSubsetToBorderConnection(Vertex borderVertex, IncidenceGraph::Path &path)
+void AccSpanningTree::Node::FindAccSubToBorderConnection(Vertex borderVertex, IncidenceGraph::Path &path)
 {
-    if (acyclicSubsetSize > 0)
+    if (accSubSize > 0)
     {
         // szukanie sciezki od wierzcholka w brzegu do najbliszego acyklicznego sempleksu        
-        path = FindPath(FindNode(parent->ig->nodes, FindNodeWithVertex(borderVertex)), FindPathToNodeWithAcyclicIntersection());
+        path = FindPath(FindNode(parent->ig->nodes, FindNodeWithVertex(borderVertex)), FindPathToNodeWithAccIntersection());
         assert(path.size() > 0);
     }
     else
@@ -28,20 +28,20 @@ void AccSpanningTree::Node::FindAcyclicSubsetToBorderConnection(Vertex borderVer
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void AccSpanningTree::Node::UpdateAcyclicSubsetToBorderConnection(Vertex borderVertex, IncidenceGraph::Path &path)
+void AccSpanningTree::Node::UpdateAccSubToBorderConnection(Vertex borderVertex, IncidenceGraph::Path &path)
 {
-    if (acyclicSubsetSize > 0)
+    if (accSubSize > 0)
     {
-        if (isConnectedToAcyclicSubset)
+        if (isConnectedToAccSub)
         {
             // std::cout<<"is connected to acyclic subset"<<std::endl;
-            UpdatePathFromBorderToAcyclicSubset(borderVertex, path);
+            UpdatePathFromBorderToAccSub(borderVertex, path);
         }
         else
         {
             // std::cout<<"connecting to acyclic subset"<<std::endl;
-            UpdatePathFromAcyclicSubsetToBorder(borderVertex, path);
-            isConnectedToAcyclicSubset = true;
+            UpdatePathFromAccSubToBorder(borderVertex, path);
+            isConnectedToAccSub = true;
         }
     }
     else
@@ -49,7 +49,7 @@ void AccSpanningTree::Node::UpdateAcyclicSubsetToBorderConnection(Vertex borderV
         // std::cout<<"updating border verts: "<<singleBorderVerts.size()<<std::endl;
         UpdateBoundaryVertsConnectingPaths();
         boundaryVertsConnectingPaths.clear();
-        isConnectedToAcyclicSubset = true;
+        isConnectedToAccSub = true;
     }
 }
 
@@ -61,7 +61,7 @@ void AccSpanningTree::Node::UpdateAcyclicSubsetToBorderConnection(Vertex borderV
 // wczesniej natrafimy na inny kawalek podzbioru acyklicznego
 // zakladamy, ze jestesmy w "kawalku" kompleksu, ktory ma juz polaczenie
 // ze zbiorem acyklicznym
-void AccSpanningTree::Node::UpdatePathFromBorderToAcyclicSubset(Vertex borderVertex, IncidenceGraph::Path &path)
+void AccSpanningTree::Node::UpdatePathFromBorderToAccSub(Vertex borderVertex, IncidenceGraph::Path &path)
 {
     IncidenceGraph::Node *prevNode = path.front();
     IncidenceGraph::Path::iterator i = path.begin();
@@ -70,7 +70,7 @@ void AccSpanningTree::Node::UpdatePathFromBorderToAcyclicSubset(Vertex borderVer
     // (musimy zagwarantowac, ze wierzcholek na brzegu bedzie mial "dojscie"
     // do zbioru acyklicznego, wiec jezeli juz w nim jest, to znaczy, ze wczesniej
     // zostal do niego dolaczony)
-    if (prevNode->GetAcyclicIntersectionFlags() & (1 << prevNode->NormalizeVertex(borderVertex)))
+    if (prevNode->GetAccInfo().IsVertexInAccIntersection(borderVertex))
     {
         // std::cout<<"vertex "<<borderVertex<<" is in acyclic subset -> finishing"<<std::endl;
         return;
@@ -85,10 +85,10 @@ void AccSpanningTree::Node::UpdatePathFromBorderToAcyclicSubset(Vertex borderVer
         {
             prevNode = *i;
         }
-        else if ((*i)->GetAcyclicIntersectionFlags() & (1 << (*i)->NormalizeVertex(vertex)))
+        else if ((*i)->GetAccInfo().IsVertexInAccIntersection(vertex))
         {
             // std::cout<<"adding acyclic edge "<<lastVertex<<" " <<vertex<<" -> finishing 1b"<<std::endl;
-            prevNode->UpdateAcyclicIntersectionWithEdge(lastVertex, vertex);
+            prevNode->GetAccInfo().UpdateAccIntersectionWithEdge(lastVertex, vertex);
             prevNode = 0;
             break;
         }
@@ -96,14 +96,14 @@ void AccSpanningTree::Node::UpdatePathFromBorderToAcyclicSubset(Vertex borderVer
         {
             vertsOnPath.insert(vertex);
             // std::cout<<"adding acyclic edge "<<lastVertex<<" " <<vertex<<std::endl;
-            prevNode->UpdateAcyclicIntersectionWithEdge(lastVertex, vertex);
+            prevNode->GetAccInfo().UpdateAccIntersectionWithEdge(lastVertex, vertex);
             prevNode = (*i);
             lastVertex = vertex;
-            vertex = prevNode->FindAcyclicVertexNotIn(vertsOnPath);
+            vertex = prevNode->GetAccInfo().FindAccVertexNotIn(vertsOnPath);
             if (vertex != -1)
             {
                 // std::cout<<"adding acyclic edge "<<lastVertex<<" " <<vertex<<" -> finishing 2b"<<std::endl;
-                prevNode->UpdateAcyclicIntersectionWithEdge(lastVertex, vertex);
+                prevNode->GetAccInfo().UpdateAccIntersectionWithEdge(lastVertex, vertex);
                 prevNode = 0;
                 break;
             }
@@ -112,10 +112,10 @@ void AccSpanningTree::Node::UpdatePathFromBorderToAcyclicSubset(Vertex borderVer
     // jezeli na liscie byl tylko jeden node
     if (prevNode != 0)
     {
-        Vertex vertex = prevNode->FindAcyclicVertexNotEqual(lastVertex);
+        Vertex vertex = prevNode->GetAccInfo().FindAccVertexNotEqual(lastVertex);
         assert(vertex != -1);
         // std::cout<<"adding acyclic edge "<<lastVertex<<" " <<vertex<<" -> finishing 3"<<std::endl;
-        prevNode->UpdateAcyclicIntersectionWithEdge(lastVertex, vertex);
+        prevNode->GetAccInfo().UpdateAccIntersectionWithEdge(lastVertex, vertex);
            
     }
 }
@@ -128,7 +128,7 @@ void AccSpanningTree::Node::UpdatePathFromBorderToAcyclicSubset(Vertex borderVer
 // albo trafilismy na wierzcholek w brzegu, ktorego podlaczenie gwarantuje
 // poprzednia funkcja albo trafilismy na inny podzbior acykliczny znajdujacy
 // sie w brzegu => tez ok
-void AccSpanningTree::Node::UpdatePathFromAcyclicSubsetToBorder(Vertex borderVertex, IncidenceGraph::Path &path)
+void AccSpanningTree::Node::UpdatePathFromAccSubToBorder(Vertex borderVertex, IncidenceGraph::Path &path)
 {
     path.reverse();
     IncidenceGraph::Path::iterator i = path.begin();
@@ -137,7 +137,7 @@ void AccSpanningTree::Node::UpdatePathFromAcyclicSubsetToBorder(Vertex borderVer
     i++;
     // pierwszy node musi zawierac wierzcholek znajdujacy sie w zbiorze
     // acyklicznym, bo takie byly warunki szukania sciezki
-    Vertex lastVertex = prevNode->FindAcyclicVertexNotIn(borderVerts);
+    Vertex lastVertex = prevNode->GetAccInfo().FindAccVertexNotIn(borderVerts);
     // std::cout<<"vertex "<<lastVertex<<" is acyclic"<<std::endl;
     assert(lastVertex != -1);
     for (; i != path.end(); i++)
@@ -147,17 +147,17 @@ void AccSpanningTree::Node::UpdatePathFromAcyclicSubsetToBorder(Vertex borderVer
         {
             prevNode = *i;
         }
-        else if ((*i)->GetAcyclicIntersectionFlags() & (1 << (*i)->NormalizeVertex(vertex)))
+        else if ((*i)->GetAccInfo().IsVertexInAccIntersection(vertex))
         {
             // std::cout<<"adding acyclic edge "<<lastVertex<<" " <<vertex<<" -> finishing 1a"<<std::endl;
-            prevNode->UpdateAcyclicIntersectionWithEdge(lastVertex, vertex);
+            prevNode->GetAccInfo().UpdateAccIntersectionWithEdge(lastVertex, vertex);
             prevNode = 0;
             break;
         }
         else
         {
             // std::cout<<"adding acyclic edge "<<lastVertex<<" " <<vertex<<std::endl;
-            prevNode->UpdateAcyclicIntersectionWithEdge(lastVertex, vertex);
+            prevNode->GetAccInfo().UpdateAccIntersectionWithEdge(lastVertex, vertex);
             prevNode = (*i);
             lastVertex = vertex;
         }
@@ -173,7 +173,7 @@ void AccSpanningTree::Node::UpdatePathFromAcyclicSubsetToBorder(Vertex borderVer
         if (lastVertex != borderVertex)
         {
             // std::cout<<"adding acyclic edge "<<lastVertex<<" " <<borderVertex<<" -> finishing 2a"<<std::endl;
-            prevNode->UpdateAcyclicIntersectionWithEdge(lastVertex, borderVertex);
+            prevNode->GetAccInfo().UpdateAccIntersectionWithEdge(lastVertex, borderVertex);
         }
     }
 }
@@ -195,7 +195,6 @@ void AccSpanningTree::Node::FindBoundaryVertsConnectingPaths()
     std::vector<Vertex>::iterator vertex = boundaryVertsToConnect.begin();
     Vertex firstVertex = *vertex;
     IncidenceGraph::Node *firstNode = FindNode(connectedComponent, FindNodeWithVertex(firstVertex));
-//    firstNode->UpdateAcyclicIntersectionWithVertex(firstVertex);
     vertex++;
     for (; vertex != boundaryVertsToConnect.end(); vertex++)
     {
@@ -226,7 +225,7 @@ void AccSpanningTree::Node::UpdateBoundaryVertsConnectingPaths()
     std::vector<Vertex>::iterator vertex = boundaryVertsToConnect.begin();
     Vertex firstVertex = *vertex;
     IncidenceGraph::Node *firstNode = FindNode(connectedComponent, FindNodeWithVertex(firstVertex));
-    firstNode->UpdateAcyclicIntersectionWithVertex(firstVertex);
+    firstNode->GetAccInfo().UpdateAccIntersectionWithVertex(firstVertex);
     vertex++;
     for (std::vector<IncidenceGraph::Path>::iterator path = boundaryVertsConnectingPaths.begin(); path != boundaryVertsConnectingPaths.end(); path++, vertex++)
     {
@@ -235,7 +234,7 @@ void AccSpanningTree::Node::UpdateBoundaryVertsConnectingPaths()
         // jezeli wierzcholek jest juz w zbiorze acyklicznym, to kontynuujemy
         // znaczy to, ze jakas wczesniejsza sciezka przeszla przez niego
         // i dolaczyla go do zbioru acyklicznego
-        if (prevNode->GetAcyclicIntersectionFlags() & (1 << prevNode->NormalizeVertex(*vertex)))
+        if (prevNode->GetAccInfo().IsVertexInAccIntersection(*vertex))
         {
             continue;
         }
@@ -252,10 +251,10 @@ void AccSpanningTree::Node::UpdateBoundaryVertsConnectingPaths()
             {
                 prevNode = *i;
             }
-            else if ((*i)->GetAcyclicIntersectionFlags() & (1 << (*i)->NormalizeVertex(vertex)))
+            else if ((*i)->GetAccInfo().IsVertexInAccIntersection(vertex))
             {
                 // std::cout<<"adding acyclic edge "<<lastVertex<<" " <<vertex<<" -> finishing 2c"<<std::endl;
-                prevNode->UpdateAcyclicIntersectionWithEdge(lastVertex, vertex);
+                prevNode->GetAccInfo().UpdateAccIntersectionWithEdge(lastVertex, vertex);
                 prevNode = 0;
                 break;
             }
@@ -263,14 +262,14 @@ void AccSpanningTree::Node::UpdateBoundaryVertsConnectingPaths()
             {
                 vertsOnPath.insert(vertex);
                 // std::cout<<"adding acyclic edge "<<lastVertex<<" " <<vertex<<std::endl;
-                prevNode->UpdateAcyclicIntersectionWithEdge(lastVertex, vertex);               
+                prevNode->GetAccInfo().UpdateAccIntersectionWithEdge(lastVertex, vertex);
                 prevNode = (*i);
                 lastVertex = vertex;
-                vertex = prevNode->FindAcyclicVertexNotIn(vertsOnPath);
+                vertex = prevNode->GetAccInfo().FindAccVertexNotIn(vertsOnPath);
                 if (vertex != -1)
                 {
                     // std::cout<<"adding acyclic edge "<<lastVertex<<" " <<vertex<<" -> finishing 2b"<<std::endl;
-                    prevNode->UpdateAcyclicIntersectionWithEdge(lastVertex, vertex);
+                    prevNode->GetAccInfo().UpdateAccIntersectionWithEdge(lastVertex, vertex);
                     prevNode = 0;
                     break;
                 }
@@ -287,7 +286,7 @@ void AccSpanningTree::Node::UpdateBoundaryVertsConnectingPaths()
             if (lastVertex != firstVertex)
             {
                 // std::cout<<"adding acyclic edge "<<lastVertex<<" " <<firstVertex<<" -> finishing 2c"<<std::endl;
-                prevNode->UpdateAcyclicIntersectionWithEdge(lastVertex, firstVertex);
+                prevNode->GetAccInfo().UpdateAccIntersectionWithEdge(lastVertex, firstVertex);
             }
         }
     }
@@ -295,13 +294,13 @@ void AccSpanningTree::Node::UpdateBoundaryVertsConnectingPaths()
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void AccSpanningTree::Edge::FindAcyclicConnections()
+void AccSpanningTree::Edge::FindAccConnections()
 {
-    nodeA->FindAcyclicSubsetToBorderConnection(intersectionVertex, pathToA);
-    nodeB->FindAcyclicSubsetToBorderConnection(intersectionVertex, pathToB);
+    nodeA->FindAccSubToBorderConnection(intersectionVertex, pathToA);
+    nodeB->FindAccSubToBorderConnection(intersectionVertex, pathToB);
 }
 
-void AccSpanningTree::Edge::UpdateAcyclicConnections()
+void AccSpanningTree::Edge::UpdateAccConnections()
 {
     // najpierw uaktualnbiamy sciezke zbioru, ktory juz jest
     // dolaczony do drzewa
@@ -310,19 +309,19 @@ void AccSpanningTree::Edge::UpdateAcyclicConnections()
     // juz wczesniej i mozna pod niego podpiac nowo dodawana czesc zbioru ac.
 
     // std::cout<<"intersection vertex: "<<intersectionVertex<<std::endl;
-    if (nodeA->isConnectedToAcyclicSubset)
+    if (nodeA->isConnectedToAccSub)
     {
         // Debug::Print(std::cout, pathToA);
-        nodeA->UpdateAcyclicSubsetToBorderConnection(intersectionVertex, pathToA);
+        nodeA->UpdateAccSubToBorderConnection(intersectionVertex, pathToA);
         // Debug::Print(std::cout, pathToB);
-        nodeB->UpdateAcyclicSubsetToBorderConnection(intersectionVertex, pathToB);
+        nodeB->UpdateAccSubToBorderConnection(intersectionVertex, pathToB);
     }
     else
     {
         // Debug::Print(std::cout, pathToB);
-        nodeB->UpdateAcyclicSubsetToBorderConnection(intersectionVertex, pathToB);
+        nodeB->UpdateAccSubToBorderConnection(intersectionVertex, pathToB);
         // Debug::Print(std::cout, pathToA);
-        nodeA->UpdateAcyclicSubsetToBorderConnection(intersectionVertex, pathToA);
+        nodeA->UpdateAccSubToBorderConnection(intersectionVertex, pathToA);
     }
 }
 
@@ -339,7 +338,7 @@ AccSpanningTree::AccSpanningTree(PartitionGraph *pg)
     {
         IncidenceGraph *ig = (*i)->ig;
         std::vector<std::set<Vertex> >::iterator ccb = ig->connectedComponentsBorders.begin();
-        std::vector<int>::iterator ccass = ig->connectedComponentsAcyclicSubsetSize.begin();
+        std::vector<int>::iterator ccass = ig->connectedComponentsAccSubSize.begin();
         for (IncidenceGraph::ConnectedComponents::iterator cc = ig->connectedComponents.begin(); cc != ig->connectedComponents.end(); cc++)
         {
             Node *newNode = new Node(*i, currentID++, *cc, *ccb, *ccass);
@@ -388,10 +387,10 @@ AccSpanningTree::AccSpanningTree(PartitionGraph *pg)
 
     // tworzymy hasha, w ktorym dla kazdego ID poddrzewa bedziemy przechowywali
     // rozmiar podzbioru acyklicznego w nim zawartego (w poddrzewie)
-    std::map<int, int> spanningTreeAcyclicSubsetSize;
+    std::map<int, int> spanningTreeAccSubSize;
     for (Nodes::iterator node = nodes.begin(); node != nodes.end(); node++)
     {
-        spanningTreeAcyclicSubsetSize[(*node)->subtreeID] = (*node)->acyclicSubsetSize;
+        spanningTreeAccSubSize[(*node)->subtreeID] = (*node)->accSubSize;
     }
 
     // i na koncu drzewo rozpinajace
@@ -406,7 +405,7 @@ AccSpanningTree::AccSpanningTree(PartitionGraph *pg)
         int oldID = (*edge)->nodeB->subtreeID;
         // przy laczeniu poddrzew sumujemy rozmiary podzbiorow acyklicznych
         // w nich zawartych
-        spanningTreeAcyclicSubsetSize[newID] = spanningTreeAcyclicSubsetSize[newID] + spanningTreeAcyclicSubsetSize[oldID];
+        spanningTreeAccSubSize[newID] = spanningTreeAccSubSize[newID] + spanningTreeAccSubSize[oldID];
         for (Nodes::iterator node = nodes.begin(); node != nodes.end(); node++)
         {
             if ((*node)->subtreeID == oldID)
@@ -430,7 +429,7 @@ AccSpanningTree::AccSpanningTree(PartitionGraph *pg)
     Nodes::iterator node = nodes.begin();
     while (node != nodes.end())
     {
-        if (spanningTreeAcyclicSubsetSize[(*node)->subtreeID] == 0)
+        if (spanningTreeAccSubSize[(*node)->subtreeID] == 0)
         {
             // usuwamy spojna skladowa i kopiujemy jej liste sympleksow
             (*node)->parent->ig->RemoveConnectedComponentAndCopySimplexList((*node)->connectedComponent, simplexPtrLists[(*node)->subtreeID]);
@@ -474,7 +473,7 @@ AccSpanningTree::AccSpanningTree(PartitionGraph *pg)
     // zaktualizowac podzbior acykliczny
     for (Edges::iterator i = edges.begin(); i != edges.end(); i++)
     {
-        if ((*i)->isInSpanningTree) (*i)->FindAcyclicConnections();
+        if ((*i)->isInSpanningTree) (*i)->FindAccConnections();
     }
     for (Nodes::iterator i = nodes.begin(); i != nodes.end(); i++)
     {
@@ -502,12 +501,12 @@ AccSpanningTree::~AccSpanningTree()
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void AccSpanningTree::JoinAcyclicSubsets()
+void AccSpanningTree::JoinAccSubsets()
 {
     // aktualizujemy zbior acykliczny o polaczenia pomiedzy podgrafami
     for (Edges::iterator i = edges.begin(); i != edges.end(); i++)
     {
-        if ((*i)->isInSpanningTree) (*i)->UpdateAcyclicConnections();
+        if ((*i)->isInSpanningTree) (*i)->UpdateAccConnections();
     }
 
 #ifdef ACCSUB_TRACE    

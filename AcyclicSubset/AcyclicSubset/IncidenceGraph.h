@@ -8,22 +8,21 @@
 
 #include "Simplex.h"
 #include "ConfigurationsFlags.hpp"
-#include "AcyclicTest.hpp"
+#include "AccTest.hpp"
 #include "IntersectionFlagsBitSet.hpp"
+#include "AccInfoFlags.hpp"
 
 #include <list>
 #include <queue>
 #include <set>
 
-class IncidenceGraph;
-
 ////////////////////////////////////////////////////////////////////////////////
 
 enum AccSubAlgorithm
 {
-    ASA_Acc = 0,
-    ASA_AccIG,
-    ASA_AccST,
+    ASA_AccSub = 0,
+    ASA_AccSubIG,
+    ASA_AccSubST,
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -37,27 +36,17 @@ public:
     typedef unsigned int IntersectionFlags;
     // typedef IntersectionFlagsBitSet<4> IntersectionFlags;
 
-    static int counter;
-
     struct Edge;
     typedef std::vector<Edge *> Edges;
 
     struct Node
     {
-        typedef unsigned short int Flags;
-
-        Simplex             *simplex;
-        Edges               edges;
-        void                *outputData; // tu bedzie zapisywany OutputNode
-        
-        // potrzebne do rownoleglych obliczen
-        int index;
-        int newIndex;
+        typedef unsigned short int PropertiesFlags;
 
         enum  // properties flags
         {
-            IGNPF_ACYCLIC                   = 0x0001,
-            IGNPF_ADDED_TO_LIST             = 0x0002,
+            IGNPF_IN_ACC_SUB                = 0x0001,
+            IGNPF_ADDED_TO_QUEUE            = 0x0002,
             IGNPF_ADDED_TO_GRAPH            = 0x0004,
             IGNPF_ADDED_TO_OUTPUT           = 0x0008,
             IGNPF_ON_BORDER                 = 0x0010,
@@ -67,31 +56,11 @@ public:
             IGNPF_HELPER_FLAG_4             = 0x8000,
         };
         
-        Node(IncidenceGraph *graph, Simplex *simplex, int index);
-
-        void AddEdge(Edge *edge);
-        bool HasNeighbour(Node *neighbour);
-        void RemoveNeighbour(Node *neighbour);
-        IntersectionFlags GetNormalizedIntersectionFlags(const Simplex &intersection);
-        bool HasAcyclicIntersection(AcyclicTest<IntersectionFlags> *test);
-        Vertex FindAcyclicVertex();
-        Vertex FindAcyclicVertexNotEqual(Vertex vertex);
-        Vertex FindAcyclicVertexNotIn(const VertsSet &vertsSet);
-        void UpdateAcyclicIntersectionWithSimplex(const Simplex &simplex);
-        void UpdateAcyclicIntersectionWithVertex(Vertex v);
-        void UpdateAcyclicIntersectionWithEdge(Vertex v1, Vertex v2);
-        void UpdateNeighboursAcyclicIntersection();
-        void UpdateAcyclicIntersectionFlags(IntersectionFlags flags, IntersectionFlags flagsMaximalFaces);
-
-        Simplex Normalize(const Simplex &simplex);
-        int NormalizeVertex(Vertex v);
-        bool operator==(const Node &node);
-
 #define GET_SET(FUNC, FLAG) inline bool Is##FUNC() const { return (propertiesFlags & IGNPF_##FLAG) == IGNPF_##FLAG; } \
                             inline void Is##FUNC(bool f) { if (f) propertiesFlags |= IGNPF_##FLAG; else propertiesFlags &= ~(IGNPF_##FLAG); }
 
-        GET_SET(Acyclic, ACYCLIC)
-        GET_SET(AddedToList, ADDED_TO_LIST)
+        GET_SET(InAccSub, IN_ACC_SUB)
+        GET_SET(AddedToQueue, ADDED_TO_QUEUE)
         GET_SET(AddedToGraph, ADDED_TO_GRAPH)
         GET_SET(AddedToOutput, ADDED_TO_OUTPUT)
         GET_SET(OnBorder, ON_BORDER)
@@ -102,21 +71,98 @@ public:
 
 #undef GET_SET
 
-        IntersectionFlags GetAcyclicIntersectionFlags() const { return acyclicIntersectionFlags; }
-        IntersectionFlags GetAcyclicIntersectionFlagsMaximalFaces() const { return acyclicIntersectionFlagsMaximalFaces; }
-        int GetAcyclicSubsetID() const { return acyclicSubsetID; }
-        void SetAcyclicSubsetID(int id) { acyclicSubsetID = id; }
+        Node(IncidenceGraph *graph, Simplex *simplex, int index) : accInfo(this)
+        {
+            this->graph = graph;
+            this->simplex = simplex;
+            this->index = newIndex = index;
+            this->propertiesFlags = 0;
+
+            for (int i = 0; i < simplex->size(); i++)
+            {
+                v2i[(*simplex)[i]] = i;
+            }
+        }
+
+        void AddEdge(Edge *edge)
+        {
+            // mozemy w ramach debugowania sprawdzic, czy krawedz nie zostala juz dodana
+            // w rzeczywistosci taka sytuacja nie moze miec miejsca (sprawdzamy to
+            // przed wywolaniem AddNeighbour)
+            edges.push_back(edge);
+        }
+
+        bool HasNeighbour(Node *neighbour)
+        {
+            for (Edges::iterator i = edges.begin(); i != edges.end(); i++)
+            {
+                if ((*i)->GetNeighbour(this) == neighbour) return true;
+            }
+            return false;
+        }
+
+        void RemoveNeighbour(Node *neighbour)
+        {
+            for (Edges::iterator i = edges.begin(); i != edges.end(); i++)
+            {
+                if ((*i)->GetNeighbour(this) == neighbour)
+                {
+                    edges.erase(i);
+                    return;
+                }
+            }
+        }
+
+        Simplex Normalize(const Simplex &simplex)
+        {
+            Simplex s = Simplex::WithSize(simplex.size());
+            int index = 0;
+            for (Simplex::const_iterator i = simplex.begin(); i != simplex.end(); i++)
+            {
+                s[index++] = v2i[(*i)];
+            }
+            return s;
+        }
+
+        int NormalizeVertex(Vertex v)
+        {
+            return v2i[v];    
+        }
+
+        IntersectionFlags GetNormalizedIntersectionFlags(const Simplex &intersection)
+        {
+            return graph->subconfigurationsFlags[Normalize(intersection)];
+        }
+
         void SetParentGraph(IncidenceGraph *g) { graph = g; }
-        Flags GetPropertiesFlags() { return propertiesFlags; }
+        PropertiesFlags GetPropertiesFlags() { return propertiesFlags; }
+        AccInfoFlags<IncidenceGraph> &GetAccInfo() { return accInfo; }
+
+        IntersectionFlags GetConfigurationsFlags(const Simplex &s) { return graph->configurationsFlags[s]; }
+        IntersectionFlags GetSubconfigurationsFlags(const Simplex &s) { return graph->subconfigurationsFlags[s]; }
+
+        bool operator==(const Node &node)
+        {
+            return (this->simplex == node.simplex);
+        }
+
+        Simplex             *simplex;
+        Edges               edges;
+
+        // to do wywalenia
+        void                *outputData; // tu bedzie zapisywany OutputNode
+
+        // to ma byc prywatne
+        // potrzebne do rownoleglych obliczen
+        int                 index;
+        int                 newIndex;
 
     private:
 
-        IncidenceGraph      *graph;
-        Flags               propertiesFlags;
-        IntersectionFlags   acyclicIntersectionFlags;
-        IntersectionFlags   acyclicIntersectionFlagsMaximalFaces;
-        int                 acyclicSubsetID;
-        std::map<Vertex, int>  v2i;    // vertex to index map
+        IncidenceGraph          *graph;
+        PropertiesFlags         propertiesFlags;
+        AccInfoFlags<IncidenceGraph> accInfo;
+        std::map<Vertex, int>   v2i;    // vertex to index map
 
     };
 
@@ -130,7 +176,6 @@ public:
 
         Edge(Node *na, Node *nb)
         {
-            IncidenceGraph::counter++;
             this->nodeA = na;
             this->nodeB = nb;
             this->intersectionFlagsA = 0;
@@ -187,18 +232,18 @@ public:
 
     ~IncidenceGraph();
 
-    void CalculateAcyclicSubset(AcyclicTest<IntersectionFlags> *test);
-    void CalculateAcyclicSubsetWithBorder(AcyclicTest<IntersectionFlags> *test);
-    void CalculateAcyclicSubsetSpanningTree(AcyclicTest<IntersectionFlags> *test);
-    void CalculateAcyclicSubsetSpanningTreeWithBorder(AcyclicTest<IntersectionFlags> *test);
+    void CalculateAccSub(AccTest<IntersectionFlags> *test);
+    void CalculateAccSubWithBorder(AccTest<IntersectionFlags> *test);
+    void CalculateAccSubSpanningTree(AccTest<IntersectionFlags> *test);
+    void CalculateAccSubSpanningTreeWithBorder(AccTest<IntersectionFlags> *test);
 
     void UpdateConnectedComponents();
-    void RemoveAcyclicSubset();
+    void RemoveAccSub();
     void AssignNewIndices(bool checkAcyclicity);
     void RemoveConnectedComponentAndCopySimplexList(ConnectedComponent cc, SimplexPtrList &simplexPtrList);
     
-    void GetAcyclicSubset(SimplexList &simplexList);
-    int GetAcyclicSubsetSize();
+    void GetAccSub(SimplexList &simplexList);
+    int GetAccSubSize();
     
     int dim;
     Nodes nodes;
@@ -206,7 +251,7 @@ public:
     ConnectedComponents connectedComponents;
     VertsSet borderVerts;
     std::vector<VertsSet> connectedComponentsBorders;
-    std::vector<int> connectedComponentsAcyclicSubsetSize;
+    std::vector<int> connectedComponentsAccSubSize;
 
 public:
 
@@ -215,13 +260,13 @@ public:
     void CreateGraph();
     void CreateGraphWithBorder();
     
-    void CreateGraphAndCalculateAcyclicSubset(AcyclicTest<IntersectionFlags> *test);
-    void CreateGraphAndCalculateAcyclicSubsetWithBorder(AcyclicTest<IntersectionFlags> *test);
-    void EnqNeighboursAndUpdateAcyclicIntersection(Node *node, VertexHash &H, std::queue<Node *> &L);
-    void AddToGraphAndEnqNeighbours(Node *node, VertexHash &H, std::queue<Node *> &L);
-    void RemoveAcyclicEdges();
+    void CreateGraphAndCalculateAccSub(AccTest<IntersectionFlags> *test);
+    void CreateGraphAndCalculateAccSubWithBorder(AccTest<IntersectionFlags> *test);
+    void EnqNeighboursAndUpdateAccIntersection(Node *node, VertexHash &H, std::queue<Node *> &Q);
+    void AddToGraphAndEnqNeighbours(Node *node, VertexHash &H, std::queue<Node *> &Q);
+    void RemoveEdgesWithAccSub();
 
-    void CreateAcyclicSpanningTree(std::vector<Path> &paths, int maxAcyclicSubsetID);
+    void CreateAccSpanningTree(std::vector<Path> &paths, int maxAccSubID);
     
 };
 

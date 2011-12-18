@@ -17,11 +17,6 @@
 #include <iostream>
 #include <cstring>
 
-// test!!!
-int IncidenceGraph::counter = 0;
-#include "../Helpers/Utils.h"
-#include <fstream>
-
 ////////////////////////////////////////////////////////////////////////////////
 
 IncidenceGraph::IncidenceGraph(int dim)
@@ -92,7 +87,7 @@ void IncidenceGraph::CreateGraph()
 {
     VertexHash H;
     CreateVertexHash(H);
-    std::queue<Node *> L;
+    std::queue<Node *> Q;
 
     for (Nodes::iterator i = nodes.begin(); i != nodes.end(); i++)
     {
@@ -106,12 +101,12 @@ void IncidenceGraph::CreateGraph()
         // spojne skladowe identyfikujemy przez wskaznik do pierwszego
         // wierzcholka (tyle nam wystarczy)
         connectedComponents.push_back(*i);
-        L.push(*i);
-        while (!L.empty())
+        Q.push(*i);
+        while (!Q.empty())
         {
-            Node *currentNode = L.front();
-            L.pop();
-            currentNode->IsAddedToList(false);
+            Node *currentNode = Q.front();
+            Q.pop();
+            currentNode->IsAddedToQueue(false);
             currentNode->IsAddedToGraph(true);
             // sprawdzamy wszytkie punkty nalezace do sympleksu w tym wierzcholku
             for (Simplex::iterator vertex = currentNode->simplex->begin(); vertex != currentNode->simplex->end(); vertex++)
@@ -134,10 +129,10 @@ void IncidenceGraph::CreateGraph()
                             currentNode->AddEdge(edge);
                             (*neighbour)->AddEdge(edge);
                         }
-                        if (!(*neighbour)->IsAddedToList())
+                        if (!(*neighbour)->IsAddedToQueue())
                         {
-                            L.push(*neighbour);
-                            (*neighbour)->IsAddedToList(true);
+                            Q.push(*neighbour);
+                            (*neighbour)->IsAddedToQueue(true);
                         }
                     }
                 }
@@ -164,7 +159,7 @@ void IncidenceGraph::CreateGraphWithBorder()
     vectorBorderVerts.assign(borderVerts.begin(), borderVerts.end());
     std::sort(vectorBorderVerts.begin(), vectorBorderVerts.end());
 
-    std::queue<Node *> L;
+    std::queue<Node *> Q;
     for (Nodes::iterator i = nodes.begin(); i != nodes.end(); i++)
     {
         // w tym miejscu zaczynamy budowanie nowej spojnek skladowej
@@ -179,11 +174,11 @@ void IncidenceGraph::CreateGraphWithBorder()
         // spojne skladowe identyfikujemy przez wskaznik do pierwszego
         // wierzcholka (tyle nam wystarczy)
         connectedComponents.push_back(*i);
-        L.push(*i);
-        while (!L.empty())
+        Q.push(*i);
+        while (!Q.empty())
         {
-            Node *currentNode = L.front();
-            L.pop();
+            Node *currentNode = Q.front();
+            Q.pop();
             currentNode->IsAddedToGraph(true);
             if (currentNode->IsOnBorder())
             {
@@ -210,10 +205,10 @@ void IncidenceGraph::CreateGraphWithBorder()
                             currentNode->AddEdge(edge);
                             (*neighbour)->AddEdge(edge);
                         }
-                        if (!(*neighbour)->IsAddedToList())
+                        if (!(*neighbour)->IsAddedToQueue())
                         {
-                            L.push(*neighbour);
-                            (*neighbour)->IsAddedToList(true);
+                            Q.push(*neighbour);
+                            (*neighbour)->IsAddedToQueue(true);
                         }
                     }
                 }
@@ -227,29 +222,29 @@ void IncidenceGraph::CreateGraphWithBorder()
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void IncidenceGraph::CreateGraphAndCalculateAcyclicSubset(AcyclicTest<IntersectionFlags> *test)
+void IncidenceGraph::CreateGraphAndCalculateAccSub(AccTest<IntersectionFlags> *test)
 {
     VertexHash H;
     CreateVertexHash(H);
-    std::queue<Node *> L;
+    std::queue<Node *> Q;
     for (Nodes::iterator i = nodes.begin(); i != nodes.end(); i++)
     {
-        if ((*i)->IsAddedToGraph() || (*i)->IsAcyclic())
+        if ((*i)->IsAddedToGraph() || (*i)->IsInAccSub())
         {
             continue;
         }
-        (*i)->IsAcyclic(true);
-        EnqNeighboursAndUpdateAcyclicIntersection(*i, H, L);
-        while (!L.empty())
+        (*i)->IsInAccSub(true);
+        EnqNeighboursAndUpdateAccIntersection(*i, H, Q);
+        while (!Q.empty())
         {
-            Node *currentNode = L.front();
-            L.pop();
-            currentNode->IsAddedToList(false);
+            Node *currentNode = Q.front();
+            Q.pop();
+            currentNode->IsAddedToQueue(false);
 
-            if (currentNode->HasAcyclicIntersection(test))
+            if (currentNode->GetAccInfo().IsAccIntersectionAcyclic(test))
             {
-                currentNode->IsAcyclic(true);
-                EnqNeighboursAndUpdateAcyclicIntersection(currentNode, H, L);
+                currentNode->IsInAccSub(true);
+                EnqNeighboursAndUpdateAccIntersection(currentNode, H, Q);
                 if (currentNode->IsAddedToGraph())
                 {
                     currentNode->IsAddedToGraph(false);
@@ -264,15 +259,15 @@ void IncidenceGraph::CreateGraphAndCalculateAcyclicSubset(AcyclicTest<Intersecti
                 }
                 else
                 {
-                    AddToGraphAndEnqNeighbours(currentNode, H, L);
+                    AddToGraphAndEnqNeighbours(currentNode, H, Q);
                 }
             }
         }
     }
-    RemoveAcyclicEdges();
+    RemoveEdgesWithAccSub();
 }
 
-void IncidenceGraph::CreateGraphAndCalculateAcyclicSubsetWithBorder(AcyclicTest<IntersectionFlags> *test)
+void IncidenceGraph::CreateGraphAndCalculateAccSubWithBorder(AccTest<IntersectionFlags> *test)
 {
     VertexHash H;
     CreateVertexHash(H);
@@ -290,30 +285,30 @@ void IncidenceGraph::CreateGraphAndCalculateAcyclicSubsetWithBorder(AcyclicTest<
     vectorBorderVerts.assign(borderVerts.begin(), borderVerts.end());
     std::sort(vectorBorderVerts.begin(), vectorBorderVerts.end());
 
-    std::queue<Node *> L;
+    std::queue<Node *> Q;
     for (Nodes::iterator i = nodes.begin(); i != nodes.end(); i++)
     {
-        if ((*i)->IsAddedToGraph() || (*i)->IsAcyclic())
+        if ((*i)->IsAddedToGraph() || (*i)->IsInAccSub())
         {
             continue;
         }
         
         Node *connectedComponent = 0;
         VertsSet connectedComponentBorderVerts;
-        int acyclicSubsetSize = 0;
+        int accSubSize = 0;
 
-        L.push(*i);
-        while (!L.empty())
+        Q.push(*i);
+        while (!Q.empty())
         {
-            Node *currentNode = L.front();
-            L.pop();
-            currentNode->IsAddedToList(false);
+            Node *currentNode = Q.front();
+            Q.pop();
+            currentNode->IsAddedToQueue(false);
 
-            if (acyclicSubsetSize == 0 && !currentNode->IsOnBorder())
+            if (accSubSize == 0 && !currentNode->IsOnBorder())
             {
-                currentNode->IsAcyclic(true);
-                EnqNeighboursAndUpdateAcyclicIntersection(currentNode, H, L);
-                acyclicSubsetSize = 1;
+                currentNode->IsInAccSub(true);
+                EnqNeighboursAndUpdateAccIntersection(currentNode, H, Q);
+                accSubSize = 1;
                 if (currentNode->IsAddedToGraph())
                 {
                     currentNode->IsAddedToGraph(false);
@@ -327,14 +322,14 @@ void IncidenceGraph::CreateGraphAndCalculateAcyclicSubsetWithBorder(AcyclicTest<
                 if (!currentNode->IsAddedToGraph())
                 {
                     connectedComponentBorderVerts.insert(currentNode->simplex->begin(), currentNode->simplex->end());
-                    AddToGraphAndEnqNeighbours(currentNode, H, L);
+                    AddToGraphAndEnqNeighbours(currentNode, H, Q);
                     connectedComponent = currentNode;
                 }
             }
-            else if (currentNode->HasAcyclicIntersection(test))
+            else if (currentNode->GetAccInfo().IsAccIntersectionAcyclic(test))
             {
-                currentNode->IsAcyclic(true);
-                EnqNeighboursAndUpdateAcyclicIntersection(currentNode, H, L);
+                currentNode->IsInAccSub(true);
+                EnqNeighboursAndUpdateAccIntersection(currentNode, H, Q);
                 if (currentNode->IsAddedToGraph())
                 {
                     currentNode->IsAddedToGraph(false);
@@ -350,28 +345,28 @@ void IncidenceGraph::CreateGraphAndCalculateAcyclicSubsetWithBorder(AcyclicTest<
                 else
                 {
                     connectedComponent = currentNode;
-                    AddToGraphAndEnqNeighbours(currentNode, H, L);
+                    AddToGraphAndEnqNeighbours(currentNode, H, Q);
                 }
             }
         }
         if (connectedComponent != 0)
         {
-        //    assert(acyclicSubsetSize > 0);
+        //    assert(accSubSize > 0);
             connectedComponents.push_back(connectedComponent);
             VertsSet tempSet;
             GetIntersectionOfUnsortedSetAndSortedVector(tempSet, connectedComponentBorderVerts, vectorBorderVerts);
             connectedComponentsBorders.push_back(tempSet);
-            connectedComponentsAcyclicSubsetSize.push_back(acyclicSubsetSize);
+            connectedComponentsAccSubSize.push_back(accSubSize);
         }
         else
         {
             assert(false);
         }
     }
-    RemoveAcyclicEdges();
+    RemoveEdgesWithAccSub();
 }
 
-void IncidenceGraph::EnqNeighboursAndUpdateAcyclicIntersection(Node* node, VertexHash &H, std::queue<Node*> &L)
+void IncidenceGraph::EnqNeighboursAndUpdateAccIntersection(Node* node, VertexHash &H, std::queue<Node*> &Q)
 {
     Simplex intersection;
     // sprawdzamy wszytkie punkty nalezace do sympleksu w tym wierzcholku
@@ -382,23 +377,23 @@ void IncidenceGraph::EnqNeighboursAndUpdateAcyclicIntersection(Node* node, Verte
         for (Nodes::iterator neighbour = nodes.begin(); neighbour != nodes.end(); neighbour++)
         {
             // jezeli to wierzcholek w ktorym aktualnie jestesmy -> dalej
-            if ((*neighbour)->IsAcyclic() || (*neighbour) == node)
+            if ((*neighbour)->IsInAccSub() || (*neighbour) == node)
             {
                 continue;
             }
             Simplex::GetIntersection(node->simplex, (*neighbour)->simplex, intersection);
             intersection = (*neighbour)->Normalize(intersection);
-            (*neighbour)->UpdateAcyclicIntersectionFlags(subconfigurationsFlags[intersection], configurationsFlags[intersection]);
-            if (!(*neighbour)->IsAddedToList())
+            (*neighbour)->GetAccInfo().UpdateAccIntersection(intersection);
+            if (!(*neighbour)->IsAddedToQueue())
             {
-                L.push(*neighbour);
-                (*neighbour)->IsAddedToList(true);
+                Q.push(*neighbour);
+                (*neighbour)->IsAddedToQueue(true);
             }
         }
     }
 }
 
-void IncidenceGraph::AddToGraphAndEnqNeighbours(Node* node, VertexHash &H, std::queue<Node*> &L)
+void IncidenceGraph::AddToGraphAndEnqNeighbours(Node* node, VertexHash &H, std::queue<Node*> &Q)
 {
     node->IsAddedToGraph(true);
     // sprawdzamy wszytkie punkty nalezace do sympleksu w tym wierzcholku
@@ -409,7 +404,7 @@ void IncidenceGraph::AddToGraphAndEnqNeighbours(Node* node, VertexHash &H, std::
         for (Nodes::iterator neighbour = nodes.begin(); neighbour != nodes.end(); neighbour++)
         {
             // jezeli to wierzcholek w ktorym aktualnie jestesmy -> dalej
-            if ((*neighbour)->IsAcyclic() || (*neighbour) == node)
+            if ((*neighbour)->IsInAccSub() || (*neighbour) == node)
             {
                 continue;
             }
@@ -420,31 +415,31 @@ void IncidenceGraph::AddToGraphAndEnqNeighbours(Node* node, VertexHash &H, std::
                 node->AddEdge(edge);
                 (*neighbour)->AddEdge(edge);
             }
-            if (!(*neighbour)->IsAddedToList())
+            if (!(*neighbour)->IsAddedToQueue())
             {
-                L.push(*neighbour);
-                (*neighbour)->IsAddedToList(true);
+                Q.push(*neighbour);
+                (*neighbour)->IsAddedToQueue(true);
             }
         }
     }
 }
 
-void IncidenceGraph::RemoveAcyclicEdges()
+void IncidenceGraph::RemoveEdgesWithAccSub()
 {
     Edges newEdges;
     for (Edges::iterator i = edges.begin(); i != edges.end(); i++)
     {
         bool acyclic = false;
-        if ((*i)->nodeA->IsAcyclic() && (*i)->nodeB->IsAcyclic())
+        if ((*i)->nodeA->IsInAccSub() && (*i)->nodeB->IsInAccSub())
         {
             delete (*i);
         }
-        else if ((*i)->nodeA->IsAcyclic())
+        else if ((*i)->nodeA->IsInAccSub())
         {
             (*i)->nodeB->RemoveNeighbour((*i)->nodeA);
             delete (*i);
         }
-        else if ((*i)->nodeB->IsAcyclic())
+        else if ((*i)->nodeB->IsInAccSub())
         {
             (*i)->nodeA->RemoveNeighbour((*i)->nodeB);
             delete (*i);
@@ -459,41 +454,41 @@ void IncidenceGraph::RemoveAcyclicEdges()
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void IncidenceGraph::CalculateAcyclicSubset(AcyclicTest<IntersectionFlags> *test)
+void IncidenceGraph::CalculateAccSub(AccTest<IntersectionFlags> *test)
 {
-    std::queue<Node *> L;
+    std::queue<Node *> Q;
     for (std::vector<ConnectedComponent>::iterator i = connectedComponents.begin(); i != connectedComponents.end(); i++)
     {
         // pierwszy wierzcholek w skladowej zaznaczamy jako acykliczny
-        (*i)->IsAcyclic(true);
-        (*i)->UpdateNeighboursAcyclicIntersection();
-        L.push(*i);
-        while (!L.empty())
+        (*i)->IsInAccSub(true);
+        (*i)->GetAccInfo().UpdateNeighboursAccIntersection();
+        Q.push(*i);
+        while (!Q.empty())
         {
-            Node *currentNode = L.front();
-            L.pop();
+            Node *currentNode = Q.front();
+            Q.pop();
 
             for (Edges::iterator j = currentNode->edges.begin(); j != currentNode->edges.end(); j++)
             {
                 Node *neighbour = (*j)->GetNeighbour(currentNode);
-                if (neighbour->IsAcyclic())
+                if (neighbour->IsInAccSub())
                 {
                     continue;
                 }
-                if (neighbour->HasAcyclicIntersection(test))
+                if (neighbour->GetAccInfo().IsAccIntersectionAcyclic(test))
                 {
-                    neighbour->IsAcyclic(true);
-                    neighbour->UpdateNeighboursAcyclicIntersection();
-                    L.push(neighbour);
+                    neighbour->IsInAccSub(true);
+                    neighbour->GetAccInfo().UpdateNeighboursAccIntersection();
+                    Q.push(neighbour);
                 }
             }            
         }        
     }
 }
 
-void IncidenceGraph::CalculateAcyclicSubsetWithBorder(AcyclicTest<IntersectionFlags> *test)
+void IncidenceGraph::CalculateAccSubWithBorder(AccTest<IntersectionFlags> *test)
 {
-    std::queue<Node *> L;
+    std::queue<Node *> Q;
     for (std::vector<ConnectedComponent>::iterator i = connectedComponents.begin(); i != connectedComponents.end(); i++)
     {
         Node *first = FindNode(*i, FindNodeNotOnBorder());
@@ -503,26 +498,26 @@ void IncidenceGraph::CalculateAcyclicSubsetWithBorder(AcyclicTest<IntersectionFl
             continue;
         }
         // pierwszy wierzcholek w skladowej zaznaczamy jako acykliczny
-        first->IsAcyclic(true);
-        first->UpdateNeighboursAcyclicIntersection();
-        L.push(first);
-        while (!L.empty())
+        first->IsInAccSub(true);
+        first->GetAccInfo().UpdateNeighboursAccIntersection();
+        Q.push(first);
+        while (!Q.empty())
         {
-            Node *currentNode = L.front();
-            L.pop();
+            Node *currentNode = Q.front();
+            Q.pop();
 
             for (Edges::iterator j = currentNode->edges.begin(); j != currentNode->edges.end(); j++)
             {
                 Node *neighbour = (*j)->GetNeighbour(currentNode);
-                if (neighbour->IsAcyclic() || neighbour->IsOnBorder())
+                if (neighbour->IsInAccSub() || neighbour->IsOnBorder())
                 {
                     continue;
                 }
-                if (neighbour->HasAcyclicIntersection(test))
+                if (neighbour->GetAccInfo().IsAccIntersectionAcyclic(test))
                 {
-                    neighbour->IsAcyclic(true);
-                    neighbour->UpdateNeighboursAcyclicIntersection();
-                    L.push(neighbour);
+                    neighbour->IsInAccSub(true);
+                    neighbour->GetAccInfo().UpdateNeighboursAccIntersection();
+                    Q.push(neighbour);
                 }
             }
         }
@@ -531,49 +526,49 @@ void IncidenceGraph::CalculateAcyclicSubsetWithBorder(AcyclicTest<IntersectionFl
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void IncidenceGraph::CalculateAcyclicSubsetSpanningTree(AcyclicTest<IntersectionFlags> *test)
+void IncidenceGraph::CalculateAccSubSpanningTree(AccTest<IntersectionFlags> *test)
 {
     int index = 0;
-    std::queue<Node *> L;
+    std::queue<Node *> Q;
     for (std::vector<ConnectedComponent>::iterator i = connectedComponents.begin(); i != connectedComponents.end(); i++)
     {
-        int acyclicSubsetID = 0;
+        int accSubID = 0;
         Nodes firstNodes;
         std::vector<Path> paths;
         Node *first = *i;
         int size = 0;
         while (first != 0)
         {
-            acyclicSubsetID++;
+            accSubID++;
             // pierwszy wierzcholek w skladowej zaznaczamy jako acykliczny
             firstNodes.push_back(first);
-            first->IsAcyclic(true);
-            first->SetAcyclicSubsetID(acyclicSubsetID);
-            first->UpdateNeighboursAcyclicIntersection();
-            L.push(first);
+            first->IsInAccSub(true);
+            first->GetAccInfo().SetAccSubID(accSubID);
+            first->GetAccInfo().UpdateNeighboursAccIntersection();
+            Q.push(first);
             size++;
-            while (!L.empty())
+            while (!Q.empty())
             {
-                Node *currentNode = L.front();
-                L.pop();
+                Node *currentNode = Q.front();
+                Q.pop();
                 for (Edges::iterator j = currentNode->edges.begin(); j != currentNode->edges.end(); j++)
                 {
                     Node *neighbour = (*j)->GetNeighbour(currentNode);
-                    if (neighbour->IsAcyclic())
+                    if (neighbour->IsInAccSub())
                     {
                         continue;
                     }
-                    if (neighbour->HasAcyclicIntersection(test))
+                    if (neighbour->GetAccInfo().IsAccIntersectionAcyclic(test))
                     {
                         size++;
-                        neighbour->IsAcyclic(true);
-                        neighbour->SetAcyclicSubsetID(acyclicSubsetID);
-                        neighbour->UpdateNeighboursAcyclicIntersection();
-                        L.push(neighbour);
+                        neighbour->IsInAccSub(true);
+                        neighbour->GetAccInfo().SetAccSubID(accSubID);
+                        neighbour->GetAccInfo().UpdateNeighboursAccIntersection();
+                        Q.push(neighbour);
                     }
                 }
             }
-            Path path = FindPath(first, FindPathToNodeNotInAcyclicSubset());
+            Path path = FindPath(first, FindPathToNodeNotInAccSub());
             if (path.size() > 0)
             {
                 first = path.back();
@@ -585,58 +580,58 @@ void IncidenceGraph::CalculateAcyclicSubsetSpanningTree(AcyclicTest<Intersection
             }
        }
 
-        connectedComponentsAcyclicSubsetSize.push_back(size);
+        connectedComponentsAccSubSize.push_back(size);
 
         // jezeli wiecej niz jeden podzbior acykliczny, to tworzymy graf
         if (firstNodes.size() > 1)
         {
-            CreateAcyclicSpanningTree(paths, ++acyclicSubsetID);
+            CreateAccSpanningTree(paths, ++accSubID);
         }
     }
 }
 
-void IncidenceGraph::CalculateAcyclicSubsetSpanningTreeWithBorder(AcyclicTest<IntersectionFlags> *test)
+void IncidenceGraph::CalculateAccSubSpanningTreeWithBorder(AccTest<IntersectionFlags> *test)
 {
-    std::queue<Node *> L;
+    std::queue<Node *> Q;
     for (std::vector<ConnectedComponent>::iterator i = connectedComponents.begin(); i != connectedComponents.end(); i++)
     {
-        int acyclicSubsetID = 0;
+        int accSubID = 0;
         Nodes firstNodes;
         std::vector<Path> paths;
         Node *first = FindNode(*i, FindNodeNotOnBorder());
         int size = 0;
         while (first != 0)
         {
-            acyclicSubsetID++;
+            accSubID++;
             // pierwszy wierzcholek w skladowej zaznaczamy jako acykliczny
             firstNodes.push_back(first);
-            first->IsAcyclic(true);
-            first->SetAcyclicSubsetID(acyclicSubsetID);
-            first->UpdateNeighboursAcyclicIntersection();
-            L.push(first);
+            first->IsInAccSub(true);
+            first->GetAccInfo().SetAccSubID(accSubID);
+            first->GetAccInfo().UpdateNeighboursAccIntersection();
+            Q.push(first);
             size++;
-            while (!L.empty())
+            while (!Q.empty())
             {
-                Node *currentNode = L.front();
-                L.pop();
+                Node *currentNode = Q.front();
+                Q.pop();
                 for (Edges::iterator j = currentNode->edges.begin(); j != currentNode->edges.end(); j++)
                 {
                     Node *neighbour = (*j)->GetNeighbour(currentNode);
-                    if (neighbour->IsAcyclic() || neighbour->IsOnBorder())
+                    if (neighbour->IsInAccSub() || neighbour->IsOnBorder())
                     {
                         continue;
                     }
-                    if (neighbour->HasAcyclicIntersection(test))
+                    if (neighbour->GetAccInfo().IsAccIntersectionAcyclic(test))
                     {
                         size++;
-                        neighbour->IsAcyclic(true);
-                        neighbour->SetAcyclicSubsetID(acyclicSubsetID);
-                        neighbour->UpdateNeighboursAcyclicIntersection();
-                        L.push(neighbour);
+                        neighbour->IsInAccSub(true);
+                        neighbour->GetAccInfo().SetAccSubID(accSubID);
+                        neighbour->GetAccInfo().UpdateNeighboursAccIntersection();
+                        Q.push(neighbour);
                     }
                 }
             }
-            Path path = FindPath(first, FindPathToNodeNotInAcyclicSubsetNorOnBorder());
+            Path path = FindPath(first, FindPathToNodeNotInAccSubNorOnBorder());
             if (path.size() > 0)
             {
                 first = path.back();
@@ -648,47 +643,47 @@ void IncidenceGraph::CalculateAcyclicSubsetSpanningTreeWithBorder(AcyclicTest<In
             }
        }
 
-        connectedComponentsAcyclicSubsetSize.push_back(size);
+        connectedComponentsAccSubSize.push_back(size);
 
         // jezeli wiecej niz jeden podzbior acykliczny, to tworzymy graf
         if (firstNodes.size() > 1)
         {
-            CreateAcyclicSpanningTree(paths, ++acyclicSubsetID);
+            CreateAccSpanningTree(paths, ++accSubID);
         }
     }
 }
 
-void IncidenceGraph::CreateAcyclicSpanningTree(std::vector<IncidenceGraph::Path> &paths, int maxAcyclicSubsetID)
+void IncidenceGraph::CreateAccSpanningTree(std::vector<IncidenceGraph::Path> &paths, int maxAccSubID)
 {
-    char *addedToAcyclicTree = new char[maxAcyclicSubsetID];
-    memset(addedToAcyclicTree, 0, sizeof(char) * maxAcyclicSubsetID);
+    char *addedToAccTree = new char[maxAccSubID];
+    memset(addedToAccTree, 0, sizeof(char) * maxAccSubID);
 
     // dodajemy pierwszy wierzcholek pierwszej sciezki do drzewa
     // acyklicznego (tak naprawde jest to jakis losowy wierzcholek)
     assert(paths.size() > 0);
-    addedToAcyclicTree[paths[0].front()->GetAcyclicSubsetID()] = true;
+    addedToAccTree[paths[0].front()->GetAccInfo().GetAccSubID()] = true;
 
     while (!paths.empty())
     {
         Path path;
         for (std::vector<Path>::iterator p = paths.begin(); p != paths.end(); p++)
         {
-            if (addedToAcyclicTree[(*p).front()->GetAcyclicSubsetID()] || addedToAcyclicTree[(*p).back()->GetAcyclicSubsetID()])
+            if (addedToAccTree[(*p).front()->GetAccInfo().GetAccSubID()] || addedToAccTree[(*p).back()->GetAccInfo().GetAccSubID()])
             {
                 path = *p;
                 paths.erase(p);
                 break;
             }
         }
-        assert(!addedToAcyclicTree[path.front()->GetAcyclicSubsetID()] || !addedToAcyclicTree[path.back()->GetAcyclicSubsetID()]);
+        assert(!addedToAccTree[path.front()->GetAccInfo().GetAccSubID()] || !addedToAccTree[path.back()->GetAccInfo().GetAccSubID()]);
         // ze wzgledu na to jak budujemy podzbiory acykliczne zazwyczaj wierzcholki
         // juz dodane do drzewa rozpinajacego beda na poczatku sciezek
         // jezeli natomiast zdarzy sie, ze sa na koncu, to musimy odwrocic liste
-        if (addedToAcyclicTree[path.back()->GetAcyclicSubsetID()])
+        if (addedToAccTree[path.back()->GetAccInfo().GetAccSubID()])
         {
             path.reverse();
         }
-        addedToAcyclicTree[path.back()->GetAcyclicSubsetID()] = 1;
+        addedToAccTree[path.back()->GetAccInfo().GetAccSubID()] = 1;
 
         // idziemy od konca listy i dodajemy dowolny wierzcholek z przeciecia
         // dwoch sasiednich sympleksow
@@ -709,24 +704,24 @@ void IncidenceGraph::CreateAcyclicSpanningTree(std::vector<IncidenceGraph::Path>
             // przy sprawdzaniu warunku korzystamy z faktu, ze flaga podsciany
             // bedacej pojedynczym wierzcholkiem jest rowna 1 << i gdzie
             // i to indeks wierzcholka
-            if (n->GetAcyclicIntersectionFlags() & (1 << n->NormalizeVertex(vertex)))
+            if (n->GetAccInfo().IsVertexInAccIntersection(vertex))
             {
                 // aktualizujemy w aktualnym nodzie flagi acyklicznego przeciecia
-                (*current)->UpdateAcyclicIntersectionWithEdge(vertex, lastVertex);
+                (*current)->GetAccInfo().UpdateAccIntersectionWithEdge(vertex, lastVertex);
                 break;
             }
             // wpp oznacza, ze mozemy isc dalej
             else
             {
                 // aktualizujemy w aktualnym nodzie flagi acyklicznego przeciecia
-                (*current)->UpdateAcyclicIntersectionWithEdge(vertex, lastVertex);
+                (*current)->GetAccInfo().UpdateAccIntersectionWithEdge(vertex, lastVertex);
                 lastVertex = vertex;
             }
             current = next;
             next++;
         }
     }
-    delete [] addedToAcyclicTree;
+    delete [] addedToAccTree;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -735,19 +730,19 @@ void IncidenceGraph::UpdateConnectedComponents()
 {
     ConnectedComponents::iterator cc = connectedComponents.begin();
     std::vector<std::set<Vertex> >::iterator ccb = connectedComponentsBorders.begin();
-    std::vector<int>::iterator ccass = connectedComponentsAcyclicSubsetSize.begin();
+    std::vector<int>::iterator ccass = connectedComponentsAccSubSize.begin();
     while (cc != connectedComponents.end())
     {
-        if ((*cc)->IsAcyclic())
+        if ((*cc)->IsInAccSub())
         {
-            Node *node = FindNode(*cc, FindNotAcyclicNode());
+            Node *node = FindNode(*cc, FindNodeNotInAccSub());
             // jezeli nie ma zadnego sympleksu nieacyklicznego, to usuwamy
             // informacje o spojnej skladowej
             if (node == 0)
             {
                 cc = connectedComponents.erase(cc);
                 ccb = connectedComponentsBorders.erase(ccb);
-                ccass = connectedComponentsAcyclicSubsetSize.erase(ccass);
+                ccass = connectedComponentsAccSubSize.erase(ccass);
                 continue;
             }
             else
@@ -763,18 +758,18 @@ void IncidenceGraph::UpdateConnectedComponents()
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void IncidenceGraph::RemoveAcyclicSubset()
+void IncidenceGraph::RemoveAccSub()
 {
     for (Nodes::iterator i = nodes.begin(); i != nodes.end(); i++)
     {
-        if ((*i)->IsAcyclic())
+        if ((*i)->IsInAccSub())
         {
             continue;
         }
         Edges newEdges;
         for (Edges::iterator edge = (*i)->edges.begin(); edge != (*i)->edges.end(); edge++)
         {
-            if ((*edge)->GetNeighbour(*i)->IsAcyclic())
+            if ((*edge)->GetNeighbour(*i)->IsInAccSub())
             {
                 continue;
             }
@@ -782,7 +777,7 @@ void IncidenceGraph::RemoveAcyclicSubset()
         }
         (*i)->edges = newEdges;
     }
-    RemoveNodesWithPredicate(this, RemoveNodesWithFlags(Node::IGNPF_ACYCLIC));
+    RemoveNodesWithPredicate(this, RemoveNodesWithFlags(Node::IGNPF_IN_ACC_SUB));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -794,7 +789,7 @@ void IncidenceGraph::AssignNewIndices(bool checkAcyclicity)
     {
         for (Nodes::iterator i = nodes.begin(); i != nodes.end(); i++)
         {
-            if ((*i)->IsAcyclic())
+            if ((*i)->IsInAccSub())
             {
                 continue;
             }
@@ -816,14 +811,14 @@ void IncidenceGraph::RemoveConnectedComponentAndCopySimplexList(ConnectedCompone
 {
     // przelatujemy cala spojna skladowa i zaznaczamy elementy do niej nalezace
     // dodatkowo dodajemy do listy sympleksy z tej spojnej skladowej
-    std::queue<Node *> L;
-    L.push(cc);
+    std::queue<Node *> Q;
+    Q.push(cc);
     cc->IsHelperFlag2(true);
     simplexPtrList.push_back(cc->simplex);
-    while (!L.empty())
+    while (!Q.empty())
     {
-        IncidenceGraph::Node *node = L.front();
-        L.pop();
+        IncidenceGraph::Node *node = Q.front();
+        Q.pop();
         for (Edges::iterator edge = node->edges.begin(); edge != node->edges.end(); edge++)
         {
             Node *neighbour = (*edge)->GetNeighbour(node);
@@ -832,7 +827,7 @@ void IncidenceGraph::RemoveConnectedComponentAndCopySimplexList(ConnectedCompone
                 continue;
             }
             neighbour->IsHelperFlag2(true);
-            L.push(neighbour);
+            Q.push(neighbour);
             simplexPtrList.push_back(neighbour->simplex);
         }
     }
@@ -841,23 +836,23 @@ void IncidenceGraph::RemoveConnectedComponentAndCopySimplexList(ConnectedCompone
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void IncidenceGraph::GetAcyclicSubset(SimplexList &simplexList)
+void IncidenceGraph::GetAccSub(SimplexList &simplexList)
 {
     for (Nodes::iterator i = nodes.begin(); i != nodes.end(); i++)
     {
-        if ((*i)->IsAcyclic())
+        if ((*i)->IsInAccSub())
         {
             simplexList.push_back(*(*i)->simplex);
         }
     }
 }
 
-int IncidenceGraph::GetAcyclicSubsetSize()
+int IncidenceGraph::GetAccSubSize()
 {
     int size = 0;
     for (Nodes::iterator i = nodes.begin(); i != nodes.end(); i++)
     {
-        if ((*i)->IsAcyclic())
+        if ((*i)->IsInAccSub())
         {
             size++;
         }

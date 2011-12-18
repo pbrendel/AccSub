@@ -125,7 +125,7 @@ int GenerateReverseSimplexList(SimplexList &simplexList, int simplicesCount, int
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void GenerateAcyclicTree(SimplexList &simplexList, int simplicesCount, int nodesCount)
+void GenerateAccTree(SimplexList &simplexList, int simplicesCount, int nodesCount)
 {
     int n = (int)ceil(sqrt(simplicesCount / nodesCount * 0.5f));
 

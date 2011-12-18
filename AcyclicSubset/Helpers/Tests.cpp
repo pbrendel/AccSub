@@ -15,7 +15,7 @@
 // static variables
 
 int Tests::testType = 0;
-int Tests::acyclicTestNumber = 0;
+int Tests::accTestNumber = 0;
 std::string Tests::inputFilename = "tests.txt";
 int Tests::simplicesCount = 1000;
 int Tests::simplicesDim = 3;
@@ -24,10 +24,10 @@ int Tests::sortSimplices = 0;
 int Tests::sortVerts = 0;
 int Tests::useAlgebraic = 0;
 int Tests::useCoreduction = 0;
-int Tests::useAcc = 0;
-int Tests::useAccIG = 1;
-int Tests::useAccST = 0;
-int Tests::useParallel = 0;
+int Tests::useAccSub = 0;
+int Tests::useAccSubIG = 1;
+int Tests::useAccSubST = 0;
+int Tests::useAccSubParallel = 0;
 int Tests::packsCount = 6;
 int Tests::parallelAccSubAlgorithm = 0;
 int Tests::prepareData = 1;
@@ -44,7 +44,7 @@ void Tests::PrintHelp()
     std::cout<<"    -test numer - numer testu acyklicznosci:"<<std::endl;
     std::cout<<"                    - 0 - tablice"<<std::endl;
     std::cout<<"                    - 1 - test CoDim 1"<<std::endl;
-    std::cout<<"                  (def. "<<acyclicTestNumber<<")"<<std::endl;
+    std::cout<<"                  (def. "<<accTestNumber<<")"<<std::endl;
     std::cout<<"    -verts vc - ilosc wierzcholkow z ktorych losujemy sympleksy"<<std::endl;
     std::cout<<"                (def. "<<vertsCount<<")"<<std::endl;
     std::cout<<"    -ss [0|1] - sortuj sympleksy przed rozpoczeciem obliczen"<<std::endl;
@@ -56,11 +56,11 @@ void Tests::PrintHelp()
     std::cout<<"    -use_cored [0|1] - wykonaj obliczenia dla koredukcji"<<std::endl;
     std::cout<<"                       (def. "<<useCoreduction<<")"<<std::endl;
     std::cout<<"    -use_acc [0|1] - wykonaj obliczenia dla podzbioru acyklicznego uzywajac algorytmu Acc"<<std::endl;
-    std::cout<<"                       (def. "<<useAcc<<")"<<std::endl;
+    std::cout<<"                       (def. "<<useAccSub<<")"<<std::endl;
     std::cout<<"    -use_accig [0|1] - wykonaj obliczenia dla podzbioru acyklicznegoo uzywajac algorytmu AccIG"<<std::endl;
-    std::cout<<"                         (def. "<<useAccIG<<")"<<std::endl;
+    std::cout<<"                         (def. "<<useAccSubIG<<")"<<std::endl;
     std::cout<<"    -use_accst [0|1] - wykonaj obliczenia dla podzbioru acyklicznegoo uzywajac algorytmu AccST"<<std::endl;
-    std::cout<<"                         (def. "<<useAccST<<")"<<std::endl;
+    std::cout<<"                         (def. "<<useAccSubST<<")"<<std::endl;
     std::cout<<"    -parallel [0|1] pc alg pd - wykonaj rownolegle obliczenia dla podzbioru acyklicznego"<<std::endl;
     std::cout<<"                                   - pc - ilosc paczek dla obliczen rownoleglych"<<std::endl;
     std::cout<<"                                     (def. "<<packsCount<<")"<<std::endl;
@@ -103,18 +103,18 @@ void Tests::ProcessArguments(int argc, char **argv)
             inputFilename = argv[index + 1];
             index += 2;
         }
-        else if (CHECK_ARG_NEXT("-test")) { acyclicTestNumber = atoi(argv[index + 1]); index += 2; }
+        else if (CHECK_ARG_NEXT("-test")) { accTestNumber = atoi(argv[index + 1]); index += 2; }
         else if (CHECK_ARG_NEXT("-verts")) { vertsCount = atoi(argv[index + 1]); index += 2; }
         else if (CHECK_ARG_NEXT("-ss")) { sortSimplices = atoi(argv[index + 1]); index += 2; }
         else if (CHECK_ARG_NEXT("-sv")) { sortVerts = atoi(argv[index + 1]); index += 2; }
         else if (CHECK_ARG_NEXT("-use_alg")) { useAlgebraic = atoi(argv[index + 1]); index += 2; }
         else if (CHECK_ARG_NEXT("-use_cored")) { useCoreduction = atoi(argv[index + 1]); index += 2; }
-        else if (CHECK_ARG_NEXT("-use_acc")) { useAcc = atoi(argv[index + 1]); index += 2; }
-        else if (CHECK_ARG_NEXT("-use_accig")) { useAccIG = atoi(argv[index + 1]); index += 2; }
-        else if (CHECK_ARG_NEXT("-use_accst")) { useAccST = atoi(argv[index + 1]); index += 2; }
+        else if (CHECK_ARG_NEXT("-use_acc")) { useAccSub = atoi(argv[index + 1]); index += 2; }
+        else if (CHECK_ARG_NEXT("-use_accig")) { useAccSubIG = atoi(argv[index + 1]); index += 2; }
+        else if (CHECK_ARG_NEXT("-use_accst")) { useAccSubST = atoi(argv[index + 1]); index += 2; }
         else if (CHECK_ARG_NEXT("-use_parallel"))
         {
-            useParallel = atoi(argv[index + 1]);
+            useAccSubParallel = atoi(argv[index + 1]);
             packsCount = atoi(argv[index + 2]);
             parallelAccSubAlgorithm = atoi(argv[index + 3]);
             prepareData = atoi(argv[index + 4]);
@@ -155,9 +155,9 @@ void Tests::GenerateData(SimplexList &simplexList)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-bool Tests::IsAcyclicSubsetReduction(ReductionType rt)
+bool Tests::IsAccSubReduction(ReductionType rt)
 {
-    return (rt == RT_Acc || rt == RT_AccIG || rt == RT_AccST || rt == RT_AccParallel);
+    return (rt == RT_AccSub || rt == RT_AccSubIG || rt == RT_AccSubST || rt == RT_AccSubParallel);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -169,23 +169,23 @@ void Tests::Test(SimplexList &simplexList, ReductionType reductionType)
     Timer::Update();
     Timer::Time timeStart = Timer::Now();
 
-    AcyclicTest<IncidenceGraph::IntersectionFlags> *test = IsAcyclicSubsetReduction(reductionType) ? AcyclicTest<IncidenceGraph::IntersectionFlags>::Create(acyclicTestNumber, Simplex::GetSimplexListDimension(simplexList)) : 0;
+    AccTest<IncidenceGraph::IntersectionFlags> *test = IsAccSubReduction(reductionType) ? AccTest<IncidenceGraph::IntersectionFlags>::Create(accTestNumber, Simplex::GetSimplexListDimension(simplexList)) : 0;
     IncidenceGraph *ig = 0;
-    if (reductionType == RT_Acc)
+    if (reductionType == RT_AccSub)
     {
-        ig = IncidenceGraphHelpers::CreateAndCalculateAcyclicSubset(simplexList, test);
+        ig = IncidenceGraphHelpers::CreateAndCalculateAccSub(simplexList, test);
     }
-    else if (reductionType == RT_AccIG)
+    else if (reductionType == RT_AccSubIG)
     {
-        ig = IncidenceGraphHelpers::CreateAndCalculateAcyclicSubsetOnline(simplexList, test);
+        ig = IncidenceGraphHelpers::CreateAndCalculateAccSubIG(simplexList, test);
     }
-    else if (reductionType == RT_AccST)
+    else if (reductionType == RT_AccSubST)
     {
-        ig = IncidenceGraphHelpers::CreateAndCalculateAcyclicSubsetSpanningTree(simplexList, test);
+        ig = IncidenceGraphHelpers::CreateAndCalculateAccSubST(simplexList, test);
     }
-    else if (reductionType == RT_AccParallel)
+    else if (reductionType == RT_AccSubParallel)
     {
-        ig = IncidenceGraphHelpers::CreateAndCalculateAcyclicSubsetParallel(simplexList, packsCount, (AccSubAlgorithm)parallelAccSubAlgorithm, test);
+        ig = IncidenceGraphHelpers::CreateAndCalculateAccSubParallel(simplexList, packsCount, (AccSubAlgorithm)parallelAccSubAlgorithm, test);
     }
     else // (reductionType == RT_Coreduction || reductionType == RT_None)
     {
@@ -199,9 +199,9 @@ void Tests::Test(SimplexList &simplexList, ReductionType reductionType)
     total = Timer::TimeFrom(timeStart, "total graph processing");
     MemoryInfo::Print();
     
-    if (IsAcyclicSubsetReduction(reductionType))
+    if (IsAccSubReduction(reductionType))
     {
-        std::cout<<"acyclic subset size: "<<ig->GetAcyclicSubsetSize()<<std::endl;
+        std::cout<<"acyclic subset size: "<<ig->GetAccSubSize()<<std::endl;
     }
 
     Timer::Update();
@@ -238,29 +238,29 @@ void Tests::TestAndCompare(SimplexList &simplexList)
         cout<<std::endl;
     }
 
-    if (useAcc)
+    if (useAccSub)
     {
-        std::cout<<"Acc:"<<std::endl;
-        Test(simplexList, RT_Acc);
+        std::cout<<"AccSub:"<<std::endl;
+        Test(simplexList, RT_AccSub);
     }
 
-    if (useAccIG)
+    if (useAccSubIG)
     {
-        std::cout<<std::endl<<"AccIG:"<<std::endl;
-        Test(simplexList, RT_AccIG);
+        std::cout<<std::endl<<"AccSubIG:"<<std::endl;
+        Test(simplexList, RT_AccSubIG);
         cout<<std::endl<<std::endl;
     }
 
-    if (useAccST)
+    if (useAccSubST)
     {
-        std::cout<<std::endl<<"AccST:"<<std::endl;
-        Test(simplexList, RT_AccST);
+        std::cout<<std::endl<<"AccSubST:"<<std::endl;
+        Test(simplexList, RT_AccSubST);
     }
 
-    if (useParallel)
+    if (useAccSubParallel)
     {
         std::cout<<std::endl<<"parallel:"<<std::endl;
-        Test(simplexList, RT_AccParallel);
+        Test(simplexList, RT_AccSubParallel);
     }
 }
 

@@ -13,8 +13,8 @@ class ComputationsLocal
 
 public:
 
-    static void Compute(PartitionGraph::Nodes &nodes, AccSubAlgorithm accSubAlgorithm, AcyclicTest<IncidenceGraph::IntersectionFlags> *test);
-    static void CreateIncidenceGraph(PartitionGraph::Node *node, AccSubAlgorithm accSubAlgorithm, AcyclicTest<IncidenceGraph::IntersectionFlags> *test);
+    static void Compute(PartitionGraph::Nodes &nodes, AccSubAlgorithm accSubAlgorithm, AccTest<IncidenceGraph::IntersectionFlags> *test);
+    static void CreateIncidenceGraph(PartitionGraph::Node *node, AccSubAlgorithm accSubAlgorithm, AccTest<IncidenceGraph::IntersectionFlags> *test);
     
 };
 

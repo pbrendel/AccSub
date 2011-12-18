@@ -40,12 +40,12 @@ void PartitionGraph::Node::CreateVertexHashForBorderNodes()
 
 ////////////////////////////////////////////////////////////////////////////////
 
-PartitionGraph::PartitionGraph(SimplexList &simplexList, int packsCount, AccSubAlgorithm accSubAlgorithm, AcyclicTest<IncidenceGraph::IntersectionFlags> *acyclicTest)
+PartitionGraph::PartitionGraph(SimplexList &simplexList, int packsCount, AccSubAlgorithm accSubAlgorithm, AccTest<IncidenceGraph::IntersectionFlags> *accTest)
 {
     this->incidenceGraph = new IncidenceGraph(Simplex::GetSimplexListDimension(simplexList));
     this->initialSize = simplexList.size();
     this->accSubAlgorithm = accSubAlgorithm;
-    this->acyclicTest = acyclicTest;
+    this->accTest = accTest;
     int packSize = (int)ceil(float(simplexList.size()) / packsCount);
 #ifdef ACCSUB_TRACE
     std::cout<<"pack size: "<<packSize<<std::endl;
@@ -72,7 +72,7 @@ PartitionGraph::PartitionGraph(SimplexList &simplexList, int packsCount, AccSubA
     Timer::Update("creating isolated incidence graphs");
 #endif
     CombineGraphs();
-    ast->JoinAcyclicSubsets();
+    ast->JoinAccSubsets();
     delete ast;
 }
 
@@ -152,7 +152,7 @@ void PartitionGraph::CreateDataEdges()
 
 void PartitionGraph::CalculateIncidenceGraphs(Nodes &sourceNodes)
 {
-    ComputationsLocal::Compute(sourceNodes, accSubAlgorithm, acyclicTest);
+    ComputationsLocalMPITest::Compute(sourceNodes, accSubAlgorithm, accTest);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

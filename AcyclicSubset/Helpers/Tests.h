@@ -11,7 +11,7 @@
 
 #include "../AcyclicSubset/IncidenceGraph.h"
 #include "../AcyclicSubset/Simplex.h"
-#include "../AcyclicSubset/AcyclicTest.hpp"
+#include "../AcyclicSubset/AccTest.hpp"
 
 class OutputGraph;
 
@@ -19,10 +19,10 @@ enum ReductionType
 {
     RT_None,
     RT_Coreduction,
-    RT_Acc,
-    RT_AccIG,
-    RT_AccST,
-    RT_AccParallel
+    RT_AccSub,
+    RT_AccSubIG,
+    RT_AccSubST,
+    RT_AccSubParallel
 };
 
 class Tests
@@ -45,14 +45,14 @@ public:
 
 private:
     
-    static bool IsAcyclicSubsetReduction(ReductionType);
+    static bool IsAccSubReduction(ReductionType);
 
     // testType:
     // 0 - random
     // 1 - single file
     // 2 - list
     static int              testType;
-    static int              acyclicTestNumber;
+    static int              accTestNumber;
     static std::string      inputFilename;
     static int              simplicesCount;
     static int              simplicesDim;
@@ -61,10 +61,10 @@ private:
     static int              sortVerts;
     static int              useAlgebraic;
     static int              useCoreduction;
-    static int              useAcc;
-    static int              useAccIG;
-    static int              useAccST;
-    static int              useParallel;
+    static int              useAccSub;
+    static int              useAccSubIG;
+    static int              useAccSubST;
+    static int              useAccSubParallel;
     static int              packsCount;
     static int              parallelAccSubAlgorithm;
     static int              prepareData;

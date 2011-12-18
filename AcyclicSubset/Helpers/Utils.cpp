@@ -103,11 +103,11 @@ void Debug::Print(std::ostream &str, IncidenceGraph::VertexHash &m)
 #endif
 }
 
-void Debug::PrintAcyclicSet(std::ostream &str, IncidenceGraph::Nodes &nodes)
+void Debug::PrintAccSub(std::ostream &str, IncidenceGraph::Nodes &nodes)
 {
     for (IncidenceGraph::Nodes::iterator i = nodes.begin(); i != nodes.end(); i++)
     {
-        if ((*i)->IsAcyclic())
+        if ((*i)->IsInAccSub())
         {
             Print(str, *((*i)->simplex));
         }

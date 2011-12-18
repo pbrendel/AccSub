@@ -21,21 +21,21 @@ public:
         PartitionGraph::Node *parent;
         int subtreeID;
         std::set<Vertex> borderVerts;
-        int acyclicSubsetSize;
+        int accSubSize;
         std::vector<Edge *> edges;
         IncidenceGraph::ConnectedComponent connectedComponent;
         std::vector<Vertex> boundaryVertsToConnect;
         std::vector<IncidenceGraph::Path> boundaryVertsConnectingPaths;
-        bool isConnectedToAcyclicSubset;
+        bool isConnectedToAccSub;
 
-        Node(PartitionGraph::Node *parent, int id, IncidenceGraph::ConnectedComponent connectedComponent, std::set<Vertex> &borderVerts, int acyclicSubsetSize)
+        Node(PartitionGraph::Node *parent, int id, IncidenceGraph::ConnectedComponent connectedComponent, std::set<Vertex> &borderVerts, int accSubSize)
         {
             this->parent = parent;
             this->subtreeID = id;
             this->connectedComponent = connectedComponent;
             this->borderVerts = borderVerts;
-            this->acyclicSubsetSize = acyclicSubsetSize;
-            this->isConnectedToAcyclicSubset = false;
+            this->accSubSize = accSubSize;
+            this->isConnectedToAccSub = false;
         }
 
         void AddEdge(Edge *edge)
@@ -43,10 +43,10 @@ public:
             edges.push_back(edge);
         }
         
-        void FindAcyclicSubsetToBorderConnection(Vertex borderVertex, IncidenceGraph::Path &path);
-        void UpdateAcyclicSubsetToBorderConnection(Vertex borderVertex, IncidenceGraph::Path &path);
-        void UpdatePathFromBorderToAcyclicSubset(Vertex borderVertex, IncidenceGraph::Path &path);
-        void UpdatePathFromAcyclicSubsetToBorder(Vertex borderVertex, IncidenceGraph::Path &path);        
+        void FindAccSubToBorderConnection(Vertex borderVertex, IncidenceGraph::Path &path);
+        void UpdateAccSubToBorderConnection(Vertex borderVertex, IncidenceGraph::Path &path);
+        void UpdatePathFromBorderToAccSub(Vertex borderVertex, IncidenceGraph::Path &path);
+        void UpdatePathFromAccSubToBorder(Vertex borderVertex, IncidenceGraph::Path &path);
         void FindBoundaryVertsConnectingPaths();
         void UpdateBoundaryVertsConnectingPaths();
     };
@@ -68,8 +68,8 @@ public:
             isInSpanningTree = false;
         }
 
-        void FindAcyclicConnections();
-        void UpdateAcyclicConnections();
+        void FindAccConnections();
+        void UpdateAccConnections();
     };
 
     typedef std::vector<Node *> Nodes;
@@ -81,7 +81,7 @@ public:
     AccSpanningTree(PartitionGraph *pg);
     ~AccSpanningTree();
     
-    void JoinAcyclicSubsets();
+    void JoinAccSubsets();
  
 };
 

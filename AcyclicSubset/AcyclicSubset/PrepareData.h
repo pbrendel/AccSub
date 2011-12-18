@@ -86,13 +86,13 @@ public:
             {
                 continue;
             }
-            std::queue<SimplexDescriptor *> L;
-            L.push(&descriptors[i]);
+            std::queue<SimplexDescriptor *> Q;
+            Q.push(&descriptors[i]);
             descriptors[i].added = true;
-            while (!L.empty())
+            while (!Q.empty())
             {
-                SimplexDescriptor *sd = L.front();
-                L.pop();
+                SimplexDescriptor *sd = Q.front();
+                Q.pop();
                 simplexList.push_back(sd->simplex);
                 for (Simplex::iterator v = sd->simplex.begin(); v != sd->simplex.end(); v++)
                 {
@@ -101,7 +101,7 @@ public:
                     {
                         if (!(*n)->added)
                         {
-                            L.push(*n);
+                            Q.push(*n);
                             (*n)->added = true;
                         }
                     }

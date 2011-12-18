@@ -11,7 +11,7 @@
 void ReadSimplexList(SimplexList &simplexList, const char *filename, bool sortVerts);
 void GenerateSimplexList(SimplexList &simplexList, int simplicesCount, int vertsCount, int dim);
 int GenerateReverseSimplexList(SimplexList &simplexList, int simplicesCount, int vertsCount, int dim);
-void GenerateAcyclicTree(SimplexList &simplexList, int simplicesCount, int nodesCount);
+void GenerateAccTree(SimplexList &simplexList, int simplicesCount, int nodesCount);
 
 bool FindDuplicates(SimplexList &simplexList);
 

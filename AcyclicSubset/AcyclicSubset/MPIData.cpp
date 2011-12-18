@@ -18,7 +18,7 @@ SimplexData::SimplexData(int* buffer, int size)
     this->size = size;
 }
 
-SimplexData::SimplexData(const SimplexPtrList& simplexPtrList, const std::set<Vertex>& borderVerts, int accSubAlgorithm, int acyclicityTestNumber, int simplexSize)
+SimplexData::SimplexData(const SimplexPtrList& simplexPtrList, const std::set<Vertex>& borderVerts, int accSubAlgorithm, int accTestNumber, int simplexSize)
 {
     size = CalcBufferSize(simplexPtrList, borderVerts.size(), simplexSize);
     buffer = new int[size];
@@ -34,7 +34,7 @@ SimplexData::SimplexData(const SimplexPtrList& simplexPtrList, const std::set<Ve
     // typ algorytmu obliczania podzbioru acyklicznego
     buffer[index++] = accSubAlgorithm;
     // numer testu acyklicznosci
-    buffer[index++] = acyclicityTestNumber;
+    buffer[index++] = accTestNumber;
     // dane sympleksow
     if (simplexSize == 0)
     {
@@ -92,13 +92,13 @@ int SimplexData::CalcBufferSize(const SimplexPtrList& simplexPtrList, int border
     return size + borderVertsCount + 5;
 }
 
-void SimplexData::GetSimplexData(SimplexList& simplexList, std::set<Vertex>& borderVerts, int &accSubAlgorithm, int &acyclicityTestNumber)
+void SimplexData::GetSimplexData(SimplexList& simplexList, std::set<Vertex>& borderVerts, int &accSubAlgorithm, int &accTestNumber)
 {
     int index = 0;
     int simplexSize = buffer[index++];
     int simplexCount = buffer[index++];
     accSubAlgorithm = buffer[index++];
-    acyclicityTestNumber = buffer[index++];
+    accTestNumber = buffer[index++];
     if (simplexSize == 0)
     {
         for (int i = 0; i < simplexCount; i++)
@@ -151,7 +151,7 @@ IncidenceGraphData::IncidenceGraphData(const IncidenceGraph* ig)
     int nodesCount = 0;
     for (IncidenceGraph::Nodes::const_iterator node = ig->nodes.begin(); node != ig->nodes.end(); node++)
     {
-        if (!(*node)->IsAcyclic())
+        if (!(*node)->IsInAccSub())
         {
             nodesCount++;
         }
@@ -161,7 +161,7 @@ IncidenceGraphData::IncidenceGraphData(const IncidenceGraph* ig)
     for (IncidenceGraph::Nodes::const_iterator node = ig->nodes.begin(); node != ig->nodes.end(); node++)
     {
          // nie zapisujemy sympleksow ze zbioru acyklicznego
-        if ((*node)->IsAcyclic())
+        if ((*node)->IsInAccSub())
         {
             continue;
         }
@@ -171,13 +171,13 @@ IncidenceGraphData::IncidenceGraphData(const IncidenceGraph* ig)
         }
         buffer[index++] = (*node)->index;
         buffer[index++] = (*node)->newIndex;
-        buffer[index++] = (*node)->GetAcyclicIntersectionFlags();
+        (*node)->GetAccInfo().WriteToBuffer(buffer, index);
     }
     // ilosc krawedzi grafu
     int edgesCount = 0;
     for (IncidenceGraph::Edges::const_iterator edge = ig->edges.begin(); edge != ig->edges.end(); edge++)
     {
-        if (!(*edge)->nodeA->IsAcyclic() && !(*edge)->nodeB->IsAcyclic())
+        if (!(*edge)->nodeA->IsInAccSub() && !(*edge)->nodeB->IsInAccSub())
         {
             edgesCount++;
         }
@@ -188,7 +188,7 @@ IncidenceGraphData::IncidenceGraphData(const IncidenceGraph* ig)
     {
         // nie zapisujemy krawedzi pomiedzy wierzcholkami
         // ktore znajduja sie w zbiorze acyklicznym
-        if ((*edge)->nodeA->IsAcyclic() || (*edge)->nodeB->IsAcyclic())
+        if ((*edge)->nodeA->IsInAccSub() || (*edge)->nodeB->IsInAccSub())
         {
             continue;
         }
@@ -217,7 +217,7 @@ IncidenceGraphData::IncidenceGraphData(const IncidenceGraph* ig)
         }
     }
     // rozmiary podzbiorow acyklicznych w spojnych skladowych
-    for (std::vector<int>::const_iterator i = ig->connectedComponentsAcyclicSubsetSize.begin(); i != ig->connectedComponentsAcyclicSubsetSize.end(); i++)
+    for (std::vector<int>::const_iterator i = ig->connectedComponentsAccSubSize.begin(); i != ig->connectedComponentsAccSubSize.end(); i++)
     {
         buffer[index++] = (*i);
     }
@@ -236,7 +236,7 @@ int IncidenceGraphData::CalcBufferSize(const IncidenceGraph* ig)
     for (IncidenceGraph::Nodes::const_iterator node = ig->nodes.begin(); node != ig->nodes.end(); node++)
     {
         // nie zapisujemy sympleksow ze zbioru acyklicznego
-        if ((*node)->IsAcyclic())
+        if ((*node)->IsInAccSub())
         {
             continue;
         }
@@ -245,15 +245,15 @@ int IncidenceGraphData::CalcBufferSize(const IncidenceGraph* ig)
         {
             size++;
         }
-        // 4 inty to:
+        size += (*node)->GetAccInfo().BufferSize();
+        // 2 inty to:
         // - index
         // - newIndex
-        // - acyclicIntersectionFlags
-        size += 3;
+        size += 2;
     }
     for (IncidenceGraph::Edges::const_iterator edge = ig->edges.begin(); edge != ig->edges.end(); edge++)
     {
-        if (!(*edge)->nodeA->IsAcyclic() && !(*edge)->nodeB->IsAcyclic())
+        if (!(*edge)->nodeA->IsInAccSub() && !(*edge)->nodeB->IsInAccSub())
         {
             size += 2;
         }
@@ -292,9 +292,8 @@ IncidenceGraph *IncidenceGraphData::GetIncidenceGraph(const SimplexPtrList &simp
     {
         int ind = buffer[index++];
         int newIndex = buffer[index++];
-        int acyclicIntersectionFlags = buffer[index++];
         IncidenceGraph::Node *node = new IncidenceGraph::Node(ig, const_cast<Simplex *>(simplexPtrList.at(ind)), newIndex);
-        node->UpdateAcyclicIntersectionFlags(acyclicIntersectionFlags, 0);
+        node->GetAccInfo().ReadFromBuffer(buffer, index);
         ig->nodes.push_back(node);
     }
     // tworzymy krawedzie
@@ -335,7 +334,7 @@ IncidenceGraph *IncidenceGraphData::GetIncidenceGraph(const SimplexPtrList &simp
     // rozmiar podzbioru acyklicznego
     for (int i = 0; i < connectedComponentsCount; i++)
     {
-        ig->connectedComponentsAcyclicSubsetSize.push_back(buffer[index++]);
+        ig->connectedComponentsAccSubSize.push_back(buffer[index++]);
     }
     return ig;
 }

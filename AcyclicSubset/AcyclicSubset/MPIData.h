@@ -27,13 +27,13 @@ class SimplexData
 public:
 
     SimplexData(int *buffer, int size);
-    SimplexData(const SimplexPtrList &simplexPtrList, const std::set<Vertex> &borderVerts, int accSubAlgorithm, int acyclicityTestNumber, int simplexSize);
+    SimplexData(const SimplexPtrList &simplexPtrList, const std::set<Vertex> &borderVerts, int accSubAlgorithm, int accTestNumber, int simplexSize);
     ~SimplexData();
     
     int *GetBuffer() const { return buffer; }
     int GetSize() const { return size; }
 
-    void GetSimplexData(SimplexList &simplexList, std::set<Vertex> &borderVerts, int &accSubAlgorithm, int &acyclicityTestNumber);
+    void GetSimplexData(SimplexList &simplexList, std::set<Vertex> &borderVerts, int &accSubAlgorithm, int &accTestNumber);
 
 };
 

@@ -87,22 +87,22 @@ OutputGraph::OutputGraph(IncidenceGraph* ig)
 {
     nodeIndex = 0;
     incidenceGraph = ig;
-    std::queue<IncidenceGraph::Node *> L;
+    std::queue<IncidenceGraph::Node *> Q;
     for (IncidenceGraph::Nodes::iterator i = ig->nodes.begin(); i != ig->nodes.end(); i++)
     {
         // omijamy sympleksy nalezace do zbioru acyklicznego
         // albo te juz dodane do grafu
-        if ((*i)->IsAcyclic() || (*i)->IsAddedToOutput())
+        if ((*i)->IsInAccSub() || (*i)->IsAddedToOutput())
         {
             continue;
         }
-        L.push(*i);
-        (*i)->IsAddedToList(true);
-        while (!L.empty())
+        Q.push(*i);
+        (*i)->IsAddedToQueue(true);
+        while (!Q.empty())
         {
             // bierzemy pierwszy na liscie wierzcholek
-            IncidenceGraph::Node *currentNode = L.front();
-            L.pop();
+            IncidenceGraph::Node *currentNode = Q.front();
+            Q.pop();
             // flagi wygenerowanych podsympleksow
             IncidenceGraph::IntersectionFlags subnodesFlags = 0;
             // wygenerowane podsympleksy
@@ -112,7 +112,7 @@ OutputGraph::OutputGraph(IncidenceGraph* ig)
                 IncidenceGraph::Node *neighbour = (*edge)->GetNeighbour(currentNode);
                 // jezeli jest acykliczny to znaczy, ze przeciecie napewno bylo
                 // wyliczone wczesniej, wiec aktualizujemy flagi przeciecia acyklicznego
-                if (!neighbour->IsAcyclic())
+                if (!neighbour->IsInAccSub())
                 {
                     if (!(*edge)->IntersectionCalculated())
                     {
@@ -123,7 +123,8 @@ OutputGraph::OutputGraph(IncidenceGraph* ig)
                     {
                         // jezeli przeciecie nie jest w zbiorze acyklicznym
                         IncidenceGraph::IntersectionFlags intersectionFlags = (*edge)->GetIntersectionFlags(currentNode);
-                        if ((intersectionFlags & currentNode->GetAcyclicIntersectionFlags()) != intersectionFlags)
+                        if (!currentNode->GetAccInfo().IsInsideAccIntersection(intersectionFlags))
+                        //if ((intersectionFlags & currentNode->GetAccInfo().GetAccIntersectionFlags()) != intersectionFlags)
                         {
                             Node *outputNode = ((Node *)neighbour->outputData)->FindNodeWithSimplex((*edge)->intersection);
                             assert(outputNode != 0);
@@ -134,10 +135,10 @@ OutputGraph::OutputGraph(IncidenceGraph* ig)
                     // wpp. dodajemy sasiada do listy
                     else
                     {
-                        if (!neighbour->IsAddedToList())
+                        if (!neighbour->IsAddedToQueue())
                         {
-                            neighbour->IsAddedToList(true);
-                            L.push(neighbour);
+                            neighbour->IsAddedToQueue(true);
+                            Q.push(neighbour);
                         }
                     }
                 }
@@ -202,18 +203,17 @@ OutputGraph::Node *OutputGraph::GenerateNode(IncidenceGraph::Node *baseNode, Sim
     assert(flags != 0);
 
     OutputGraph::Node *newNode = 0;
-    IncidenceGraph::IntersectionFlags acyclicFlags = baseNode->GetAcyclicIntersectionFlags();
 
     // jezeli sciana nie jest w przecieciu ze zbiorem acyklicznym
     // ale juz ja wygenerowalismy, to szukamy jej w liscie wygenerowanych sympleksow
     // jezeli subnodes flags == 0 to zadna z podscian nie zostala jeszcze wygenerowana
-    if ((acyclicFlags & flags) == 0 && (subnodesFlags & flags) == flags)
+    if (baseNode->GetAccInfo().IsDisjointWithAccIntersection(flags) && (subnodesFlags & flags) == flags)
     {
         return Node::FindNodeWithSimplex(generatedSubnodes, baseSimplex);
     }
     // jezeli sciana nie jest w przecieciu ze zbiorem acyklicznym
     // ani nie byla wczesniej dodana -> dodajemy
-    else if ((acyclicFlags & flags) == 0/* && (subnodesFlags & flags) == 0 */)
+    else if (baseNode->GetAccInfo().IsDisjointWithAccIntersection(flags)/* && (subnodesFlags & flags) == 0 */)
     {
         assert(baseSimplex.size() != 0);
         newNode = AddNode(baseSimplex);
@@ -223,13 +223,13 @@ OutputGraph::Node *OutputGraph::GenerateNode(IncidenceGraph::Node *baseNode, Sim
         subnodesFlags |= flags;
     }
     // calkowicie pokrywa sie ze zbiorem acyklicznym -> nie generujemy juz nic w dol
-    else if ((acyclicFlags & flags) == flags)
+    else if (baseNode->GetAccInfo().IsInsideAccIntersection(flags))
     {
         return 0;
     }
-    else /* if ((acyclicFlags & flags) != 0) */
+    else /* if (!baseNode->GetAccInfo().IsDisjointWithAccIntersection(flags)) */
     {
-        // nie mozemy tutaj wejsc, bo flags moze miec czesc wspolna z acyclicFlags
+        // nie mozemy tutaj wejsc, bo flags moze miec czesc wspolna ze zbiorem acyklicznym
         // tylko w jednym miejscu (czyli sama siebie)
         assert(false);
         return 0;

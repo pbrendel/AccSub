@@ -12,18 +12,18 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void ComputationsLocal::Compute(PartitionGraph::Nodes &nodes, AccSubAlgorithm accSubAlgorithm, AcyclicTest<IncidenceGraph::IntersectionFlags> *test)
+void ComputationsLocal::Compute(PartitionGraph::Nodes &nodes, AccSubAlgorithm accSubAlgorithm, AccTest<IncidenceGraph::IntersectionFlags> *test)
 {
 #ifdef ACCSUB_TRACE
     Timer::TimeStamp("***** ComputationsLocal start");
     Timer::Time start = Timer::Now();
-    if (accSubAlgorithm == ASA_AccIG)
+    if (accSubAlgorithm == ASA_AccSubIG)
     {    
-        std::cout<<"using AccIG"<<std::endl;
+        std::cout<<"using AccSubIG"<<std::endl;
     }
     else
     {
-        std::cout<<"using AccST"<<std::endl;            
+        std::cout<<"using AccSubST"<<std::endl;
     }
 #endif    
     for (PartitionGraph::Nodes::iterator i = nodes.begin(); i != nodes.end(); i++)
@@ -39,18 +39,18 @@ void ComputationsLocal::Compute(PartitionGraph::Nodes &nodes, AccSubAlgorithm ac
 #endif
 }
 
-void ComputationsLocal::CreateIncidenceGraph(PartitionGraph::Node *node, AccSubAlgorithm accSubAlgorithm, AcyclicTest<IncidenceGraph::IntersectionFlags> *test)
+void ComputationsLocal::CreateIncidenceGraph(PartitionGraph::Node *node, AccSubAlgorithm accSubAlgorithm, AccTest<IncidenceGraph::IntersectionFlags> *test)
 {
-    if (accSubAlgorithm == ASA_AccIG)
+    if (accSubAlgorithm == ASA_AccSubIG)
     {
-        node->ig = IncidenceGraphHelpers::CreateAndCalculateAcyclicSubsetOnlineWithBorder(node->simplexPtrList, node->borderVerts, test);
+        node->ig = IncidenceGraphHelpers::CreateAndCalculateAccSubIGWithBorder(node->simplexPtrList, node->borderVerts, test);
     }
     else
     {
-        node->ig = IncidenceGraphHelpers::CreateAndCalculateAcyclicSubsetSpanningTreeWithBorder(node->simplexPtrList, node->borderVerts, test);
+        node->ig = IncidenceGraphHelpers::CreateAndCalculateAccSubSTWithBorder(node->simplexPtrList, node->borderVerts, test);
     }
     node->ig->UpdateConnectedComponents();
-    node->ig->RemoveAcyclicSubset();
+    node->ig->RemoveAccSub();
     node->ig->AssignNewIndices(false);
 }
 

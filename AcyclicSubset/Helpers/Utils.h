@@ -35,7 +35,7 @@ public:
     static void Print(std::ostream &str, IncidenceGraph::Nodes &nodes);
     static void Print(std::ostream &str, IncidenceGraph::Path &path);
     static void Print(std::ostream &str, IncidenceGraph::VertexHash &m);
-    static void PrintAcyclicSet(std::ostream &str, IncidenceGraph::Nodes &nodes);
+    static void PrintAccSub(std::ostream &str, IncidenceGraph::Nodes &nodes);
     static void PrintGraph(std::ostream &str, IncidenceGraph::Nodes &nodes);
     static void Print(std::ostream &str, std::map<Simplex, IncidenceGraph::IntersectionFlags> &flags);
     static void Print(std::ostream &str, OutputGraph &graph);

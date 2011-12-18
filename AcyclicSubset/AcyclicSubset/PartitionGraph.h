@@ -77,7 +77,7 @@ public:
 
     void GetIntersection(std::vector<Vertex> &intersection, std::set<Vertex> &setA, std::set<Vertex> &setB);
     
-    PartitionGraph(SimplexList &simplexList, int packsCount, AccSubAlgorithm accSubAlgorithm, AcyclicTest<IncidenceGraph::IntersectionFlags> *acyclicTest);
+    PartitionGraph(SimplexList &simplexList, int packsCount, AccSubAlgorithm accSubAlgorithm, AccTest<IncidenceGraph::IntersectionFlags> *accTest);
     ~PartitionGraph();
 
     IncidenceGraph *GetIncidenceGraph() { return incidenceGraph; }
@@ -92,7 +92,7 @@ private:
     int initialSize;
 
     AccSubAlgorithm accSubAlgorithm;
-    AcyclicTest<IncidenceGraph::IntersectionFlags> *acyclicTest; 
+    AccTest<IncidenceGraph::IntersectionFlags> *accTest;
     
     void DivideData(SimplexList &simplexList, int packSize);
     void CreateDataEdges();

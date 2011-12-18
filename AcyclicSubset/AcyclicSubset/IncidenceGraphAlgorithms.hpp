@@ -21,13 +21,13 @@ public:
     }
 };
 
-class FindNotAcyclicNode
+class FindNodeNotInAccSub
 {
 public:
 
     bool FoundNode(IncidenceGraph::Node *node)
     {
-        return !node->IsAcyclic();
+        return !node->IsInAccSub();
     }
 };
 
@@ -51,15 +51,15 @@ template <typename FindOptions>
 IncidenceGraph::Node *FindNode(IncidenceGraph::ConnectedComponent connectedComponent, FindOptions findOptions)
 {
     IncidenceGraph::Nodes tmp;
-    std::queue<IncidenceGraph::Node *> L;
+    std::queue<IncidenceGraph::Node *> Q;
     tmp.push_back(connectedComponent);
     connectedComponent->IsHelperFlag1(true);
-    L.push(connectedComponent);
+    Q.push(connectedComponent);
     IncidenceGraph::Node *foundNode = 0;
-    while (foundNode == 0 && !L.empty())
+    while (foundNode == 0 && !Q.empty())
     {
-        IncidenceGraph::Node *currentNode = L.front();
-        L.pop();
+        IncidenceGraph::Node *currentNode = Q.front();
+        Q.pop();
         if (findOptions.FoundNode(currentNode))
         {
             foundNode = currentNode;
@@ -73,7 +73,7 @@ IncidenceGraph::Node *FindNode(IncidenceGraph::ConnectedComponent connectedCompo
                 {
                     tmp.push_back(neighbour);
                     neighbour->IsHelperFlag1(true);
-                    L.push(neighbour);
+                    Q.push(neighbour);
                 }
             }
         }
@@ -150,44 +150,44 @@ public:
     }
 };
 
-class FindPathToAcyclicNode : public FindPathBase
+class FindPathToNodeInAccSub : public FindPathBase
 {
 public:
     bool FoundNode(IncidenceGraph::Node *n)
     {
-        return n->IsAcyclic();
+        return n->IsInAccSub();
     }
 };
 
-class FindPathToNodeWithAcyclicIntersection : public FindPathBase
+class FindPathToNodeWithAccIntersection : public FindPathBase
 {
 public:
     bool FoundNode(IncidenceGraph::Node *n)
     {
-        return (n->GetAcyclicIntersectionFlags() != 0);
+        return (n->GetAccInfo().HasIntersectionWithAccSub());
     }
 };
 
-class FindPathToNodeNotInAcyclicSubset : public FindPathBase
+class FindPathToNodeNotInAccSub : public FindPathBase
 {
 public:
     bool FoundNode(IncidenceGraph::Node *n)
     {
-        return (!n->GetAcyclicIntersectionFlags() && !n->IsAcyclic());
+        return (!n->GetAccInfo().HasIntersectionWithAccSub() && !n->IsInAccSub());
     }
 
     bool EndOfPath(IncidenceGraph::Node *n)
     {
-        return n->IsAcyclic();
+        return n->IsInAccSub();
     }
 };
 
-class FindPathToNodeNotInAcyclicSubsetNorOnBorder : public FindPathBase
+class FindPathToNodeNotInAccSubNorOnBorder : public FindPathBase
 {
 public:
     bool FoundNode(IncidenceGraph::Node *n)
     {
-        return (!n->GetAcyclicIntersectionFlags() && !n->IsAcyclic() && !n->IsOnBorder());
+        return (!n->GetAccInfo().HasIntersectionWithAccSub() && !n->IsInAccSub() && !n->IsOnBorder());
     }
 
     bool IsValidNeighbour(IncidenceGraph::Node *n)
@@ -197,7 +197,7 @@ public:
 
     bool EndOfPath(IncidenceGraph::Node *n)
     {
-        return n->IsAcyclic();
+        return n->IsInAccSub();
     }
 };
 
@@ -206,17 +206,17 @@ public:
 template <typename FindOptions>
 IncidenceGraph::Path FindPath(IncidenceGraph::Node *firstNode, FindOptions findOptions)
 {
-    std::queue<IncidenceGraph::Node *> L;
+    std::queue<IncidenceGraph::Node *> Q;
     IncidenceGraph::Nodes tmp;
     firstNode->IsHelperFlag1(true);
-    L.push(firstNode);
+    Q.push(firstNode);
     tmp.push_back(firstNode);
     IncidenceGraph::Node *foundNode = 0;
     std::map<IncidenceGraph::Node *, IncidenceGraph::Node *> pred;
-    while (!L.empty() && foundNode == 0)
+    while (!Q.empty() && foundNode == 0)
     {
-        IncidenceGraph::Node *node = L.front();
-        L.pop();
+        IncidenceGraph::Node *node = Q.front();
+        Q.pop();
         if (findOptions.FoundNode(node))
         {
             foundNode = node;
@@ -228,7 +228,7 @@ IncidenceGraph::Path FindPath(IncidenceGraph::Node *firstNode, FindOptions findO
                 IncidenceGraph::Node *neighbour = (*edge)->GetNeighbour(node);
                 if (!neighbour->IsHelperFlag1() && findOptions.IsValidNeighbour(neighbour))
                 {
-                    L.push(neighbour);
+                    Q.push(neighbour);
                     tmp.push_back(neighbour);
                     neighbour->IsHelperFlag1(true);
                     pred[neighbour] = node;
@@ -262,11 +262,11 @@ IncidenceGraph::Path FindPath(IncidenceGraph::Node *firstNode, FindOptions findO
 
 class RemoveNodesWithFlags
 {
-    IncidenceGraph::Node::Flags flags;
+    IncidenceGraph::Node::PropertiesFlags flags;
 
 public:
 
-    RemoveNodesWithFlags(IncidenceGraph::Node::Flags f)
+    RemoveNodesWithFlags(IncidenceGraph::Node::PropertiesFlags f)
     {
         flags = f;
     }

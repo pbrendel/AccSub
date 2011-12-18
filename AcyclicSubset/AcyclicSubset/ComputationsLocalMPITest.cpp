@@ -14,18 +14,18 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void ComputationsLocalMPITest::Compute(PartitionGraph::Nodes &nodes, AccSubAlgorithm accSubAlgorithm, AcyclicTest<IncidenceGraph::IntersectionFlags> *test)
+void ComputationsLocalMPITest::Compute(PartitionGraph::Nodes &nodes, AccSubAlgorithm accSubAlgorithm, AccTest<IncidenceGraph::IntersectionFlags> *test)
 {
 #ifdef ACCSUB_TRACE
     Timer::TimeStamp("***** ComputationsLocalMPITest start");
     Timer::Time start = Timer::Now();
-    if (accSubAlgorithm == ASA_AccIG)
+    if (accSubAlgorithm == ASA_AccSubIG)
     {    
-        std::cout<<"using AccIG"<<std::endl;
+        std::cout<<"using AccSubIG"<<std::endl;
     }
     else
     {
-        std::cout<<"using AccST"<<std::endl;            
+        std::cout<<"using AccSubST"<<std::endl;
     }
 #endif
     for (PartitionGraph::Nodes::iterator i = nodes.begin(); i != nodes.end(); i++)
@@ -35,22 +35,22 @@ void ComputationsLocalMPITest::Compute(PartitionGraph::Nodes &nodes, AccSubAlgor
         MPIData::SimplexData *simplexData = new MPIData::SimplexData(node->simplexPtrList, node->borderVerts, accSubAlgorithm, test->GetID(), Simplex::GetSimplexListConstantSize(node->simplexPtrList));
         SimplexList simplexList;
         std::set<Vertex> borderVerts;
-        int acyclicTestNumber;
+        int accTestNumber;
         int accSubAlg;
-        simplexData->GetSimplexData(simplexList, borderVerts, accSubAlg, acyclicTestNumber);
-        AcyclicTest<IncidenceGraph::IntersectionFlags> *test = AcyclicTest<IncidenceGraph::IntersectionFlags>::Create(acyclicTestNumber, Simplex::GetSimplexListDimension(simplexList));
+        simplexData->GetSimplexData(simplexList, borderVerts, accSubAlg, accTestNumber);
+        AccTest<IncidenceGraph::IntersectionFlags> *test = AccTest<IncidenceGraph::IntersectionFlags>::Create(accTestNumber, Simplex::GetSimplexListDimension(simplexList));
 
         IncidenceGraph *ig = 0;
-        if (accSubAlg == ASA_AccIG)
+        if (accSubAlg == ASA_AccSubIG)
         {
-           ig = IncidenceGraphHelpers::CreateAndCalculateAcyclicSubsetOnlineWithBorder(simplexList, borderVerts, test);
+           ig = IncidenceGraphHelpers::CreateAndCalculateAccSubIGWithBorder(simplexList, borderVerts, test);
         }
         else
         {
-            ig = IncidenceGraphHelpers::CreateAndCalculateAcyclicSubsetSpanningTreeWithBorder(simplexList, borderVerts, test);
+            ig = IncidenceGraphHelpers::CreateAndCalculateAccSubSTWithBorder(simplexList, borderVerts, test);
         }
         ig->UpdateConnectedComponents();
-        ig->RemoveAcyclicSubset();
+        ig->RemoveAccSub();
         ig->AssignNewIndices(false);
 
         MPIData::IncidenceGraphData *igData = new MPIData::IncidenceGraphData(ig);

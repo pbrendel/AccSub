@@ -12,24 +12,24 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void ComputationsParallelOMP::Compute(PartitionGraph::Nodes &nodes, AccSubAlgorithm accSubAlgorithm, AcyclicTest<IncidenceGraph::IntersectionFlags> *acyclicTest)
+void ComputationsParallelOMP::Compute(PartitionGraph::Nodes &nodes, AccSubAlgorithm accSubAlgorithm, AccTest<IncidenceGraph::IntersectionFlags> *accTest)
 {
 #ifdef ACCSUB_TRACE
     Timer::TimeStamp("***** ComputationsParallelOMP start");
     Timer::Time start = Timer::Now();
-    if (accSubAlgorithm == ASA_AccIG)
+    if (accSubAlgorithm == ASA_AccSubIG)
     {    
-        std::cout<<"using AccIG"<<std::endl;
+        std::cout<<"using AccSubIG"<<std::endl;
     }
     else
     {
-        std::cout<<"using AccST"<<std::endl;            
+        std::cout<<"using AccSubST"<<std::endl;
     }
 #endif  
     #pragma omp parallel for
     for (PartitionGraph::Nodes::iterator i = nodes.begin(); i != nodes.end(); i++)
     {
-        ComputationsLocal::CreateIncidenceGraph(*i, accSubAlgorithm, acyclicTest);
+        ComputationsLocal::CreateIncidenceGraph(*i, accSubAlgorithm, accTest);
 #ifdef ACCSUB_TRACE
         Timer::TimeStamp("***** incidence graph calculated");
 #endif    

@@ -8,7 +8,7 @@
 #include "Utils.h"
 #include "../AcyclicSubset/PartitionGraph.h"
 #include "../AcyclicSubset/ComputationsParallelMPI.h"
-#include "../AcyclicSubset/AcyclicTest.hpp"
+#include "../AcyclicSubset/AccTest.hpp"
 #include "../AcyclicSubset/IncidenceGraphHelpers.h"
 #include "../AcyclicSubset/HomologyHelpers.h"
 
@@ -45,15 +45,15 @@ void MPITest::StandardTest()
 
     std::cout<<buff<<std::endl;
 
-    AcyclicTest<IncidenceGraph::IntersectionFlags> *test = AcyclicTest<IncidenceGraph::IntersectionFlags>::Create(Tests::acyclicTestNumber, Simplex::GetSimplexListDimension(simplexList));
+    AccTest<IncidenceGraph::IntersectionFlags> *test = AccTest<IncidenceGraph::IntersectionFlags>::Create(Tests::accTestNumber, Simplex::GetSimplexListDimension(simplexList));
     Timer::Time start = Timer::Now();
 
-    IncidenceGraph *ig = IncidenceGraphHelpers::CreateAndCalculateAcyclicSubsetParallel(simplexList, Tests::packsCount, (AccSubAlgorithm)Tests::parallelAccSubAlgorithm, test);
+    IncidenceGraph *ig = IncidenceGraphHelpers::CreateAndCalculateAccSubParallel(simplexList, Tests::packsCount, (AccSubAlgorithm)Tests::parallelAccSubAlgorithm, test);
     delete test;
 
     Timer::TimeFrom(start, "parallel computations");
 
-    std::cout<<"acyclic subset size: "<<ig->GetAcyclicSubsetSize()<<std::endl;
+    std::cout<<"acyclic subset size: "<<ig->GetAccSubSize()<<std::endl;
 
     Timer::Update();
     OutputGraph *og = new OutputGraph(ig);
