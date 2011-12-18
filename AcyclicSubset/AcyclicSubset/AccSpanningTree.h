@@ -11,24 +11,28 @@
 
 class AccSpanningTree
 {
-    
+
+    typedef IncidenceGraph::ConnectedComponent ConnectedComponent;
+    typedef IncidenceGraph::ConnectedComponents ConnectedComponents;
+    typedef IncidenceGraph::Path Path;
+
 public:
     
     struct Edge;
     
     struct Node
     {
-        PartitionGraph::Node *parent;
-        int subtreeID;
-        std::set<Vertex> borderVerts;
-        int accSubSize;
-        std::vector<Edge *> edges;
-        IncidenceGraph::ConnectedComponent connectedComponent;
-        std::vector<Vertex> boundaryVertsToConnect;
-        std::vector<IncidenceGraph::Path> boundaryVertsConnectingPaths;
-        bool isConnectedToAccSub;
+        PartitionGraph::Node    *parent;
+        int                     subtreeID;
+        std::set<Vertex>        borderVerts;
+        int                     accSubSize;
+        std::vector<Edge *>     edges;
+        ConnectedComponent      connectedComponent;
+        std::vector<Vertex>     boundaryVertsToConnect;
+        std::vector<Path>       boundaryVertsConnectingPaths;
+        bool                    isConnectedToAccSub;
 
-        Node(PartitionGraph::Node *parent, int id, IncidenceGraph::ConnectedComponent connectedComponent, std::set<Vertex> &borderVerts, int accSubSize)
+        Node(PartitionGraph::Node *parent, int id, ConnectedComponent connectedComponent, std::set<Vertex> &borderVerts, int accSubSize)
         {
             this->parent = parent;
             this->subtreeID = id;
@@ -43,22 +47,22 @@ public:
             edges.push_back(edge);
         }
         
-        void FindAccSubToBorderConnection(Vertex borderVertex, IncidenceGraph::Path &path);
-        void UpdateAccSubToBorderConnection(Vertex borderVertex, IncidenceGraph::Path &path);
-        void UpdatePathFromBorderToAccSub(Vertex borderVertex, IncidenceGraph::Path &path);
-        void UpdatePathFromAccSubToBorder(Vertex borderVertex, IncidenceGraph::Path &path);
+        void FindAccSubToBorderConnection(Vertex borderVertex, Path &path);
+        void UpdateAccSubToBorderConnection(Vertex borderVertex, Path &path);
+        void UpdatePathFromBorderToAccSub(Vertex borderVertex, Path &path);
+        void UpdatePathFromAccSubToBorder(Vertex borderVertex, Path &path);
         void FindBoundaryVertsConnectingPaths();
         void UpdateBoundaryVertsConnectingPaths();
     };
     
     struct Edge
     {
-        Node *nodeA;
-        Node *nodeB;
-        IncidenceGraph::Path pathToA;
-        IncidenceGraph::Path pathToB;
-        Vertex intersectionVertex;
-        bool isInSpanningTree;
+        Node    *nodeA;
+        Node    *nodeB;
+        Path    pathToA;
+        Path    pathToB;
+        Vertex  intersectionVertex;
+        bool    isInSpanningTree;
 
         Edge(Node *na, Node *nb, Vertex iv)
         {

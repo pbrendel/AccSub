@@ -14,6 +14,9 @@
 #ifdef USE_MPI
 #include <mpi.h>
 #include "MPIData.h"
+#ifdef DEBUG_MPI
+#include "../Helpers/Utils.h"
+#endif
 #endif
 
 #define MPI_MY_WORK_TAG        1

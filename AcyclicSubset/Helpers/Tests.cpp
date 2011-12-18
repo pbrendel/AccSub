@@ -11,6 +11,14 @@
 #include "../AcyclicSubset/IncidenceGraphHelpers.h"
 #include "../AcyclicSubset/HomologyHelpers.h"
 
+#include <cassert>
+
+#ifdef USE_MPI
+#include <mpi.h>
+#include "../AcyclicSubset/ComputationsParallelMPI.h"
+#include "../AcyclicSubset/MPIData.h"
+#endif
+
 ////////////////////////////////////////////////////////////////////////////////
 // static variables
 
@@ -31,6 +39,7 @@ int Tests::useAccSubParallel = 0;
 int Tests::packsCount = 6;
 int Tests::parallelAccSubAlgorithm = 0;
 int Tests::prepareData = 1;
+int Tests::processRank = 0;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -170,6 +179,10 @@ void Tests::Test(SimplexList &simplexList, ReductionType reductionType)
     Timer::Time timeStart = Timer::Now();
 
     AccTest<IncidenceGraph::IntersectionFlags> *test = IsAccSubReduction(reductionType) ? AccTest<IncidenceGraph::IntersectionFlags>::Create(accTestNumber, Simplex::GetSimplexListDimension(simplexList)) : 0;
+    if (test)
+    {
+        std::cout<<"acyclic test number: "<<test->GetID()<<std::endl;
+    }
     IncidenceGraph *ig = 0;
     if (reductionType == RT_AccSub)
     {
@@ -193,7 +206,6 @@ void Tests::Test(SimplexList &simplexList, ReductionType reductionType)
     }
     if (test)
     {
-        std::cout<<"acyclic test number: "<<test->GetID()<<std::endl;
         delete test;
     }
     total = Timer::TimeFrom(timeStart, "total graph processing");
@@ -337,6 +349,49 @@ void Tests::TestFromCommandLine(int argc, char **argv)
 
     MemoryInfo::Print();
 
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+void Tests::MPIMaster(int argc, char** argv)
+{
+#ifdef USE_MPI
+    TestFromCommandLine(argc, argv);
+    ComputationsParallelMPI::KillSlaves();
+#endif
+}
+
+void Tests::MPISlave(int processRank)
+{
+#ifdef USE_MPI
+    ComputationsParallelMPI::Slave(processRank);
+#endif
+}
+
+void Tests::MPITestFromCommandLine(int argc, char **argv)
+{
+#ifdef USE_MPI
+    MPI_Init(&argc, &argv);
+    Timer::Init();
+
+    MPI_Comm_rank(MPI_COMM_WORLD, &processRank);
+    std::cout<<"starting process: "<<processRank<<std::endl;
+    Timer::Time now = Timer::Now();
+
+    if (processRank == 0)
+    {
+        MPIMaster(argc, argv);
+    }
+    else
+    {
+        MPISlave(processRank);
+    }
+
+    std::cout<<"terminating process: "<<processRank<<std::endl;
+    Timer::TimeFrom(now, "total");
+    MemoryInfo::Print();
+    MPI_Finalize();
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////////////

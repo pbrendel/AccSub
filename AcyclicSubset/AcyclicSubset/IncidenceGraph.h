@@ -75,7 +75,7 @@ public:
         {
             this->graph = graph;
             this->simplex = simplex;
-            this->index = newIndex = index;
+            this->index = index;
             this->propertiesFlags = 0;
 
             for (int i = 0; i < simplex->size(); i++)
@@ -148,14 +148,13 @@ public:
 
         Simplex             *simplex;
         Edges               edges;
-
-        // to do wywalenia
-        void                *outputData; // tu bedzie zapisywany OutputNode
-
-        // to ma byc prywatne
-        // potrzebne do rownoleglych obliczen
         int                 index;
-        int                 newIndex;
+
+        union
+        {
+            void *ptr;
+            int  i;
+        } helpers;
 
     private:
 
@@ -245,13 +244,13 @@ public:
     void GetAccSub(SimplexList &simplexList);
     int GetAccSubSize();
     
-    int dim;
-    Nodes nodes;
-    Edges edges;
+    int                 dim;
+    Nodes               nodes;
+    Edges               edges;
     ConnectedComponents connectedComponents;
-    VertsSet borderVerts;
+    VertsSet            borderVerts;
     std::vector<VertsSet> connectedComponentsBorders;
-    std::vector<int> connectedComponentsAccSubSize;
+    std::vector<int>    connectedComponentsAccSubSize;
 
 public:
 

@@ -3,13 +3,8 @@
  * Author: Piotr Brendel
  */
 
-#include "Helpers/Utils.h"
 #include "Helpers/Tests.h"
-#include "Helpers/MPITest.h"
 
-////////////////////////////////////////////////////////////////////////////////
-// co mozna zrobic szybciej?
-// - hash vertex -> index
 ////////////////////////////////////////////////////////////////////////////////
 
 int main(int argc, char *argv[])
@@ -17,14 +12,14 @@ int main(int argc, char *argv[])
     try
     {
 #ifdef USE_MPI
-    MPITest::Test(argc, argv);
+    Tests::MPITestFromCommandLine(argc, argv);
 #else
     Tests::TestFromCommandLine(argc, argv);
 #endif
     }
     catch (std::string s)
     {
-        std::cerr<<"Something went wrong: "<<s<<std::endl;
+        std::cerr<<"something went wrong: "<<s<<std::endl;
         return 1;
     }
             

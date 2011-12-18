@@ -12,7 +12,7 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void AccSpanningTree::Node::FindAccSubToBorderConnection(Vertex borderVertex, IncidenceGraph::Path &path)
+void AccSpanningTree::Node::FindAccSubToBorderConnection(Vertex borderVertex, Path &path)
 {
     if (accSubSize > 0)
     {
@@ -28,7 +28,7 @@ void AccSpanningTree::Node::FindAccSubToBorderConnection(Vertex borderVertex, In
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void AccSpanningTree::Node::UpdateAccSubToBorderConnection(Vertex borderVertex, IncidenceGraph::Path &path)
+void AccSpanningTree::Node::UpdateAccSubToBorderConnection(Vertex borderVertex, Path &path)
 {
     if (accSubSize > 0)
     {
@@ -61,10 +61,10 @@ void AccSpanningTree::Node::UpdateAccSubToBorderConnection(Vertex borderVertex, 
 // wczesniej natrafimy na inny kawalek podzbioru acyklicznego
 // zakladamy, ze jestesmy w "kawalku" kompleksu, ktory ma juz polaczenie
 // ze zbiorem acyklicznym
-void AccSpanningTree::Node::UpdatePathFromBorderToAccSub(Vertex borderVertex, IncidenceGraph::Path &path)
+void AccSpanningTree::Node::UpdatePathFromBorderToAccSub(Vertex borderVertex, Path &path)
 {
     IncidenceGraph::Node *prevNode = path.front();
-    IncidenceGraph::Path::iterator i = path.begin();
+    Path::iterator i = path.begin();
     i++;
     // jezeli zaczynamy od acyklicznego wierzcholka to jestesmy w domu
     // (musimy zagwarantowac, ze wierzcholek na brzegu bedzie mial "dojscie"
@@ -128,10 +128,10 @@ void AccSpanningTree::Node::UpdatePathFromBorderToAccSub(Vertex borderVertex, In
 // albo trafilismy na wierzcholek w brzegu, ktorego podlaczenie gwarantuje
 // poprzednia funkcja albo trafilismy na inny podzbior acykliczny znajdujacy
 // sie w brzegu => tez ok
-void AccSpanningTree::Node::UpdatePathFromAccSubToBorder(Vertex borderVertex, IncidenceGraph::Path &path)
+void AccSpanningTree::Node::UpdatePathFromAccSubToBorder(Vertex borderVertex, Path &path)
 {
     path.reverse();
-    IncidenceGraph::Path::iterator i = path.begin();
+    Path::iterator i = path.begin();
     // pierwszy node sasiaduje ze zbiorem acyklicznym
     IncidenceGraph::Node *prevNode = *i;
     i++;
@@ -199,7 +199,7 @@ void AccSpanningTree::Node::FindBoundaryVertsConnectingPaths()
     for (; vertex != boundaryVertsToConnect.end(); vertex++)
     {
         // szukanie sciezki pomiedzy wierzcholkami
-        IncidenceGraph::Path path = FindPath(firstNode, FindPathToVertex(*vertex));
+        Path path = FindPath(firstNode, FindPathToVertex(*vertex));
         assert(path.size() > 0);
         boundaryVertsConnectingPaths.push_back(path);
     }
@@ -227,7 +227,7 @@ void AccSpanningTree::Node::UpdateBoundaryVertsConnectingPaths()
     IncidenceGraph::Node *firstNode = FindNode(connectedComponent, FindNodeWithVertex(firstVertex));
     firstNode->GetAccInfo().UpdateAccIntersectionWithVertex(firstVertex);
     vertex++;
-    for (std::vector<IncidenceGraph::Path>::iterator path = boundaryVertsConnectingPaths.begin(); path != boundaryVertsConnectingPaths.end(); path++, vertex++)
+    for (std::vector<Path>::iterator path = boundaryVertsConnectingPaths.begin(); path != boundaryVertsConnectingPaths.end(); path++, vertex++)
     {
         assert(vertex != boundaryVertsToConnect.end());
         IncidenceGraph::Node *prevNode = path->back();
@@ -240,7 +240,7 @@ void AccSpanningTree::Node::UpdateBoundaryVertsConnectingPaths()
         }
         Vertex lastVertex = *vertex;
         // std::cout<<"vertex: "<<lastVertex<<std::endl;
-        IncidenceGraph::Path::reverse_iterator i = path->rbegin();
+        Path::reverse_iterator i = path->rbegin();
         i++;
         VertsSet vertsOnPath;
         vertsOnPath.insert(lastVertex);
@@ -339,7 +339,7 @@ AccSpanningTree::AccSpanningTree(PartitionGraph *pg)
         IncidenceGraph *ig = (*i)->ig;
         std::vector<std::set<Vertex> >::iterator ccb = ig->connectedComponentsBorders.begin();
         std::vector<int>::iterator ccass = ig->connectedComponentsAccSubSize.begin();
-        for (IncidenceGraph::ConnectedComponents::iterator cc = ig->connectedComponents.begin(); cc != ig->connectedComponents.end(); cc++)
+        for (ConnectedComponents::iterator cc = ig->connectedComponents.begin(); cc != ig->connectedComponents.end(); cc++)
         {
             Node *newNode = new Node(*i, currentID++, *cc, *ccb, *ccass);
             dataNodeChildren[*i].push_back(newNode);

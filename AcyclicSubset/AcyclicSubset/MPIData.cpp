@@ -167,10 +167,10 @@ IncidenceGraphData::IncidenceGraphData(const IncidenceGraph* ig)
         }
         if ((*node)->IsOnBorder())
         {
-            simplicesOnBorder.push_back((*node)->newIndex);
+            simplicesOnBorder.push_back((*node)->index);
         }
+        buffer[index++] = (*node)->helpers.i;
         buffer[index++] = (*node)->index;
-        buffer[index++] = (*node)->newIndex;
         (*node)->GetAccInfo().WriteToBuffer(buffer, index);
     }
     // ilosc krawedzi grafu
@@ -192,8 +192,8 @@ IncidenceGraphData::IncidenceGraphData(const IncidenceGraph* ig)
         {
             continue;
         }
-        buffer[index++] = (*edge)->nodeA->newIndex;
-        buffer[index++] = (*edge)->nodeB->newIndex;
+        buffer[index++] = (*edge)->nodeA->index;
+        buffer[index++] = (*edge)->nodeB->index;
     }
     // sympleksy brzegowe
     buffer[index++] = simplicesOnBorder.size();
@@ -205,7 +205,7 @@ IncidenceGraphData::IncidenceGraphData(const IncidenceGraph* ig)
     buffer[index++] = ig->connectedComponents.size();
     for (IncidenceGraph::ConnectedComponents::const_iterator i = ig->connectedComponents.begin(); i != ig->connectedComponents.end(); i++)
     {
-        buffer[index++] = (*i)->newIndex;
+        buffer[index++] = (*i)->index;
     }
     // wierzcholki brzegowe dla spojnych skladowych
     for (std::vector<VertsSet>::const_iterator i = ig->connectedComponentsBorders.begin(); i != ig->connectedComponentsBorders.end(); i++)
@@ -290,9 +290,9 @@ IncidenceGraph *IncidenceGraphData::GetIncidenceGraph(const SimplexPtrList &simp
     int nodesCount = buffer[index++];
     for (int i = 0; i < nodesCount; i++)
     {
-        int ind = buffer[index++];
-        int newIndex = buffer[index++];
-        IncidenceGraph::Node *node = new IncidenceGraph::Node(ig, const_cast<Simplex *>(simplexPtrList.at(ind)), newIndex);
+        int simplexIndex = buffer[index++];
+        int nodeIndex = buffer[index++];
+        IncidenceGraph::Node *node = new IncidenceGraph::Node(ig, const_cast<Simplex *>(simplexPtrList.at(simplexIndex)), nodeIndex);
         node->GetAccInfo().ReadFromBuffer(buffer, index);
         ig->nodes.push_back(node);
     }

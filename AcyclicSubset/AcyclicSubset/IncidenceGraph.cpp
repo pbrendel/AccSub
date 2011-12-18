@@ -793,14 +793,16 @@ void IncidenceGraph::AssignNewIndices(bool checkAcyclicity)
             {
                 continue;
             }
-            (*i)->newIndex = index++;
+            (*i)->helpers.i = (*i)->index;
+            (*i)->index = index++;
         }
     }
     else
     {
         for (Nodes::iterator i = nodes.begin(); i != nodes.end(); i++)
         {
-            (*i)->newIndex = index++;
+            (*i)->helpers.i = (*i)->index;
+            (*i)->index = index++;
         }
     }
 }

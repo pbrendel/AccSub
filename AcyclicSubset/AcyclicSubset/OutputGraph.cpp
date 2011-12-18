@@ -126,7 +126,7 @@ OutputGraph::OutputGraph(IncidenceGraph* ig)
                         if (!currentNode->GetAccInfo().IsInsideAccIntersection(intersectionFlags))
                         //if ((intersectionFlags & currentNode->GetAccInfo().GetAccIntersectionFlags()) != intersectionFlags)
                         {
-                            Node *outputNode = ((Node *)neighbour->outputData)->FindNodeWithSimplex((*edge)->intersection);
+                            Node *outputNode = ((Node *)neighbour->helpers.ptr)->FindNodeWithSimplex((*edge)->intersection);
                             assert(outputNode != 0);
                             outputNode->GetSubnodes(subnodes);
                             subnodesFlags |= intersectionFlags;
@@ -144,7 +144,7 @@ OutputGraph::OutputGraph(IncidenceGraph* ig)
                 }
             }
             currentNode->IsAddedToOutput(true);
-            currentNode->outputData = GenerateNode(currentNode, *currentNode->simplex, subnodes, subnodesFlags);
+            currentNode->helpers.ptr = GenerateNode(currentNode, *currentNode->simplex, subnodes, subnodesFlags);
         }
     }
 }

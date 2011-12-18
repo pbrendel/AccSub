@@ -30,23 +30,11 @@ class Tests
 
 public:
 
-    static void PrintHelp();
-    static void ProcessArguments(int, char **);
-    
-    static void GenerateData(SimplexList &);
-
-    static void Test(SimplexList &, ReductionType);
-    static void TestAndCompare(SimplexList &);
-
-    static void StandardTest();
-    static void TestFromList();
-
     static void TestFromCommandLine(int, char **);
+    static void MPITestFromCommandLine(int, char**);
 
 private:
     
-    static bool IsAccSubReduction(ReductionType);
-
     // testType:
     // 0 - random
     // 1 - single file
@@ -68,8 +56,26 @@ private:
     static int              packsCount;
     static int              parallelAccSubAlgorithm;
     static int              prepareData;
+    static int              processRank;
 
-    friend class MPITest;
+    static void PrintHelp();
+    static void ProcessArguments(int, char **);
+
+    static void GenerateData(SimplexList &);
+
+    static bool IsAccSubReduction(ReductionType);
+
+    static void Test(SimplexList &, ReductionType);
+    static void TestAndCompare(SimplexList &);
+
+    static void StandardTest();
+    static void TestFromList();
+
+    static void MPIMaster(int argc, char **argv);
+    static void MPISlave(int processRank);
+
+    static int GetProcessRank() { return processRank; }
+
 };
 
 #endif	/* TESTS_H */

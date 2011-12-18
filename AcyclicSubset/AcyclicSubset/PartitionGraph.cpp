@@ -40,7 +40,7 @@ void PartitionGraph::Node::CreateVertexHashForBorderNodes()
 
 ////////////////////////////////////////////////////////////////////////////////
 
-PartitionGraph::PartitionGraph(SimplexList &simplexList, int packsCount, AccSubAlgorithm accSubAlgorithm, AccTest<IncidenceGraph::IntersectionFlags> *accTest)
+PartitionGraph::PartitionGraph(SimplexList &simplexList, int packsCount, AccSubAlgorithm accSubAlgorithm, AccTest<IntersectionFlags> *accTest)
 {
     this->incidenceGraph = new IncidenceGraph(Simplex::GetSimplexListDimension(simplexList));
     this->initialSize = simplexList.size();
@@ -164,7 +164,7 @@ void PartitionGraph::CombineGraphs()
     {
         IncidenceGraph::Nodes nodesA = (*edge)->nodeA->ig->nodes;
         (*edge)->nodeB->CreateVertexHashForBorderNodes();
-        IncidenceGraph::VertexHash HB = (*edge)->nodeB->H;
+        VertexHash HB = (*edge)->nodeB->H;
 
         for (IncidenceGraph::Nodes::iterator node = nodesA.begin(); node != nodesA.end(); node++)
         {

@@ -13,7 +13,7 @@ class IncidenceGraph;
 
 class OutputGraph
 {
-
+    
 public:
 
     struct Node
@@ -43,8 +43,8 @@ public:
 
 private:
 
-    int nodeIndex;
-    IncidenceGraph *incidenceGraph;
+    int             nodeIndex;
+    IncidenceGraph  *incidenceGraph;
 
     Node *GenerateNode(IncidenceGraph::Node *baseNode, Simplex &baseSimplex, Nodes &generatedSubnodes, IncidenceGraph::IntersectionFlags &subnodesFlags);
     Node *AddNode(const Simplex &s);
