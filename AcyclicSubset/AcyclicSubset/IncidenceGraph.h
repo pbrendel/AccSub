@@ -11,6 +11,7 @@
 #include "AccTest.hpp"
 #include "IntersectionFlagsBitSet.hpp"
 #include "AccInfoFlags.hpp"
+#include "IntersectionInfoFlags.hpp"
 
 #include <list>
 #include <queue>
@@ -169,16 +170,12 @@ public:
     {
         Node                *nodeA;
         Node                *nodeB;
-        Simplex             intersection;
-        IntersectionFlags   intersectionFlagsA;
-        IntersectionFlags   intersectionFlagsB;
+        IntersectionInfoFlags<IncidenceGraph> intersection;
 
-        Edge(Node *na, Node *nb)
+        Edge(Node *na, Node *nb) : intersection(this)
         {
-            this->nodeA = na;
-            this->nodeB = nb;
-            this->intersectionFlagsA = 0;
-            this->intersectionFlagsB = 0;
+            nodeA = na;
+            nodeB = nb;
         }
 
         Node *GetNeighbour(Node *node)
@@ -189,25 +186,6 @@ public:
         bool Contains(Node *node)
         {
             return (node == nodeA || node == nodeB);
-        }
-
-        bool IntersectionCalculated()
-        {
-            return (intersectionFlagsA != 0 && intersectionFlagsB != 0);
-        }
-
-        void CalculateIntersection()
-        {
-            if (Simplex::GetIntersection(nodeA->simplex, nodeB->simplex, intersection))
-            {
-                intersectionFlagsA = nodeA->GetNormalizedIntersectionFlags(intersection);
-                intersectionFlagsB = nodeB->GetNormalizedIntersectionFlags(intersection);
-            }
-        }
-
-        IntersectionFlags GetIntersectionFlags(Node *node)
-        {
-            return (node == nodeA) ? intersectionFlagsA : intersectionFlagsB;
         }
     };
 

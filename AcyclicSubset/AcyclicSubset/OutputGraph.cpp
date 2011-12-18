@@ -114,19 +114,15 @@ OutputGraph::OutputGraph(IncidenceGraph* ig)
                 // wyliczone wczesniej, wiec aktualizujemy flagi przeciecia acyklicznego
                 if (!neighbour->IsInAccSub())
                 {
-                    if (!(*edge)->IntersectionCalculated())
-                    {
-                        (*edge)->CalculateIntersection();
-                    }
                     // jezeli byl juz dodany do wyjscia
                     if (neighbour->IsAddedToOutput())
                     {
                         // jezeli przeciecie nie jest w zbiorze acyklicznym
-                        IncidenceGraph::IntersectionFlags intersectionFlags = (*edge)->GetIntersectionFlags(currentNode);
+                        IncidenceGraph::IntersectionFlags intersectionFlags = (*edge)->intersection.GetFlags(currentNode);
                         if (!currentNode->GetAccInfo().IsInsideAccIntersection(intersectionFlags))
                         //if ((intersectionFlags & currentNode->GetAccInfo().GetAccIntersectionFlags()) != intersectionFlags)
                         {
-                            Node *outputNode = ((Node *)neighbour->helpers.ptr)->FindNodeWithSimplex((*edge)->intersection);
+                            Node *outputNode = ((Node *)neighbour->helpers.ptr)->FindNodeWithSimplex((*edge)->intersection.Get());
                             assert(outputNode != 0);
                             outputNode->GetSubnodes(subnodes);
                             subnodesFlags |= intersectionFlags;

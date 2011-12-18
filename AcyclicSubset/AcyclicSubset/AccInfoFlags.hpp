@@ -114,13 +114,9 @@ public:
             {
                 continue;
             }
-            if (!(*edge)->IntersectionCalculated())
-            {
-                (*edge)->CalculateIntersection();
-            }
             // obliczamy czesc wspolna (przeciecie) krawedzi i przeciecia z sasiadem
             Simplex s;
-            Simplex::GetIntersection((*edge)->intersection, simplex, s);
+            Simplex::GetIntersection((*edge)->intersection.Get(), simplex, s);
             // jezeli przeciecie to jest niepuste (maja wspolne punkty)
             // to aktualizujemy jego acyclic flags
             if (s.size() > 0)
@@ -142,11 +138,7 @@ public:
             {
                 continue;
             }
-            if (!(*edge)->IntersectionCalculated())
-            {
-                (*edge)->CalculateIntersection();
-            }
-            if ((*edge)->intersection.ContainsVertex(v))
+            if ((*edge)->intersection.Get().ContainsVertex(v))
             {
                 Node *neighbour = (*edge)->GetNeighbour(node);
                 Simplex s1 = neighbour->Normalize(s);
