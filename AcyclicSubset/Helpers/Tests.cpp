@@ -5,11 +5,14 @@
 
 #include "Tests.h"
 #include "Utils.h"
-#include "../AcyclicSubset/Simplex.h"
 #include "../AcyclicSubset/SimplexUtils.h"
-#include "../AcyclicSubset/IncidenceGraph.h"
 #include "../AcyclicSubset/IncidenceGraphHelpers.h"
 #include "../AcyclicSubset/HomologyHelpers.h"
+//#include "../AcyclicSubset/PrepareData.h"
+//#include "../AcyclicSubset/ComputationsLocal.h"
+//#include "../AcyclicSubset/ComputationsLocalMPITest.h"
+//#include "../AcyclicSubset/ComputationsParallelMPI.h"
+//#include "../AcyclicSubset/ComputationsParallelOMP.h"
 
 #include <cassert>
 
@@ -18,6 +21,7 @@
 #include "../AcyclicSubset/ComputationsParallelMPI.h"
 #include "../AcyclicSubset/MPIData.h"
 #endif
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // static variables
@@ -146,10 +150,10 @@ void Tests::GenerateData(SimplexList &simplexList)
     switch (testType)
     {
         case 0:
-            GenerateSimplexList(simplexList, simplicesCount, vertsCount, simplicesDim);
+            SimplexUtils<Simplex>::GenerateSimplexList(simplexList, simplicesCount, vertsCount, simplicesDim);
             break;
         case 1:
-            ReadSimplexList(simplexList, inputFilename.c_str(), sortVerts);
+            SimplexUtils<Simplex>::ReadSimplexList(simplexList, inputFilename.c_str(), sortVerts);
             break;
         default:
             break;
@@ -178,35 +182,35 @@ void Tests::Test(SimplexList &simplexList, ReductionType reductionType)
     Timer::Update();
     Timer::Time timeStart = Timer::Now();
 
-    AccTest<IncidenceGraph::IntersectionFlags> *test = IsAccSubReduction(reductionType) ? AccTest<IncidenceGraph::IntersectionFlags>::Create(accTestNumber, Simplex::GetSimplexListDimension(simplexList)) : 0;
-    if (test)
+    AccTest *accTest = IsAccSubReduction(reductionType) ? AccTest::Create(accTestNumber, Simplex::GetSimplexListDimension(simplexList)) : 0;
+    if (accTest)
     {
-        std::cout<<"acyclic test number: "<<test->GetID()<<std::endl;
+        std::cout<<"acyclic test number: "<<accTest->GetID()<<std::endl;
     }
     IncidenceGraph *ig = 0;
     if (reductionType == RT_AccSub)
     {
-        ig = IncidenceGraphHelpers::CreateAndCalculateAccSub(simplexList, test);
+        ig = IncidenceGraphHelpers<IncidenceGraph>::CreateAndCalculateAccSub(simplexList, accTest);
     }
     else if (reductionType == RT_AccSubIG)
     {
-        ig = IncidenceGraphHelpers::CreateAndCalculateAccSubIG(simplexList, test);
+        ig = IncidenceGraphHelpers<IncidenceGraph>::CreateAndCalculateAccSubIG(simplexList, accTest);
     }
     else if (reductionType == RT_AccSubST)
     {
-        ig = IncidenceGraphHelpers::CreateAndCalculateAccSubST(simplexList, test);
+        ig = IncidenceGraphHelpers<IncidenceGraph>::CreateAndCalculateAccSubST(simplexList, accTest);
     }
     else if (reductionType == RT_AccSubParallel)
     {
-        ig = IncidenceGraphHelpers::CreateAndCalculateAccSubParallel(simplexList, packsCount, (AccSubAlgorithm)parallelAccSubAlgorithm, test);
+ //       ig = IncidenceGraphHelpers<IncidenceGraph>::CreateAndCalculateAccSubParallel(simplexList, packsCount, (AccSubAlgorithm)parallelAccSubAlgorithm, accTest);
     }
     else // (reductionType == RT_Coreduction || reductionType == RT_None)
     {
-        ig = IncidenceGraphHelpers::Create(simplexList);
+        ig = IncidenceGraphHelpers<IncidenceGraph>::Create(simplexList);
     }
-    if (test)
+    if (accTest)
     {
-        delete test;
+        delete accTest;
     }
     total = Timer::TimeFrom(timeStart, "total graph processing");
     MemoryInfo::Print();
@@ -222,7 +226,7 @@ void Tests::Test(SimplexList &simplexList, ReductionType reductionType)
     MemoryInfo::Print();
 
     timeStart = Timer::Now();
-    HomologyHelpers::ComputeHomology(og, reductionType == RT_Coreduction);
+    HomologyHelpers<OutputGraph>::ComputeHomology(og, reductionType == RT_Coreduction);
     total += Timer::TimeFrom(timeStart);
     std::cout<<"total: "<<total<<std::endl;
     MemoryInfo::Print();

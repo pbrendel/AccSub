@@ -6,25 +6,263 @@
 #ifndef COMPUTATIONSPARALLELMPI_H
 #define	COMPUTATIONSPARALLELMPI_H
 
-#include "PartitionGraph.h"
+#include "IncidenceGraphHelpers.h"
+#include <map>
 
+#ifdef ACCSUB_TRACE
+#include "../Helpers/Utils.h"
+#endif
+
+#ifdef USE_MPI
+#include <mpi.h>
+#include "MPIData.h"
+#ifdef DEBUG_MPI
+#include "../Helpers/Utils.h"
+#endif
+#endif
+
+#define MPI_MY_WORK_TAG        1
+#define MPI_MY_DIE_TAG         2
+#define MPI_MY_DATASIZE_TAG    3
+#define MPI_MY_DATA_TAG        4
+#define MPI_MY_MEMORY_INFO_TAG 5
+
+////////////////////////////////////////////////////////////////////////////////
+
+template <typename PartitionGraph>
 class ComputationsParallelMPI
 {
-    static AccSubAlgorithm accSubAlgorithm;
-    static AccTest<IncidenceGraph::IntersectionFlags> *accTest;
+    typedef typename PartitionGraph::IncidenceGraph IncidenceGraph;
+    typedef typename PartitionGraph::Vertex Vertex;
+    typedef typename PartitionGraph::Simplex Simplex;
+    typedef typename PartitionGraph::SimplexList SimplexList;
+    typedef typename PartitionGraph::SimplexPtrList SimplexPtrList;
+    typedef typename PartitionGraph::Node Node;
+    typedef typename PartitionGraph::Nodes Nodes;
+    typedef typename PartitionGraph::AccTest AccTest;
+    typedef typename PartitionGraph::AccSubAlgorithm AccSubAlgorithm;
 
-    static void SendMPISimplexData(PartitionGraph::Node *node, int processRank);
-    static void SetMPIIncidenceGraphData(PartitionGraph::Node *node, int *buffer, int size);
+    static AccSubAlgorithm accSubAlgorithm;
+    static AccTest *accTest;
+
+    static void SendMPISimplexData(Node *node, int processRank)
+    {
+#ifdef USE_MPI
+#ifdef DEBUG_MPI
+        std::cout<<"process 0 ";
+        Timer::TimeStamp("packing data");
+#endif
+        MPIData::SimplexData<IncicenceGraph> *data = new MPIData::SimplexData<IncicenceGraph>(node->simplexPtrList, node->borderVerts, accSubAlgorithm, accTest->GetID(), Simplex::GetSimplexListConstantSize(node->simplexPtrList));
+        int dataSize = data->GetSize();
+        MPI_Send(&dataSize, 1, MPI_INT, processRank, MPI_MY_DATASIZE_TAG, MPI_COMM_WORLD);
+#ifdef DEBUG_MPI
+        std::cout<<"process 0 ";
+        Timer::TimeStamp("sending data");
+#endif
+        MPI_Send(data->GetBuffer(), dataSize, MPI_INT, processRank, MPI_MY_WORK_TAG, MPI_COMM_WORLD);
+        delete data;
+#endif
+    }
+
+    static void SetMPIIncidenceGraphData(Node *node, int *buffer, int size)
+    {
+#ifdef USE_MPI
+        MPIData::IncidenceGraphData<IncidenceGraph> *data = new MPIData::IncidenceGraphData<IncidenceGraph>(buffer, size);
+        node->ig = data->GetIncidenceGraph(node->simplexPtrList);
+#ifdef DEBUG_MPI
+        std::cout<<"process 0 ";
+        Timer::TimeStamp("unpacked data");
+#endif
+        delete data;
+#endif
+    }
 
 public:
 
-    static void Compute(PartitionGraph::Nodes &nodes, AccSubAlgorithm accSubAlgorithm, AccTest<IncidenceGraph::IntersectionFlags> *test);
+    static void Compute(Nodes &nodes, AccSubAlgorithm accSubAlgorithm, AccTest *accTest)
+    {
+#ifdef USE_MPI
+        ComputationsParallelMPI::accSubAlgorithm = accSubAlgorithm;
+        ComputationsParallelMPI::accTest = accTest;
+        int nodesCount = nodes.size();
+        int currentNode = 0;
+        int tasksCount;
+        int dataSize;
+        MPI_Status status;
+        std::map<int, Node *> rankToNode;
 
-    static void Slave(int processRank);
+        MPI_Comm_size(MPI_COMM_WORLD, &tasksCount);
 
-    static void KillSlaves();
-    static void CollectDebugMemoryInfo();
+        int size = (tasksCount < (nodesCount + 1)) ? tasksCount : (nodesCount + 1);
+
+        // dopoki starczy nam node'ow wysylamy paczki
+        for (int rank = 1; rank < size; rank++)
+        {
+            std::cout<<"sending node "<<currentNode<<" to process: "<<rank<<std::endl;
+            rankToNode[rank] = nodes[currentNode];
+            SendMPISimplexData(nodes[currentNode++], rank);
+        }
+
+        // potem czekamy na dane i wysylamy kolejne
+        while (currentNode < nodesCount)
+        {
+            // najpierw pobieramy rozmiar danych
+            MPI_Recv(&dataSize, 1, MPI_INT, MPI_ANY_SOURCE, MPI_MY_DATASIZE_TAG, MPI_COMM_WORLD, &status);
+            int *buffer = new int[dataSize];
+
+            // teraz dane od node'a od ktorego dostalismy info o rozmiarze danych
+            MPI_Recv(buffer, dataSize, MPI_INT, status.MPI_SOURCE, MPI_MY_DATA_TAG, MPI_COMM_WORLD, &status);
+#ifdef DEBUG_MPI
+            std::cout<<"process 0 ";
+            Timer::TimeStamp("received data");
+#endif
+            SetMPIIncidenceGraphData(rankToNode[status.MPI_SOURCE], buffer, size);
+            std::cout<<"sending node "<<currentNode<<" to process: "<<status.MPI_SOURCE<<std::endl;
+            rankToNode[status.MPI_SOURCE] = nodes[currentNode];
+            SendMPISimplexData(nodes[currentNode++], status.MPI_SOURCE);
+        }
+
+        // na koncu odbieramy to co jeszcze jest liczone
+        for (int rank = 1; rank < size; ++rank)
+        {
+            // najpierw pobieramy rozmiar danych
+            MPI_Recv(&dataSize, 1, MPI_INT, MPI_ANY_SOURCE, MPI_MY_DATASIZE_TAG, MPI_COMM_WORLD, &status);
+            int *buffer = new int[dataSize];
+            // teraz dane od node'a od ktorego dostalismy info o rozmiarze danych
+            MPI_Recv(buffer, dataSize, MPI_INT, status.MPI_SOURCE, MPI_MY_DATA_TAG, MPI_COMM_WORLD, &status);
+#ifdef DEBUG_MPI
+            std::cout<<"process 0 ";
+            Timer::TimeStamp("received data");
+#endif
+            SetMPIIncidenceGraphData(rankToNode[status.MPI_SOURCE], buffer, size);
+        }
+        std::cout<<"parallel computing done"<<std::endl;
+#endif
+    }
+
+    static void Slave(int processRank)
+    {
+#ifdef USE_MPI
+        MPI_Status status;
+        int dataSize;
+
+        while (1)
+        {
+            // pobieramy pierwszy komunikat
+            MPI_Recv(&dataSize, 1, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+
+            // jezeli polecenie zakonczenia pracy to konczymy
+            if (status.MPI_TAG == MPI_MY_DIE_TAG)
+            {
+                return;
+            }
+
+            if (status.MPI_TAG == MPI_MY_MEMORY_INFO_TAG)
+            {
+                int memory = MemoryInfo::GetUsage();
+                MPI_Send(&memory, 1, MPI_INT, 0, MPI_MY_MEMORY_INFO_TAG, MPI_COMM_WORLD);
+                MemoryInfo::Print();
+                continue;
+            }
+
+            // wpp. musi to byc MPI_MY_DATASIZE_TAG
+            assert(status.MPI_TAG == MPI_MY_DATASIZE_TAG);
+
+            // pobieramy bufor z danymi
+            int *buffer = new int[dataSize];
+            MPI_Recv(buffer, dataSize, MPI_INT, 0, MPI_MY_WORK_TAG, MPI_COMM_WORLD, &status);
+#ifdef DEBUG_MPI
+            std::cout<<"process "<<processRank<<" ";
+            Timer::TimeStamp("received data");
+#endif
+
+            // z pobranego bufora budujemy dane wejsciowe
+            MPIData::SimplexData<IncidenceGraph> *data = new MPIData::SimplexData<IncidenceGraph>(buffer, dataSize);
+            SimplexList simplexList;
+            std::set<Vertex> borderVerts;
+            int accSubAlgorithm;
+            int accTestNumber;
+            data->GetSimplexData(simplexList, borderVerts, accSubAlgorithm, accTestNumber);
+#ifdef DEBUG_MPI
+            std::cout<<"process "<<processRank<<" ";
+            Timer::TimeStamp("upacked data");
+#endif
+            AccTest *accTest = AccTest::Create(accTestNumber, Simplex::GetSimplexListDimension(simplexList));
+
+            // tworzymy graf incydencji z policzonym podzbiorem acyklicznym
+            IncidenceGraph *ig = 0;
+            if (accSubAlgorithm == ASA_AccSubIG)
+            {
+                ig = IncidenceGraphHelpers<IncidenceGraph>::CreateAndCalculateAccSubIGWithBorder(simplexList, borderVerts, accTest);
+            }
+            else
+            {
+                ig = IncidenceGraphHelpers<IncidenceGraph>::CreateAndCalculateAccSubSTWithBorder(simplexList, borderVerts, accTest);
+            }
+            ig->UpdateConnectedComponents();
+            ig->AssignNewIndices(true);
+
+            delete data;
+            delete test;
+
+            // zamieniamy na bufor danych
+            MPIData::IncidenceGraphData<IncidenceGraph> *igData = new MPIData::IncidenceGraphData<IncidenceGraph>(ig);
+#ifdef DEBUG_MPI
+            std::cout<<"process "<<processRank<<" ";
+            Timer::TimeStamp("packing data");
+#endif
+            dataSize = igData->GetSize();
+
+#ifdef DEBUG_MPI
+            std::cout<<"process "<<processRank<<" ";
+            Timer::TimeStamp("sending data");
+#endif
+            // i odsylamy do mastera
+            MPI_Send(&dataSize, 1, MPI_INT, 0, MPI_MY_DATASIZE_TAG, MPI_COMM_WORLD);
+            MPI_Send(igData->GetBuffer(), dataSize, MPI_INT,0, MPI_MY_DATA_TAG, MPI_COMM_WORLD);
+
+            delete igData;
+            delete ig;
+        }
+#endif
+    }
+
+    static void KillSlaves()
+    {
+#ifdef USE_MPI
+        int tasksCount;
+        MPI_Comm_size(MPI_COMM_WORLD, &tasksCount);
+        for (int rank = 1; rank < tasksCount; ++rank)
+        {
+            MPI_Send(0, 0, MPI_INT, rank, MPI_MY_DIE_TAG, MPI_COMM_WORLD);
+        }
+        std::cout<<"slaves killed"<<std::endl;
+#endif
+    }
+
+    static void CollectDebugMemoryInfo()
+    {
+#ifdef USE_MPI
+        MPI_Status status;
+        int tasksCount;
+        int mem = 0;
+        MPI_Comm_size(MPI_COMM_WORLD, &tasksCount);
+        for (int rank = 1; rank < tasksCount; ++rank)
+        {
+            MPI_Send(0, 0, MPI_INT, rank, MPI_MY_MEMORY_INFO_TAG, MPI_COMM_WORLD);
+            MPI_Recv(&mem, 1, MPI_INT, rank, MPI_MY_MEMORY_INFO_TAG, MPI_COMM_WORLD, &status);
+            // todo!!!
+            // MemoryInfo::AddSlaveMemoryInfo(rank, mem);
+        }
+        std::cout<<"slaves killed"<<std::endl;
+#endif
+    }
 };
+
+template <typename PartitionGraph>
+typename ComputationsParallelMPI<PartitionGraph>::AccSubAlgorithm ComputationsParallelMPI<PartitionGraph>::accSubAlgorithm = ComputationsParallelMPI<PartitionGraph>::AccSubAlgorithm::ASA_AccSubST;
+template <typename PartitionGraph>
+typename ComputationsParallelMPI<PartitionGraph>::AccTest *ComputationsParallelMPI<PartitionGraph>::accTest = 0;
 
 #endif	/* COMPUTATIONSPARALLELMPI_H */
 

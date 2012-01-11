@@ -6,12 +6,13 @@
 #ifndef INTERSECTIONINFOFLAGS_HPP
 #define	INTERSECTIONINFOFLAGS_HPP
 
-template <typename IncidenceGraphT>
+template <typename IncidenceGraph>
 class IntersectionInfoFlags
 {
-    typedef typename IncidenceGraphT::IntersectionFlags IntersectionFlags;
-    typedef typename IncidenceGraphT::Node Node;
-    typedef typename IncidenceGraphT::Edge Edge;
+    typedef typename IncidenceGraph::Simplex Simplex;
+    typedef typename IncidenceGraph::IntersectionFlags IntersectionFlags;
+    typedef typename IncidenceGraph::Node Node;
+    typedef typename IncidenceGraph::Edge Edge;
 
     Edge                *edge;
     Simplex             intersection;

@@ -6,6 +6,7 @@
 #ifndef CONFIGURATIONSFLAGS_HPP
 #define	CONFIGURATIONSFLAGS_HPP
 
+#include <vector>
 #include <map>
 
 template <typename SimplexType, typename FlagsType>

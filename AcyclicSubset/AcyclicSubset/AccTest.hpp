@@ -6,27 +6,29 @@
 #ifndef ACCTEST_HPP
 #define ACCTEST_HPP
 
-#include "Simplex.h"
-#include "ConfigurationsFlags.hpp"
 #include <map>
 #include <queue>
+#include <set>
 #include <string>
 
-#include <cstdio>
-#include <iostream>
+//#include <cstdio>
+//#include <iostream>
 #include <cassert>
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template <typename FlagsType>
-class AccTest
+template <typename Traits>
+class AccTestT
 {
+    typedef typename Traits::Simplex Simplex;
+    typedef typename Traits::SimplexList SimplexList;
+    typedef typename Traits::IntersectionFlags IntersectionFlags;
 
 public:
 
-    virtual ~AccTest() { };
+    virtual ~AccTestT() { };
     virtual bool IsAcyclic(Simplex &simplex, SimplexList &intersectionMF) = 0;
-    virtual bool IsAcyclic(Simplex &simplex, FlagsType intersectionFlags, FlagsType intersectionFlagsMF) = 0;
+    virtual bool IsAcyclic(Simplex &simplex, IntersectionFlags intersectionFlags, IntersectionFlags intersectionFlagsMF) = 0;
     virtual int GetID() = 0;
 
     int TrivialTest(Simplex &simplex, SimplexList &intersectionMF)
@@ -46,7 +48,7 @@ public:
         return 0;
     }
 
-    int TrivialTest(Simplex &simplex, FlagsType intersectionFlags, FlagsType intersectionFlagsMF)
+    int TrivialTest(Simplex &simplex, IntersectionFlags intersectionFlags, IntersectionFlags intersectionFlagsMF)
     {
         if (intersectionFlags == 0 || intersectionFlagsMF == 0)
         {
@@ -59,7 +61,7 @@ public:
         return 0;
     }
 
-    static AccTest *Create(int accTestNumber, int dim);
+    static AccTestT *Create(int accTestNumber, int dim);
 
 };
 
@@ -68,17 +70,20 @@ public:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template <typename FlagsType>
-class AccTestFalse : public AccTest<FlagsType>
+template <typename Traits>
+class AccTestFalse : public AccTestT<Traits>
 {
-
+    typedef typename Traits::Simplex Simplex;
+    typedef typename Traits::SimplexList SimplexList;
+    typedef typename Traits::IntersectionFlags IntersectionFlags;
+    
 public:
 
     bool IsAcyclic(Simplex &simplex, SimplexList &intersectionMF)
     {
         return false;
     }
-    bool IsAcyclic(Simplex &simplex, FlagsType intersectionFlags, FlagsType intersectionFlagsMF)
+    bool IsAcyclic(Simplex &simplex, IntersectionFlags intersectionFlags, IntersectionFlags intersectionFlagsMF)
     {
         return false;
     }
@@ -92,10 +97,13 @@ public:
 #define TAB_3D  "tablica3bBin.txt"
 #define TAB_4D  "tab4d.txt"
 
-template <typename FlagsType>
-class AccTestTabs : public AccTest<FlagsType>
+template <typename Traits>
+class AccTestTabs : public AccTestT<Traits>
 {
-
+    typedef typename Traits::Simplex Simplex;
+    typedef typename Traits::SimplexList SimplexList;
+    typedef typename Traits::IntersectionFlags IntersectionFlags;
+    
 public:
 
     AccTestTabs(int dim)
@@ -138,14 +146,14 @@ public:
         }
         // zakladamy, ze wejsciowe simpleksy sa w wersji "indeksowej"
         int index = 0;
-        for (SimplexList::iterator i = intersectionMF.begin(); i != intersectionMF.end(); i++)
+        for (typename SimplexList::iterator i = intersectionMF.begin(); i != intersectionMF.end(); i++)
         {
             index |= configurationsFlags[*i];
         }
         return GetValue(index);
     }
 
-    bool IsAcyclic(Simplex &simplex, FlagsType intersectionFlags, FlagsType intersectionFlagsMF)
+    bool IsAcyclic(Simplex &simplex, IntersectionFlags intersectionFlags, IntersectionFlags intersectionFlagsMF)
     {
         return GetValue((int)intersectionFlags);
     }
@@ -154,7 +162,7 @@ public:
 
 private:
 
-    ConfigurationsFlags<Simplex, FlagsType> configurationsFlags;
+    ConfigurationsFlags<Simplex, IntersectionFlags> configurationsFlags;
     long int dataSize;
     unsigned char *data;
 
@@ -173,12 +181,15 @@ private:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template <typename FlagsType>
-class AccTestCodim1 : public AccTest<FlagsType>
+template <typename Traits>
+class AccTestCodim1 : public AccTestT<Traits>
 {
-
+    typedef typename Traits::Simplex Simplex;
+    typedef typename Traits::SimplexList SimplexList;
+    typedef typename Traits::IntersectionFlags IntersectionFlags;
+    
     int maxSimplexSize;
-    std::map<int, FlagsType> codim1flags;
+    std::map<int, IntersectionFlags> codim1flags;
 
 public:
 
@@ -186,15 +197,15 @@ public:
     {
         maxSimplexSize = dim + 1;
 
-        ConfigurationsFlags<Simplex, FlagsType> configurationsFlags(dim, false, false);
+        ConfigurationsFlags<Simplex, IntersectionFlags> configurationsFlags(dim, false, false);
 
         Simplex s = Simplex::FromVertices(0, 1);
         for (int d = 2; d <= maxSimplexSize; d++)
         {
             SimplexList faces;
             s.GenerateProperFaces(faces);
-            FlagsType flags = 0;
-            for (SimplexList::iterator i = faces.begin(); i != faces.end(); i++)
+            IntersectionFlags flags = 0;
+            for (typename SimplexList::iterator i = faces.begin(); i != faces.end(); i++)
             {
                 if ((*i).size() == d - 1)
                 {
@@ -210,7 +221,7 @@ public:
     {
         TRIVIAL_TEST_I(simplex, intersectionMF);
         int d = simplex.size() - 1;
-        for (SimplexList::iterator i = intersectionMF.begin(); i != intersectionMF.end(); i++)
+        for (typename SimplexList::iterator i = intersectionMF.begin(); i != intersectionMF.end(); i++)
         {
             if (i->size() != d)
             {
@@ -220,12 +231,12 @@ public:
         return intersectionMF.size() < simplex.size();
     }
 
-    bool IsAcyclic(Simplex &simplex, FlagsType intersectionFlags, FlagsType intersectionFlagsMF)
+    bool IsAcyclic(Simplex &simplex, IntersectionFlags intersectionFlags, IntersectionFlags intersectionFlagsMF)
     {
         TRIVIAL_TEST_F(simplex, intersectionFlags, intersectionFlagsMF);
         int d= simplex.size();
         if (d > maxSimplexSize) return false;
-        FlagsType flags = codim1flags[d];
+        IntersectionFlags flags = codim1flags[d];
         // w przecieciu sa wszystkie podsympleksy z codim == 1
         if ((intersectionFlagsMF & flags) == flags) return false;
         // w przecieciu jest cos poza podsympleksami z codim == 1
@@ -238,12 +249,16 @@ public:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template <typename FlagsType>
-class AccTestStar : public AccTest<FlagsType>
+template <typename Traits>
+class AccTestStar : public AccTestT<Traits>
 {
+    typedef typename Traits::Simplex Simplex;
+    typedef typename Traits::SimplexList SimplexList;
+    typedef typename Traits::IntersectionFlags IntersectionFlags;
+    
     int firstMaximalFacePower;
     int lastMaximalFacePower;
-    std::map<FlagsType, FlagsType> confToSubconf;
+    std::map<IntersectionFlags, IntersectionFlags> confToSubconf;
 
 public:
 
@@ -252,10 +267,10 @@ public:
         firstMaximalFacePower = dim + 1;
         lastMaximalFacePower = (1 << (dim + 1)) - 2;
 
-        ConfigurationsFlags<Simplex, FlagsType> configurationsFlags(dim, false, false);
-        ConfigurationsFlags<Simplex, FlagsType> subconfigurationsFlags(dim, true, false);
+        ConfigurationsFlags<Simplex, IntersectionFlags> configurationsFlags(dim, false, false);
+        ConfigurationsFlags<Simplex, IntersectionFlags> subconfigurationsFlags(dim, true, false);
 
-        FlagsType flag = 1 << firstMaximalFacePower;
+        IntersectionFlags flag = 1 << firstMaximalFacePower;
         for (int i = firstMaximalFacePower; i < lastMaximalFacePower; i++)
         {
             Simplex s;
@@ -276,7 +291,7 @@ public:
         TRIVIAL_TEST_I(simplex, intersectionMF);
         int totalMaximalFaces = 0;
         int vertsCount = 0;
-        for (SimplexList::iterator face = intersectionMF.begin(); face != intersectionMF.end(); face++)
+        for (typename SimplexList::iterator face = intersectionMF.begin(); face != intersectionMF.end(); face++)
         {
             if (face->size() > 1)
             {
@@ -299,10 +314,10 @@ public:
         {
             return false;
         }
-        for (Simplex::iterator vertex = simplex.begin(); vertex != simplex.end(); vertex++)
+        for (typename Simplex::iterator vertex = simplex.begin(); vertex != simplex.end(); vertex++)
         {
             int count = 0;
-            for (SimplexList::iterator face = intersectionMF.begin(); face != intersectionMF.end(); face++)
+            for (typename SimplexList::iterator face = intersectionMF.begin(); face != intersectionMF.end(); face++)
             {
                 // omijamy wierzcholki
                 if (face->size() > 1 && std::find(face->begin(), face->end(), *vertex) != face->end())
@@ -318,12 +333,12 @@ public:
         return false;
     }
 
-    bool IsAcyclic(Simplex &simplex, FlagsType intersectionFlags, FlagsType intersectionFlagsMF)
+    bool IsAcyclic(Simplex &simplex, IntersectionFlags intersectionFlags, IntersectionFlags intersectionFlagsMF)
     {
         TRIVIAL_TEST_F(simplex, intersectionFlags, intersectionFlagsMF);
         // sprawdzamy liczbe wierzcholkow, ktore sa maksymalnymi podscianami
         // jezeli wiecej niz 1 -> przeciecie nie jest acykliczne
-        FlagsType flag = 1;
+        IntersectionFlags flag = 1;
         int vertsCount = 0;
         for (int i = 0; i < firstMaximalFacePower; i++)
         {
@@ -339,7 +354,7 @@ public:
         }
         // teraz obliczamy flagi przeciec dla wszystkich maksymalnych
         // scian o wymiarze wiekszym niz 1
-        std::vector<FlagsType> maximalFacesFlags;
+        std::vector<IntersectionFlags> maximalFacesFlags;
         for (int i = firstMaximalFacePower; i < lastMaximalFacePower; i++)
         {
             if ((intersectionFlagsMF & flag) == flag)
@@ -365,7 +380,7 @@ public:
         for (int i = 0; i < firstMaximalFacePower; i++)
         {
             int count = 0;
-            for (typename std::vector<FlagsType>::iterator flags = maximalFacesFlags.begin(); flags != maximalFacesFlags.end(); flags++)
+            for (typename std::vector<IntersectionFlags>::iterator flags = maximalFacesFlags.begin(); flags != maximalFacesFlags.end(); flags++)
             {
                 if (((*flags) & flag) == flag)
                 {
@@ -387,23 +402,27 @@ public:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template <typename FlagsType>
-class AccTestRecursive : public AccTest<FlagsType>
+template <typename Traits>
+class AccTestRecursive : public AccTestT<Traits>
 {
+    typedef typename Traits::Simplex Simplex;
+    typedef typename Traits::SimplexList SimplexList;
+    typedef typename Traits::IntersectionFlags IntersectionFlags;
+    
     struct MaximalFace;
     
     typedef MaximalFace *MaximalFacePtr;
     
     struct MaximalFace
     {
-        FlagsType flag;
-        FlagsType subconfFlags;
-        FlagsType accIntersectionFlags;
-        FlagsType accIntersectionFlagsMF;
+        IntersectionFlags flag;
+        IntersectionFlags subconfFlags;
+        IntersectionFlags accIntersectionFlags;
+        IntersectionFlags accIntersectionFlagsMF;
         bool isInAccSub;
         bool isAddedToQueue;
         
-        MaximalFace(FlagsType f, FlagsType sf)
+        MaximalFace(IntersectionFlags f, IntersectionFlags sf)
         {
             flag = f;
             subconfFlags = sf;
@@ -431,7 +450,7 @@ class AccTestRecursive : public AccTest<FlagsType>
     };
         
     int lastMaximalFacePower;
-    std::map<FlagsType, FlagsType> confToSubconf;
+    std::map<IntersectionFlags, IntersectionFlags> confToSubconf;
     
 public:
 
@@ -439,10 +458,10 @@ public:
     {
         lastMaximalFacePower = (1 << (dim + 1)) - 2;
 
-        ConfigurationsFlags<Simplex, FlagsType> configurationsFlags(dim, false, false);
-        ConfigurationsFlags<Simplex, FlagsType> subconfigurationsFlags(dim, true, false);
+        ConfigurationsFlags<Simplex, IntersectionFlags> configurationsFlags(dim, false, false);
+        ConfigurationsFlags<Simplex, IntersectionFlags> subconfigurationsFlags(dim, true, false);
 
-        FlagsType flag = 1;
+        IntersectionFlags flag = 1;
         for (int i = 0; i < lastMaximalFacePower; i++)
         {
             Simplex s;
@@ -495,11 +514,11 @@ public:
         return (simplicesInAccSub.size() == intersectionMF.size());
     }
     
-    bool IsAcyclic(Simplex &simplex, FlagsType intersectionFlags, FlagsType intersectionFlagsMF)
+    bool IsAcyclic(Simplex &simplex, IntersectionFlags intersectionFlags, IntersectionFlags intersectionFlagsMF)
     {
         TRIVIAL_TEST_F(simplex, intersectionFlags, intersectionFlagsMF);
         
-        FlagsType flag = 1;
+        IntersectionFlags flag = 1;
         std::vector<MaximalFacePtr> maximalFaces;
         for (int i = 0; i < lastMaximalFacePower; i++)
         {
@@ -563,26 +582,26 @@ private:
             {
                 continue;
             }
-            FlagsType intersection = (*f)->subconfFlags & face->subconfFlags;                        
+            IntersectionFlags intersection = (*f)->subconfFlags & face->subconfFlags;
             // jezeli flagi juz sa ustawione to nic nie robimy
             if (((*f)->accIntersectionFlags & intersection) == intersection)
             {
                 continue;
             }
-            FlagsType flags = 1 << lastMaximalFacePower;
-            FlagsType intersectionMF = intersection;
+            IntersectionFlags flags = 1 << lastMaximalFacePower;
+            IntersectionFlags intersectionMF = intersection;
             for (int i = 0; i < lastMaximalFacePower; i++)
             {
                 if ((intersectionMF & flags) != 0)
                 {
-                    FlagsType subconf = confToSubconf[flags];
+                    IntersectionFlags subconf = confToSubconf[flags];
                     intersectionMF &= (~(subconf & (~flags)));
                 }
                 flags = flags >> 1;
             }
             (*f)->accIntersectionFlags |= intersection;
             (*f)->accIntersectionFlagsMF |= intersectionMF;
-            FlagsType flagsSubfaces = intersection & (~intersectionMF);
+            IntersectionFlags flagsSubfaces = intersection & (~intersectionMF);
             (*f)->accIntersectionFlagsMF &= (~flagsSubfaces);
         }
     }        
@@ -601,7 +620,7 @@ private:
         {
             neighbours.clear();
         }
-        for (SimplexList::const_iterator i = simplexList.begin(); i != simplexList.end(); i++)
+        for (typename SimplexList::const_iterator i = simplexList.begin(); i != simplexList.end(); i++)
         {
             if (s == (*i) || std::find(simplicesInAccSub.begin(), simplicesInAccSub.end(), *i) != simplicesInAccSub.end())
             {
@@ -621,7 +640,7 @@ private:
         {
             accIntersection.clear();
         }
-        for (SimplexList::const_iterator i = simplicesInAccSub.begin(); i != simplicesInAccSub.end(); i++)
+        for (typename SimplexList::const_iterator i = simplicesInAccSub.begin(); i != simplicesInAccSub.end(); i++)
         {
             if (s == (*i))
             {
@@ -638,18 +657,18 @@ private:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template <typename FlagsType>
-AccTest<FlagsType> *AccTest<FlagsType>::Create(int accTestNumber, int dim)
+template <typename Traits>
+AccTestT<Traits> *AccTestT<Traits>::Create(int accTestNumber, int dim)
 {
     if (dim < 2) dim = 2;
     if (accTestNumber == 0) // jezeli tablice, to gorne ograniczenie na wymiar == 4
     {
         if (dim > 4) dim = 4;
     }
-    if (accTestNumber == 1) return new AccTestCodim1<FlagsType>(dim);
-    if (accTestNumber == 2) return new AccTestStar<FlagsType>(dim);
-    if (accTestNumber == 3) return new AccTestRecursive<FlagsType>(dim);
-    return new AccTestTabs<FlagsType>(dim); // default
+    if (accTestNumber == 1) return new AccTestCodim1<Traits>(dim);
+    if (accTestNumber == 2) return new AccTestStar<Traits>(dim);
+    if (accTestNumber == 3) return new AccTestRecursive<Traits>(dim);
+    return new AccTestTabs<Traits>(dim); // default
 }
 
 ////////////////////////////////////////////////////////////////////////////////

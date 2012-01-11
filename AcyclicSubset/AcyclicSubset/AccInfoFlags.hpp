@@ -8,12 +8,17 @@
 
 #include <cassert>
 
-template <typename IncidenceGraphT>
+template <typename IncidenceGraphType>
 class AccInfoFlags
 {
-    typedef typename IncidenceGraphT::Node Node;
-    typedef typename IncidenceGraphT::Edges Edges;
-    typedef typename IncidenceGraphT::IntersectionFlags IntersectionFlags;
+    typedef IncidenceGraphType IncidenceGraph;
+    typedef typename IncidenceGraph::Vertex Vertex;
+    typedef typename IncidenceGraph::VertsSet VertsSet;
+    typedef typename IncidenceGraph::Simplex Simplex;
+    typedef typename IncidenceGraph::Node Node;
+    typedef typename IncidenceGraph::Edges Edges;
+    typedef typename IncidenceGraph::IntersectionFlags IntersectionFlags;
+    typedef typename IncidenceGraph::AccTest AccTest;
 
     Node                *node;
     IntersectionFlags   intersectionFlags;
@@ -30,7 +35,7 @@ public:
         accSubID = 0;
     }
 
-    bool IsAccIntersectionAcyclic(AccTest<IntersectionFlags> *test)
+    bool IsAccIntersectionAcyclic(AccTest *test)
     {
         test->IsAcyclic(*node->simplex, intersectionFlags, intersectionFlagsMF);
     }
@@ -56,7 +61,7 @@ public:
         {
             return Vertex(-1);
         }
-        for (Simplex::iterator v = node->simplex->begin(); v != node->simplex->end(); v++)
+        for (typename Simplex::iterator v = node->simplex->begin(); v != node->simplex->end(); v++)
         {
             if (intersectionFlags & (1 << node->NormalizeVertex(*v)))
             {
@@ -72,7 +77,7 @@ public:
         {
             return Vertex(-1);
         }
-        for (Simplex::iterator v = node->simplex->begin(); v != node->simplex->end(); v++)
+        for (typename Simplex::iterator v = node->simplex->begin(); v != node->simplex->end(); v++)
         {
             if (*v == vertex)
             {
@@ -92,7 +97,7 @@ public:
         {
             return Vertex(-1);
         }
-        for (Simplex::iterator v = node->simplex->begin(); v != node->simplex->end(); v++)
+        for (typename Simplex::iterator v = node->simplex->begin(); v != node->simplex->end(); v++)
         {
             if (std::find(vertsSet.begin(), vertsSet.end(), *v) != vertsSet.end())
             {

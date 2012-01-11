@@ -6,40 +6,51 @@
 #ifndef INCIDENCEGRAPHALGORITHMS_HPP
 #define INCIDENCEGRAPHALGORITHMS_HPP
 
-#include "IncidenceGraph.h"
+#include <queue>
+#include <map>
 #include <algorithm>
 
 ////////////////////////////////////////////////////////////////////////////////
 
+template <typename IncidenceGraph>
 class FindNodeNotOnBorder
 {
+    typedef typename IncidenceGraph::Node Node;
+
 public:
 
-    bool FoundNode(IncidenceGraph::Node *node)
+    bool FoundNode(Node *node)
     {
         return !node->IsOnBorder();
     }
 };
 
+template <typename IncidenceGraph>
 class FindNodeNotInAccSub
 {
+    typedef typename IncidenceGraph::Node Node;
+
 public:
 
-    bool FoundNode(IncidenceGraph::Node *node)
+    bool FoundNode(Node *node)
     {
         return !node->IsInAccSub();
     }
 };
 
+template <typename IncidenceGraph>
 class FindNodeWithVertex
 {
+    typedef typename IncidenceGraph::Vertex Vertex;
+    typedef typename IncidenceGraph::Node Node;
+
     Vertex vertex;
 
 public:
 
     FindNodeWithVertex(Vertex v) : vertex(v) { }
 
-    bool FoundNode(IncidenceGraph::Node *node)
+    bool FoundNode(Node *node)
     {
         return (std::find(node->simplex->begin(), node->simplex->end(), vertex) != node->simplex->end());
     }
@@ -47,18 +58,22 @@ public:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template <typename FindOptions>
-IncidenceGraph::Node *FindNode(IncidenceGraph::ConnectedComponent connectedComponent, FindOptions findOptions)
+template <typename IncidenceGraph, template<typename> class FindOptions>
+typename IncidenceGraph::Node *FindNode(typename IncidenceGraph::ConnectedComponent connectedComponent, FindOptions<IncidenceGraph> findOptions)
 {
-    IncidenceGraph::Nodes tmp;
-    std::queue<IncidenceGraph::Node *> Q;
+    typedef typename IncidenceGraph::Node Node;
+    typedef typename IncidenceGraph::Nodes Nodes;
+    typedef typename IncidenceGraph::Edges Edges;
+
+    Nodes tmp;
+    std::queue<Node *> Q;
     tmp.push_back(connectedComponent);
     connectedComponent->IsHelperFlag1(true);
     Q.push(connectedComponent);
-    IncidenceGraph::Node *foundNode = 0;
+    Node *foundNode = 0;
     while (foundNode == 0 && !Q.empty())
     {
-        IncidenceGraph::Node *currentNode = Q.front();
+        Node *currentNode = Q.front();
         Q.pop();
         if (findOptions.FoundNode(currentNode))
         {
@@ -66,9 +81,9 @@ IncidenceGraph::Node *FindNode(IncidenceGraph::ConnectedComponent connectedCompo
         }
         else
         {
-            for (IncidenceGraph::Edges::iterator edge = currentNode->edges.begin(); edge != currentNode->edges.end(); edge++)
+            for (typename Edges::iterator edge = currentNode->edges.begin(); edge != currentNode->edges.end(); edge++)
             {
-                IncidenceGraph::Node *neighbour = (*edge)->GetNeighbour(currentNode);
+                Node *neighbour = (*edge)->GetNeighbour(currentNode);
                 if (!neighbour->IsHelperFlag1())
                 {
                     tmp.push_back(neighbour);
@@ -78,7 +93,7 @@ IncidenceGraph::Node *FindNode(IncidenceGraph::ConnectedComponent connectedCompo
             }
         }
     }
-    for (IncidenceGraph::Nodes::iterator i = tmp.begin(); i != tmp.end(); i++)
+    for (typename Nodes::iterator i = tmp.begin(); i != tmp.end(); i++)
     {
         (*i)->IsHelperFlag1(false);
     }
@@ -87,10 +102,10 @@ IncidenceGraph::Node *FindNode(IncidenceGraph::ConnectedComponent connectedCompo
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template <typename FindOptions>
-IncidenceGraph::Node *FindNode(IncidenceGraph::Nodes &nodes, FindOptions findOptions)
+template <typename IncidenceGraph, template<typename> class FindOptions>
+typename IncidenceGraph::Node *FindNode(typename IncidenceGraph::Nodes &nodes, FindOptions<IncidenceGraph> findOptions)
 {
-    for (IncidenceGraph::Nodes::iterator node = nodes.begin(); node != nodes.end(); node++)
+    for (typename IncidenceGraph::Nodes::iterator node = nodes.begin(); node != nodes.end(); node++)
     {
         if (findOptions.FoundNode(*node))
         {
@@ -102,39 +117,49 @@ IncidenceGraph::Node *FindNode(IncidenceGraph::Nodes &nodes, FindOptions findOpt
 
 ////////////////////////////////////////////////////////////////////////////////
 
+template <typename IncidenceGraph>
 class FindPathBase
 {
+    typedef typename IncidenceGraph::Node Node;
+
 public:
-    bool IsValidNeighbour(IncidenceGraph::Node *n)
+    bool IsValidNeighbour(Node *n)
     {
         return true;
     }
 
-    bool EndOfPath(IncidenceGraph::Node *n)
+    bool EndOfPath(Node *n)
     {
         return false;
     }
 };
 
-class FindPathToNode : public FindPathBase
+template <typename IncidenceGraph>
+class FindPathToNode : public FindPathBase<IncidenceGraph>
 {
-    IncidenceGraph::Node *node;
+    typedef typename IncidenceGraph::Node Node;
+
+    Node *node;
     
 public:
     
-    FindPathToNode(IncidenceGraph::Node *n)
+    FindPathToNode(Node *n)
     {
         node = n;
     }
             
-    bool FoundNode(IncidenceGraph::Node *n)
+    bool FoundNode(Node *n)
     {
         return (node == n);
     }
 };
 
-class FindPathToVertex : public FindPathBase
+template <typename IncidenceGraph>
+class FindPathToVertex : public FindPathBase<IncidenceGraph>
 {
+    typedef typename IncidenceGraph::Vertex Vertex;
+    typedef typename IncidenceGraph::Node Node;
+
     Vertex vertex;
 
 public:
@@ -144,58 +169,70 @@ public:
         vertex = v;
     }
 
-    bool FoundNode(IncidenceGraph::Node *n)
+    bool FoundNode(Node *n)
     {
         return (std::find(n->simplex->begin(), n->simplex->end(), vertex) != n->simplex->end());
     }
 };
 
-class FindPathToNodeInAccSub : public FindPathBase
+template <typename IncidenceGraph>
+class FindPathToNodeInAccSub : public FindPathBase<IncidenceGraph>
 {
+    typedef typename IncidenceGraph::Node Node;
+
 public:
-    bool FoundNode(IncidenceGraph::Node *n)
+    bool FoundNode(Node *n)
     {
         return n->IsInAccSub();
     }
 };
 
-class FindPathToNodeWithAccIntersection : public FindPathBase
+template <typename IncidenceGraph>
+class FindPathToNodeWithAccIntersection : public FindPathBase<IncidenceGraph>
 {
+    typedef typename IncidenceGraph::Node Node;
+
 public:
-    bool FoundNode(IncidenceGraph::Node *n)
+    bool FoundNode(Node *n)
     {
         return (n->GetAccInfo().HasIntersectionWithAccSub());
     }
 };
 
-class FindPathToNodeNotInAccSub : public FindPathBase
+template <typename IncidenceGraph>
+class FindPathToNodeNotInAccSub : public FindPathBase<IncidenceGraph>
 {
+    typedef typename IncidenceGraph::Node Node;
+
 public:
-    bool FoundNode(IncidenceGraph::Node *n)
+    bool FoundNode(Node *n)
     {
         return (!n->GetAccInfo().HasIntersectionWithAccSub() && !n->IsInAccSub());
     }
 
-    bool EndOfPath(IncidenceGraph::Node *n)
+    bool EndOfPath(Node *n)
     {
         return n->IsInAccSub();
     }
 };
 
-class FindPathToNodeNotInAccSubNorOnBorder : public FindPathBase
+template <typename IncidenceGraph>
+class FindPathToNodeNotInAccSubNorOnBorder : public FindPathBase<IncidenceGraph>
 {
+    typedef typename IncidenceGraph::Node Node;
+
 public:
-    bool FoundNode(IncidenceGraph::Node *n)
+    bool FoundNode(Node *n)
     {
         return (!n->GetAccInfo().HasIntersectionWithAccSub() && !n->IsInAccSub() && !n->IsOnBorder());
     }
 
-    bool IsValidNeighbour(IncidenceGraph::Node *n)
+    bool IsValidNeighbour(Node *n)
     {
         return !n->IsOnBorder();
     }
 
-    bool EndOfPath(IncidenceGraph::Node *n)
+    bool EndOfPath(Node *n)
     {
         return n->IsInAccSub();
     }
@@ -203,19 +240,24 @@ public:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template <typename FindOptions>
-IncidenceGraph::Path FindPath(IncidenceGraph::Node *firstNode, FindOptions findOptions)
+template <typename IncidenceGraph, template<typename> class FindOptions>
+typename IncidenceGraph::Path FindPath(typename IncidenceGraph::Node *firstNode, FindOptions<IncidenceGraph> findOptions)
 {
-    std::queue<IncidenceGraph::Node *> Q;
-    IncidenceGraph::Nodes tmp;
+    typedef typename IncidenceGraph::Node Node;
+    typedef typename IncidenceGraph::Nodes Nodes;
+    typedef typename IncidenceGraph::Edges Edges;
+    typedef typename IncidenceGraph::Path Path;
+
+    std::queue<Node *> Q;
+    Nodes tmp;
     firstNode->IsHelperFlag1(true);
     Q.push(firstNode);
     tmp.push_back(firstNode);
-    IncidenceGraph::Node *foundNode = 0;
-    std::map<IncidenceGraph::Node *, IncidenceGraph::Node *> pred;
+    Node *foundNode = 0;
+    std::map<Node *, Node *> pred;
     while (!Q.empty() && foundNode == 0)
     {
-        IncidenceGraph::Node *node = Q.front();
+        Node *node = Q.front();
         Q.pop();
         if (findOptions.FoundNode(node))
         {
@@ -223,9 +265,9 @@ IncidenceGraph::Path FindPath(IncidenceGraph::Node *firstNode, FindOptions findO
         }
         else
         {
-            for (IncidenceGraph::Edges::iterator edge = node->edges.begin(); edge != node->edges.end(); edge++)
+            for (typename Edges::iterator edge = node->edges.begin(); edge != node->edges.end(); edge++)
             {
-                IncidenceGraph::Node *neighbour = (*edge)->GetNeighbour(node);
+                Node *neighbour = (*edge)->GetNeighbour(node);
                 if (!neighbour->IsHelperFlag1() && findOptions.IsValidNeighbour(neighbour))
                 {
                     Q.push(neighbour);
@@ -238,16 +280,16 @@ IncidenceGraph::Path FindPath(IncidenceGraph::Node *firstNode, FindOptions findO
     }
 
     // zerujemy ustawione flagi pomocnicze
-    for (IncidenceGraph::Nodes::iterator i = tmp.begin(); i != tmp.end(); i++)
+    for (typename Nodes::iterator i = tmp.begin(); i != tmp.end(); i++)
     {
         (*i)->IsHelperFlag1(false);
     }
 
-    IncidenceGraph::Path path;
+    Path path;
     if (foundNode != 0)
     {
         path.push_front(foundNode);
-        IncidenceGraph::Node *n = foundNode;
+        Node *n = foundNode;
         while (n != firstNode && !findOptions.EndOfPath(n))
         {
             n = pred[n];
@@ -260,29 +302,36 @@ IncidenceGraph::Path FindPath(IncidenceGraph::Node *firstNode, FindOptions findO
 
 ////////////////////////////////////////////////////////////////////////////////
 
+template <typename IncidenceGraph>
 class RemoveNodesWithFlags
 {
-    IncidenceGraph::Node::PropertiesFlags flags;
+    typedef typename IncidenceGraph::Node Node;
+    typedef typename IncidenceGraph::Node::PropertiesFlags PropertiesFlags;
+
+    PropertiesFlags flags;
 
 public:
 
-    RemoveNodesWithFlags(IncidenceGraph::Node::PropertiesFlags f)
+    RemoveNodesWithFlags(PropertiesFlags f)
     {
         flags = f;
     }
 
-    bool IsTrue(IncidenceGraph::Node *node)
+    bool IsTrue(Node *node)
     {
         return (node->GetPropertiesFlags() & flags) != 0;
     }
 };
 
-template <typename RemovePredicate>
-void RemoveNodesWithPredicate(IncidenceGraph *graph, RemovePredicate predicate)
+template <typename IncidenceGraph, template<typename> class RemovePredicate>
+void RemoveNodesWithPredicate(IncidenceGraph *graph, RemovePredicate<IncidenceGraph> predicate)
 {
+    typedef typename IncidenceGraph::Nodes Nodes;
+    typedef typename IncidenceGraph::Edges Edges;
+
     // na koncu wszystkie zaznaczone node'y i krawedzie usuwamy z grafu
-    IncidenceGraph::Edges newEdges;
-    for (IncidenceGraph::Edges::iterator i = graph->edges.begin(); i != graph->edges.end(); i++)
+    Edges newEdges;
+    for (typename Edges::iterator i = graph->edges.begin(); i != graph->edges.end(); i++)
     {
         if (predicate.IsTrue((*i)->nodeA) || predicate.IsTrue((*i)->nodeB))
         {
@@ -294,8 +343,8 @@ void RemoveNodesWithPredicate(IncidenceGraph *graph, RemovePredicate predicate)
         }
     }
     graph->edges = newEdges;
-    IncidenceGraph::Nodes newNodes;
-    for (IncidenceGraph::Nodes::iterator i = graph->nodes.begin(); i != graph->nodes.end(); i++)
+    Nodes newNodes;
+    for (typename Nodes::iterator i = graph->nodes.begin(); i != graph->nodes.end(); i++)
     {
         if (predicate.IsTrue(*i))
         {
@@ -311,13 +360,13 @@ void RemoveNodesWithPredicate(IncidenceGraph *graph, RemovePredicate predicate)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template <typename VertexT>
-void GetSortedIntersectionOfUnsortedSets(std::vector<VertexT> &intersection, const std::set<VertexT> &setA, const std::set<VertexT> &setB)
+template <typename VertexVector, typename VertexSet>
+void GetSortedIntersectionOfUnsortedSets(VertexVector &intersection, const VertexSet &setA, const VertexSet &setB)
 {
-    std::vector<VertexT> va;
+    VertexVector va;
     va.assign(setA.begin(), setA.end());
     std::sort(va.begin(), va.end());
-    std::vector<VertexT> vb;
+    VertexVector vb;
     vb.assign(setB.begin(), setB.end());
     std::sort(vb.begin(), vb.end());
 
@@ -330,8 +379,8 @@ void GetSortedIntersectionOfUnsortedSets(std::vector<VertexT> &intersection, con
     if (va.front() > vb.back()) return;
     if (va.back() < vb.front()) return;
 
-    typename std::vector<VertexT>::iterator ia = va.begin();
-    typename std::vector<VertexT>::iterator ib = vb.begin();
+    typename VertexVector::iterator ia = va.begin();
+    typename VertexVector::iterator ib = vb.begin();
     while (ia != va.end() && ib != vb.end())
     {
         if (*ia < *ib) ia++;
@@ -345,10 +394,10 @@ void GetSortedIntersectionOfUnsortedSets(std::vector<VertexT> &intersection, con
     }
 }
 
-template <typename VertexT>
-void GetIntersectionOfUnsortedSetAndSortedVector(std::set<VertexT> &intersection, const std::set<VertexT> &setA, const std::vector<VertexT> &vb)
+template <typename VertexVector, typename VertexSet>
+void GetIntersectionOfUnsortedSetAndSortedVector(VertexVector &intersection, const VertexSet &setA, const VertexVector &vb)
 {
-    std::vector<VertexT> va;
+    VertexVector va;
     va.assign(setA.begin(), setA.end());
     std::sort(va.begin(), va.end());
 
@@ -361,8 +410,8 @@ void GetIntersectionOfUnsortedSetAndSortedVector(std::set<VertexT> &intersection
     if (va.front() > vb.back()) return;
     if (va.back() < vb.front()) return;
 
-    typename std::vector<VertexT>::iterator ia = va.begin();
-    typename std::vector<VertexT>::const_iterator ib = vb.begin();
+    typename VertexVector::iterator ia = va.begin();
+    typename VertexVector::const_iterator ib = vb.begin();
     while (ia != va.end() && ib != vb.end())
     {
         if (*ia < *ib) ia++;

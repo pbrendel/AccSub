@@ -9,9 +9,9 @@
 #include <fstream>
 #include <string>
 
+#include "../AcyclicSubset/IncidenceGraphTraits.h"
 #include "../AcyclicSubset/IncidenceGraph.h"
-#include "../AcyclicSubset/Simplex.h"
-#include "../AcyclicSubset/AccTest.hpp"
+#include "../AcyclicSubset/OutputGraph.h"
 
 class OutputGraph;
 
@@ -27,6 +27,13 @@ enum ReductionType
 
 class Tests
 {
+    typedef IncidenceGraphT<IncidenceGraphDefaultTraits, IntersectionInfoFlags, AccInfoFlags> IncidenceGraph;
+    typedef IncidenceGraph::Simplex Simplex;
+    typedef IncidenceGraph::SimplexList SimplexList;
+    typedef IncidenceGraph::AccTest AccTest;
+    typedef IncidenceGraph::AccSubAlgorithm AccSubAlgorithm;
+
+    typedef OutputGraphT<IncidenceGraph> OutputGraph;
 
 public:
 
