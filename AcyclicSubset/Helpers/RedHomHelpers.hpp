@@ -1,16 +1,13 @@
 /* 
- * File:   HomologyHelpers.h
+ * File:   RedHomHelpers.hpp
  * Author: Piotr Brendel
  */
 
-#ifndef HOMOLOGYHELPERS_H
-#define	HOMOLOGYHELPERS_H
+#ifndef REDHOMHELPERS_HPP
+#define	REDHOMHELPERS_HPP
 
-#include "IncidenceGraphHelpers.h"
-
-#ifdef ACCSUB_TRACE
-#include "../Helpers/Utils.h"
-#endif
+#include "../AcyclicSubset/IncidenceGraphHelpers.h"
+#include "Utils.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 // RedHom stuff
@@ -53,7 +50,7 @@ typedef int Id;
 ////////////////////////////////////////////////////////////////////////////////
 
 template <typename OutputGraph>
-class HomologyHelpers
+class RedHomHelpers
 {
 public:
 
@@ -78,25 +75,20 @@ public:
         Complex::KappaMap kappaMap;
         GetDimsAndKappaMap(og, dims, kappaMap);
         Complex complex(3, dims, kappaMap, 1);
-#ifdef ACCSUB_TRACE
+
         Timer::Update("creating complex");
-#endif
 
         if (performCoreductions)
         {
             (*CoreductionAlgorithmFactory<Complex>::createDefault(complex))();
-#ifdef ACCSUB_TRACE
             Timer::Update("performing coreductions");
             MemoryInfo::Print();
-#endif
         }
 
         CRef<ReducibleFreeChainComplexType> RFCComplexCR = (ReducibleFreeChainComplexOverZFromSComplexAlgorithm<SComplex<SComplexDefaultTraits>, ReducibleFreeChainComplexType>(complex))();
         CRef<HomologySignature<int> > homSignCR = HomAlgFunctors<FreeModuleType>::homSignViaAR_Random(RFCComplexCR);
 
-#ifdef ACCSUB_TRACE
         Timer::Update("computing homology");
-#endif
 
         std::cout<<homSignCR();
     }
@@ -125,5 +117,5 @@ public:
     }    
 };
 
-#endif	/* HOMOLOGYHELPERS_H */
+#endif	/* REDHOMHELPERS_HPP */
 

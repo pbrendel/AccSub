@@ -6,7 +6,7 @@
 #ifndef INTERSECTIONFLAGSSET_H
 #define	INTERSECTIONFLAGSSET_H
 
-#include <assert.h>
+#include <cassert>
 
 ////////////////////////////////////////////////////////////////////////////////
 

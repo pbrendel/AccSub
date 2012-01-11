@@ -1,10 +1,10 @@
 /*
- * File:   AccSpanningTree.h
+ * File:   AccSpanningTree.hpp
  * Author: Piotr Brendel
  */
 
-#ifndef ACCSPANNINGTREE_H
-#define ACCSPANNINGTREE_H
+#ifndef ACCSPANNINGTREE_HPP
+#define ACCSPANNINGTREE_HPP
 
 #include "IncidenceGraphAlgorithms.hpp"
 #include <vector>
@@ -147,7 +147,7 @@ public:
                     prevNode = (*i);
                     lastVertex = vertex;
                     vertex = prevNode->GetAccInfo().FindAccVertexNotIn(vertsOnPath);
-                    if (vertex != -1)
+                    if (vertex != Vertex(-1))
                     {
                         // std::cout<<"adding acyclic edge "<<lastVertex<<" " <<vertex<<" -> finishing 2b"<<std::endl;
                         prevNode->GetAccInfo().UpdateAccIntersectionWithEdge(lastVertex, vertex);
@@ -160,7 +160,7 @@ public:
             if (prevNode != 0)
             {
                 Vertex vertex = prevNode->GetAccInfo().FindAccVertexNotEqual(lastVertex);
-                assert(vertex != -1);
+                assert(vertex != Vertex(-1));
                 // std::cout<<"adding acyclic edge "<<lastVertex<<" " <<vertex<<" -> finishing 3"<<std::endl;
                 prevNode->GetAccInfo().UpdateAccIntersectionWithEdge(lastVertex, vertex);
 
@@ -186,7 +186,7 @@ public:
             // acyklicznym, bo takie byly warunki szukania sciezki
             Vertex lastVertex = prevNode->GetAccInfo().FindAccVertexNotIn(borderVerts);
             // std::cout<<"vertex "<<lastVertex<<" is acyclic"<<std::endl;
-            assert(lastVertex != -1);
+            assert(lastVertex != Vertex(-1));
             for (; i != path.end(); i++)
             {
                 Vertex vertex = Simplex::GetVertexFromIntersection(prevNode->simplex, (*i)->simplex);
@@ -310,7 +310,7 @@ public:
                         prevNode = (*i);
                         lastVertex = vertex;
                         vertex = prevNode->GetAccInfo().FindAccVertexNotIn(vertsOnPath);
-                        if (vertex != -1)
+                        if (vertex != Vertex(-1))
                         {
                             // std::cout<<"adding acyclic edge "<<lastVertex<<" " <<vertex<<" -> finishing 2b"<<std::endl;
                             prevNode->GetAccInfo().UpdateAccIntersectionWithEdge(lastVertex, vertex);
@@ -576,4 +576,4 @@ public:
  
 };
 
-#endif /* ACCSPANNINGTREE_H */
+#endif /* ACCSPANNINGTREE_HPP */

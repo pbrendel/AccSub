@@ -1,10 +1,10 @@
 /* 
- * File:   ComputationsLocal.h
+ * File:   ComputationsLocal.hpp
  * Author: Piotr Brendel
  */
 
-#ifndef COMPUTATIONSLOCAL_H
-#define	COMPUTATIONSLOCAL_H
+#ifndef COMPUTATIONSLOCAL_HPP
+#define	COMPUTATIONSLOCAL_HPP
 
 #include "IncidenceGraphHelpers.h"
 
@@ -23,12 +23,12 @@ class ComputationsLocal
 
 public:
 
-    static void Compute(Nodes &nodes, AccSubAlgorithm accSubAlgorithm, AccTest *test)
+    static void Compute(Nodes &nodes, AccSubAlgorithm accSubAlgorithm, AccTest *accTest)
     {
-    #ifdef ACCSUB_TRACE
-        Timer::TimeStamp("***** ComputationsLocal start");
+#ifdef ACCSUB_TRACE
+        Timer::TimeStamp("ComputationsLocal start");
         Timer::Time start = Timer::Now();
-        if (accSubAlgorithm == ASA_AccSubIG)
+        if (accSubAlgorithm == AccSubAlgorithm::AccSubIG)
         {    
             std::cout<<"using AccSubIG"<<std::endl;
         }
@@ -36,23 +36,23 @@ public:
         {
             std::cout<<"using AccSubST"<<std::endl;
         }
-    #endif    
+#endif    
         for (typename Nodes::iterator i = nodes.begin(); i != nodes.end(); i++)
         {
-            CreateIncidenceGraph(*i, accSubAlgorithm, test);
-    #ifdef ACCSUB_TRACE
-            Timer::TimeStamp("***** incidence graph calculated");
-    #endif    
+            CreateIncidenceGraph(*i, accSubAlgorithm, accTest);
+#ifdef ACCSUB_TRACE
+            Timer::TimeStamp("incidence graph calculated");
+#endif    
         }
-    #ifdef ACCSUB_TRACE
-        Timer::TimeStamp("***** ComputationsLocal end");
+#ifdef ACCSUB_TRACE
+        Timer::TimeStamp("ComputationsLocal end");
         Timer::TimeFrom(start, "total parallel computations");
-    #endif
+#endif
     }
 
     static void CreateIncidenceGraph(Node *node, AccSubAlgorithm accSubAlgorithm, AccTest *accTest)
     {
-        if (accSubAlgorithm == AccSubAlgorithm::ASA_AccSubIG)
+        if (accSubAlgorithm == AccSubAlgorithm::AccSubIG)
         {
             node->ig = IncidenceGraphHelpers<IncidenceGraph>::CreateAndCalculateAccSubIGWithBorder(node->simplexPtrList, node->borderVerts, accTest);
         }
@@ -66,5 +66,5 @@ public:
     }
 };
 
-#endif	/* COMPUTATIONSLOCAL_H */
+#endif	/* COMPUTATIONSLOCAL_HPP */
 

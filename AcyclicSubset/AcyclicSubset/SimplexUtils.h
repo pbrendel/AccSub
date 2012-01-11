@@ -1,16 +1,15 @@
 /* 
- * File:   SimplexUtils.h
+ * File:   SimplexUtils.hpp
  * Author: Piotr Brendel
  */
 
-#ifndef SIMPLEXUTILS_H
-#define	SIMPLEXUTILS_H
+#ifndef SIMPLEXUTILS_HPP
+#define	SIMPLEXUTILS_HPP
 
 #include <fstream>
 #include <sstream>
 #include <cmath>
 #include <algorithm>
-
 
 template <typename Simplex>
 class SimplexUtils
@@ -227,5 +226,5 @@ public:
     }
 };
 
-#endif	/* SIMPLEXUTILS_H */
+#endif	/* SIMPLEXUTILS_HPP */
 

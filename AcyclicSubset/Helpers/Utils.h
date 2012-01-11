@@ -1,10 +1,10 @@
 /*
- * File:   Utils.h
+ * File:   Utils.hpp
  * Author: Piotr Brendel
  */
 
-#ifndef UTILS_H
-#define UTILS_H
+#ifndef UTILS_HPP
+#define UTILS_HPP
 
 #include <fstream>
 #include <ostream>
@@ -222,4 +222,4 @@ public:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-#endif /* UTILS_H */
+#endif /* UTILS_HPP */

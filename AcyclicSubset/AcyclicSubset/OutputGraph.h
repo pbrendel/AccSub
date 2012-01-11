@@ -1,10 +1,10 @@
 /*
- * File:   OutputGraph.h
+ * File:   OutputGraph.hpp
  * Author: Piotr Brendel
  */
 
-#ifndef OUTPUTGRAPH_H
-#define OUTPUTGRAPH_H
+#ifndef OUTPUTGRAPH_HPP
+#define OUTPUTGRAPH_HPP
 
 template <typename IncidenceGraphType>
 class OutputGraphT
@@ -284,4 +284,4 @@ private:
     }
 };
 
-#endif /* OUTPUTGRAPH_H */
+#endif /* OUTPUTGRAPH_HPP */

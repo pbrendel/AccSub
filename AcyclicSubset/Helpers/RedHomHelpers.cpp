@@ -1,12 +1,11 @@
 /* 
- * File:   HomologyHelpers.cpp
+ * File:   RedHomHelpers.cpp
  * Author: Piotr Brendel
  */
 
 ////////////////////////////////////////////////////////////////////////////////
-// RedHom stuff
 
-#include "HomologyHelpers.h"
+#include "RedHomHelpers.hpp"
 
 #include <cmath>
 

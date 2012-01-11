@@ -4,24 +4,12 @@
  */
 
 #include "Tests.h"
+#include "RedHomHelpers.hpp"
 #include "Utils.h"
 #include "../AcyclicSubset/SimplexUtils.h"
 #include "../AcyclicSubset/IncidenceGraphHelpers.h"
-#include "../AcyclicSubset/HomologyHelpers.h"
-//#include "../AcyclicSubset/PrepareData.h"
-//#include "../AcyclicSubset/ComputationsLocal.h"
-//#include "../AcyclicSubset/ComputationsLocalMPITest.h"
-//#include "../AcyclicSubset/ComputationsParallelMPI.h"
-//#include "../AcyclicSubset/ComputationsParallelOMP.h"
 
 #include <cassert>
-
-#ifdef USE_MPI
-#include <mpi.h>
-#include "../AcyclicSubset/ComputationsParallelMPI.h"
-#include "../AcyclicSubset/MPIData.h"
-#endif
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // static variables
@@ -202,7 +190,7 @@ void Tests::Test(SimplexList &simplexList, ReductionType reductionType)
     }
     else if (reductionType == RT_AccSubParallel)
     {
- //       ig = IncidenceGraphHelpers<IncidenceGraph>::CreateAndCalculateAccSubParallel(simplexList, packsCount, (AccSubAlgorithm)parallelAccSubAlgorithm, accTest);
+        ig = IncidenceGraphHelpers<IncidenceGraph>::CreateAndCalculateAccSubParallel<PartitionGraph>(simplexList, packsCount, (AccSubAlgorithm)parallelAccSubAlgorithm, accTest);
     }
     else // (reductionType == RT_Coreduction || reductionType == RT_None)
     {
@@ -226,7 +214,7 @@ void Tests::Test(SimplexList &simplexList, ReductionType reductionType)
     MemoryInfo::Print();
 
     timeStart = Timer::Now();
-    HomologyHelpers<OutputGraph>::ComputeHomology(og, reductionType == RT_Coreduction);
+    RedHomHelpers<OutputGraph>::ComputeHomology(og, reductionType == RT_Coreduction);
     total += Timer::TimeFrom(timeStart);
     std::cout<<"total: "<<total<<std::endl;
     MemoryInfo::Print();
@@ -361,14 +349,14 @@ void Tests::MPIMaster(int argc, char** argv)
 {
 #ifdef USE_MPI
     TestFromCommandLine(argc, argv);
-    ComputationsParallelMPI::KillSlaves();
+    ComputationsParallelMPI<PartitionGraph>::KillSlaves();
 #endif
 }
 
 void Tests::MPISlave(int processRank)
 {
 #ifdef USE_MPI
-    ComputationsParallelMPI::Slave(processRank);
+    ComputationsParallelMPI<PartitionGraph>::Slave(processRank);
 #endif
 }
 

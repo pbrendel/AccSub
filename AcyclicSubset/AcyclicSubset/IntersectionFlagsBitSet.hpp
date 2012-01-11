@@ -6,7 +6,7 @@
 #ifndef INTERSECTIONFLAGSBITSET_HPP
 #define	INTERSECTIONFLAGSBITSET_HPP
 
-#include <assert.h>
+#include <cassert>
 
 ////////////////////////////////////////////////////////////////////////////////
 

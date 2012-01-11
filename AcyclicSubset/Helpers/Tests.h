@@ -12,8 +12,11 @@
 #include "../AcyclicSubset/IncidenceGraphTraits.h"
 #include "../AcyclicSubset/IncidenceGraph.h"
 #include "../AcyclicSubset/OutputGraph.h"
-
-class OutputGraph;
+#include "../AcyclicSubset/PrepareData.h"
+#include "../AcyclicSubset/ComputationsLocal.h"
+#include "../AcyclicSubset/ComputationsLocalMPITest.h"
+#include "../AcyclicSubset/ComputationsParallelMPI.h"
+#include "../AcyclicSubset/ComputationsParallelOMP.h"
 
 enum ReductionType
 {
@@ -34,6 +37,7 @@ class Tests
     typedef IncidenceGraph::AccSubAlgorithm AccSubAlgorithm;
 
     typedef OutputGraphT<IncidenceGraph> OutputGraph;
+    typedef PartitionGraphT<IncidenceGraph, PrepareDataNone, ComputationsLocal> PartitionGraph;
 
 public:
 

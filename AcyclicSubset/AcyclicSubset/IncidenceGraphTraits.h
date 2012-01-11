@@ -9,6 +9,7 @@
 #include "SimplexT.hpp"
 #include "IntersectionInfoFlags.hpp"
 #include "AccInfoFlags.hpp"
+#include "AccSubAlgorithmType.h"
 
 #include <vector>
 #include <set>
@@ -24,8 +25,8 @@ public:
     typedef Simplex *                       SimplexPtr;
     typedef std::vector<SimplexPtr>         SimplexPtrList;
     typedef unsigned int                    IntersectionFlags;
-    // typedef IntersectionInfoFlags           IntersectionInfo;
-    // typedef AccInfoFlags                    AccInfo;
+    typedef AccSubAlgorithmType             AccSubAlgorithm;
+
 };
 
 #endif	/* INCIDENCEGRAPHTRAITS_H */

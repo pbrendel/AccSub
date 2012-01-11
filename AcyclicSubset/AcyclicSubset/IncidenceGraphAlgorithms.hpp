@@ -395,7 +395,7 @@ void GetSortedIntersectionOfUnsortedSets(VertexVector &intersection, const Verte
 }
 
 template <typename VertexVector, typename VertexSet>
-void GetIntersectionOfUnsortedSetAndSortedVector(VertexVector &intersection, const VertexSet &setA, const VertexVector &vb)
+void GetIntersectionOfUnsortedSetAndSortedVector(VertexSet &intersection, const VertexSet &setA, const VertexVector &vb)
 {
     VertexVector va;
     va.assign(setA.begin(), setA.end());

@@ -1,10 +1,10 @@
 /* 
- * File:   PrepareData.h
+ * File:   PrepareData.hpp
  * Author: Piotr Brendel
  */
 
-#ifndef PREPAREDATA_H
-#define	PREPAREDATA_H
+#ifndef PREPAREDATA_HPP
+#define	PREPAREDATA_HPP
 
 #include <cstdlib>
 
@@ -122,5 +122,5 @@ public:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-#endif	/* PREPAREDATA_H */
+#endif	/* PREPAREDATA_HPP */
 

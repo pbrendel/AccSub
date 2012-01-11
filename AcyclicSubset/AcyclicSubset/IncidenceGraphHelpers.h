@@ -1,12 +1,12 @@
 /* 
- * File:   IncidenceGraphHelpers.h
+ * File:   IncidenceGraphHelpers.hpp
  * Author: Piotr Brendel
  */
 
-#ifndef INCIDENCEGRAPHHELPERS_H
-#define	INCIDENCEGRAPHHELPERS_H
+#ifndef INCIDENCEGRAPHHELPERS_HPP
+#define	INCIDENCEGRAPHHELPERS_HPP
 
-//#include "PartitionGraph.h"
+#include "PartitionGraph.h"
 
 #ifdef ACCSUB_TRACE
 #include "../Helpers/Utils.h"
@@ -171,7 +171,7 @@ public:
         ig->CreateGraph();
         Timer::Update("incidence graph created");
         MemoryInfo::Print();
-        ig->CalculateAccSubST(accTest);
+        ig->CalculateAccSubSpanningTree(accTest);
         Timer::Update("acyclic subset calculated");
         MemoryInfo::Print();
 #else
@@ -210,7 +210,7 @@ public:
         ig->CreateGraphWithBorder();
         Timer::Update("incidence graph created");
         MemoryInfo::Print();
-        ig->CalculateAccSubSTWithBorder(accTest);
+        ig->CalculateAccSubSpanningTreeWithBorder(accTest);
         Timer::Update("acyclic subset calculated");
         MemoryInfo::Print();
 #else
@@ -231,7 +231,7 @@ public:
         ig->CreateGraphWithBorder();
         Timer::Update("incidence graph created");
         MemoryInfo::Print();
-        ig->CalculateAccSubSTWithBorder(accTest);
+        ig->CalculateAccSubSpanningTreeWithBorder(accTest);
         Timer::Update("acyclic subset calculated");
         MemoryInfo::Print();
 #else
@@ -242,15 +242,16 @@ public:
 #endif
         return ig;
     }
-/*
+
+    template <typename PartitionGraph>
     static IncidenceGraph *CreateAndCalculateAccSubParallel(SimplexList &simplexList, int packsCount, AccSubAlgorithm accSubAlgorithm, AccTest *accTest)
     {
-        PartitionGraphT<IncidenceGraph> *pg = new PartitionGraphT<IncidenceGraph>(simplexList, packsCount, accSubAlgorithm, accTest);
+        PartitionGraph *pg = new PartitionGraph(simplexList, packsCount, accSubAlgorithm, accTest);
         IncidenceGraph *ig = pg->GetIncidenceGraph();
         delete pg;
         return ig;
-    }*/
+    }
 };
 
-#endif	/* INCIDENCEGRAPHHELPERS_H */
+#endif	/* INCIDENCEGRAPHHELPERS_HPP */
 

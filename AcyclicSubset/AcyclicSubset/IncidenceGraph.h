@@ -1,21 +1,18 @@
 /*
- * File:   IncidenceGraph.h
+ * File:   IncidenceGraph.hpp
  * Author: Piotr Brendel
  */
 
-#ifndef INCIDENCEGRAPH_H
-#define INCIDENCEGRAPH_H
+#ifndef INCIDENCEGRAPH_HPP
+#define INCIDENCEGRAPH_HPP
 
 #include "IncidenceGraphAlgorithms.hpp"
-
 #include "ConfigurationsFlags.hpp"
 #include "AccTest.hpp"
 
 #include <list>
 #include <queue>
 #include <set>
-
-////////////////////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -34,6 +31,7 @@ public:
     typedef IntersectionInfoT<IncidenceGraphT> IntersectionInfo;
     typedef AccInfoT<IncidenceGraphT> AccInfo;
     typedef AccTestT<Traits> AccTest;
+    typedef typename Traits::AccSubAlgorithm AccSubAlgorithm;
 
     struct Node;
     struct Edge;
@@ -45,13 +43,6 @@ public:
     typedef Node *ConnectedComponent;
     typedef std::vector<ConnectedComponent> ConnectedComponents;
     typedef std::map<Vertex, Nodes> VertexHash;
-
-    enum AccSubAlgorithm
-    {
-        ASA_AccSub = 0,
-        ASA_AccSubIG,
-        ASA_AccSubST,
-    };
 
     struct Node
     {
@@ -396,7 +387,7 @@ public:
         }
     }
 
-    void CalculateAccSub(AccTest *test)
+    void CalculateAccSub(AccTest *accTest)
     {
         std::queue<Node *> Q;
         for (typename std::vector<ConnectedComponent>::iterator i = connectedComponents.begin(); i != connectedComponents.end(); i++)
@@ -417,7 +408,7 @@ public:
                     {
                         continue;
                     }
-                    if (neighbour->GetAccInfo().IsAccIntersectionAcyclic(test))
+                    if (neighbour->GetAccInfo().IsAccIntersectionAcyclic(accTest))
                     {
                         neighbour->IsInAccSub(true);
                         neighbour->GetAccInfo().UpdateNeighboursAccIntersection();
@@ -428,7 +419,7 @@ public:
         }
     }
 
-    void CalculateAccSubWithBorder(AccTest *test)
+    void CalculateAccSubWithBorder(AccTest *accTest)
     {
         std::queue<Node *> Q;
         for (typename std::vector<ConnectedComponent>::iterator i = connectedComponents.begin(); i != connectedComponents.end(); i++)
@@ -455,7 +446,7 @@ public:
                     {
                         continue;
                     }
-                    if (neighbour->GetAccInfo().IsAccIntersectionAcyclic(test))
+                    if (neighbour->GetAccInfo().IsAccIntersectionAcyclic(accTest))
                     {
                         neighbour->IsInAccSub(true);
                         neighbour->GetAccInfo().UpdateNeighboursAccIntersection();
@@ -466,7 +457,7 @@ public:
         }
     }
 
-    void CalculateAccSubSpanningTree(AccTest *test)
+    void CalculateAccSubSpanningTree(AccTest *accTest)
     {
         int index = 0;
         std::queue<Node *> Q;
@@ -498,7 +489,7 @@ public:
                         {
                             continue;
                         }
-                        if (neighbour->GetAccInfo().IsAccIntersectionAcyclic(test))
+                        if (neighbour->GetAccInfo().IsAccIntersectionAcyclic(accTest))
                         {
                             size++;
                             neighbour->IsInAccSub(true);
@@ -530,7 +521,7 @@ public:
         }
     }
 
-    void CalculateAccSubSpanningTreeWithBorder(AccTest *test)
+    void CalculateAccSubSpanningTreeWithBorder(AccTest *accTest)
     {
         std::queue<Node *> Q;
         for (typename std::vector<ConnectedComponent>::iterator i = connectedComponents.begin(); i != connectedComponents.end(); i++)
@@ -561,7 +552,7 @@ public:
                         {
                             continue;
                         }
-                        if (neighbour->GetAccInfo().IsAccIntersectionAcyclic(test))
+                        if (neighbour->GetAccInfo().IsAccIntersectionAcyclic(accTest))
                         {
                             size++;
                             neighbour->IsInAccSub(true);
@@ -668,7 +659,7 @@ private:
     
 public:
 
-    void CreateGraphAndCalculateAccSub(AccTest *test)
+    void CreateGraphAndCalculateAccSub(AccTest *accTest)
     {
         VertexHash H;
         CreateVertexHash(H);
@@ -687,7 +678,7 @@ public:
                 Q.pop();
                 currentNode->IsAddedToQueue(false);
 
-                if (currentNode->GetAccInfo().IsAccIntersectionAcyclic(test))
+                if (currentNode->GetAccInfo().IsAccIntersectionAcyclic(accTest))
                 {
                     currentNode->IsInAccSub(true);
                     EnqNeighboursAndUpdateAccIntersection(currentNode, H, Q);
@@ -713,7 +704,7 @@ public:
         RemoveEdgesWithAccSub();
     }
 
-    void CreateGraphAndCalculateAccSubWithBorder(AccTest *test)
+    void CreateGraphAndCalculateAccSubWithBorder(AccTest *accTest)
     {
         VertexHash H;
         CreateVertexHash(H);
@@ -772,7 +763,7 @@ public:
                         connectedComponent = currentNode;
                     }
                 }
-                else if (currentNode->GetAccInfo().IsAccIntersectionAcyclic(test))
+                else if (currentNode->GetAccInfo().IsAccIntersectionAcyclic(accTest))
                 {
                     currentNode->IsInAccSub(true);
                     EnqNeighboursAndUpdateAccIntersection(currentNode, H, Q);
@@ -1048,4 +1039,4 @@ private:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-#endif /* INCIDENCEGRAPH_H */
+#endif /* INCIDENCEGRAPH_HPP */

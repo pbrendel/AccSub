@@ -1,10 +1,10 @@
 /*
- * File:   PartitionGraph.h
+ * File:   PartitionGraph.hpp
  * Author: Piotr Brendel
  */
 
-#ifndef PARTITIONGRAPH_H
-#define PARTITIONGRAPH_H
+#ifndef PARTITIONGRAPH_HPP
+#define PARTITIONGRAPH_HPP
 
 #include "AccSpanningTree.h"
 #include <cmath> // ceil()
@@ -13,7 +13,7 @@
 #include "../Helpers/Utils.h"
 #endif
 
-template <typename IncidenceGraphType>
+template <typename IncidenceGraphType, template <typename> class PrepareDataPolicy, template <typename> class ComputationsPolicy>
 class PartitionGraphT
 {
 public:
@@ -112,7 +112,7 @@ public:
 #ifdef ACCSUB_TRACE
         std::cout<<"pack size: "<<packSize<<std::endl;
 #endif
-        // PrepareDataPolicy::Prepare(simplexList, packSize);
+        PrepareDataPolicy<PartitionGraphT>::Prepare(simplexList, packSize);
 #ifdef ACCSUB_TRACE
         Timer::Update("preparing data");
 #endif
@@ -219,7 +219,7 @@ private:
 
     void CalculateIncidenceGraphs(Nodes &sourceNodes)
     {
-        // ComputationsPolicy::Compute(sourceNodes, accSubAlgorithm, accTest);
+        ComputationsPolicy<PartitionGraphT>::Compute(sourceNodes, accSubAlgorithm, accTest);
     }
 
     void CombineGraphs()
@@ -244,7 +244,7 @@ private:
                     {
                         if (!(*node)->HasNeighbour(*neighbour))
                         {
-                            typename IncidenceGraph::Edge *edge = new IncidenceGraph::Edge(*node, *neighbour);
+                            typename IncidenceGraph::Edge *edge = new typename IncidenceGraph::Edge(*node, *neighbour);
                             incidenceGraph->edges.push_back(edge);
                             (*node)->AddEdge(edge);
                             (*neighbour)->AddEdge(edge);
@@ -290,4 +290,4 @@ private:
     }
 };
 
-#endif /* PARTITIONGRAPH_H */
+#endif /* PARTITIONGRAPH_HPP */

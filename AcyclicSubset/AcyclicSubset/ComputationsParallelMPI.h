@@ -1,10 +1,10 @@
 /* 
- * File:   ComputationsParallelMPI.h
+ * File:   ComputationsParallelMPI.hpp
  * Author: Piotr Brendel
  */
 
-#ifndef COMPUTATIONSPARALLELMPI_H
-#define	COMPUTATIONSPARALLELMPI_H
+#ifndef COMPUTATIONSPARALLELMPI_HPP
+#define	COMPUTATIONSPARALLELMPI_HPP
 
 #include "IncidenceGraphHelpers.h"
 #include <map>
@@ -52,7 +52,7 @@ class ComputationsParallelMPI
         std::cout<<"process 0 ";
         Timer::TimeStamp("packing data");
 #endif
-        MPIData::SimplexData<IncicenceGraph> *data = new MPIData::SimplexData<IncicenceGraph>(node->simplexPtrList, node->borderVerts, accSubAlgorithm, accTest->GetID(), Simplex::GetSimplexListConstantSize(node->simplexPtrList));
+        MPISimplexData<IncidenceGraph> *data = new MPISimplexData<IncidenceGraph>(node->simplexPtrList, node->borderVerts, accSubAlgorithm, accTest->GetID(), Simplex::GetSimplexListConstantSize(node->simplexPtrList));
         int dataSize = data->GetSize();
         MPI_Send(&dataSize, 1, MPI_INT, processRank, MPI_MY_DATASIZE_TAG, MPI_COMM_WORLD);
 #ifdef DEBUG_MPI
@@ -67,7 +67,7 @@ class ComputationsParallelMPI
     static void SetMPIIncidenceGraphData(Node *node, int *buffer, int size)
     {
 #ifdef USE_MPI
-        MPIData::IncidenceGraphData<IncidenceGraph> *data = new MPIData::IncidenceGraphData<IncidenceGraph>(buffer, size);
+        MPIIncidenceGraphData<IncidenceGraph> *data = new MPIIncidenceGraphData<IncidenceGraph>(buffer, size);
         node->ig = data->GetIncidenceGraph(node->simplexPtrList);
 #ifdef DEBUG_MPI
         std::cout<<"process 0 ";
@@ -177,7 +177,7 @@ public:
 #endif
 
             // z pobranego bufora budujemy dane wejsciowe
-            MPIData::SimplexData<IncidenceGraph> *data = new MPIData::SimplexData<IncidenceGraph>(buffer, dataSize);
+            MPISimplexData<IncidenceGraph> *data = new MPISimplexData<IncidenceGraph>(buffer, dataSize);
             SimplexList simplexList;
             std::set<Vertex> borderVerts;
             int accSubAlgorithm;
@@ -191,7 +191,7 @@ public:
 
             // tworzymy graf incydencji z policzonym podzbiorem acyklicznym
             IncidenceGraph *ig = 0;
-            if (accSubAlgorithm == ASA_AccSubIG)
+            if (accSubAlgorithm == AccSubAlgorithm::AccSubIG)
             {
                 ig = IncidenceGraphHelpers<IncidenceGraph>::CreateAndCalculateAccSubIGWithBorder(simplexList, borderVerts, accTest);
             }
@@ -203,10 +203,10 @@ public:
             ig->AssignNewIndices(true);
 
             delete data;
-            delete test;
+            delete accTest;
 
             // zamieniamy na bufor danych
-            MPIData::IncidenceGraphData<IncidenceGraph> *igData = new MPIData::IncidenceGraphData<IncidenceGraph>(ig);
+            MPIIncidenceGraphData<IncidenceGraph> *igData = new MPIIncidenceGraphData<IncidenceGraph>(ig);
 #ifdef DEBUG_MPI
             std::cout<<"process "<<processRank<<" ";
             Timer::TimeStamp("packing data");
@@ -260,9 +260,9 @@ public:
 };
 
 template <typename PartitionGraph>
-typename ComputationsParallelMPI<PartitionGraph>::AccSubAlgorithm ComputationsParallelMPI<PartitionGraph>::accSubAlgorithm = ComputationsParallelMPI<PartitionGraph>::AccSubAlgorithm::ASA_AccSubST;
+typename ComputationsParallelMPI<PartitionGraph>::AccSubAlgorithm ComputationsParallelMPI<PartitionGraph>::accSubAlgorithm = ComputationsParallelMPI<PartitionGraph>::AccSubAlgorithm::AccSubST;
 template <typename PartitionGraph>
 typename ComputationsParallelMPI<PartitionGraph>::AccTest *ComputationsParallelMPI<PartitionGraph>::accTest = 0;
 
-#endif	/* COMPUTATIONSPARALLELMPI_H */
+#endif	/* COMPUTATIONSPARALLELMPI_HPP */
 

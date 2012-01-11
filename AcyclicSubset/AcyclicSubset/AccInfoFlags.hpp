@@ -35,9 +35,9 @@ public:
         accSubID = 0;
     }
 
-    bool IsAccIntersectionAcyclic(AccTest *test)
+    bool IsAccIntersectionAcyclic(AccTest *accTest)
     {
-        test->IsAcyclic(*node->simplex, intersectionFlags, intersectionFlagsMF);
+        accTest->IsAcyclic(*node->simplex, intersectionFlags, intersectionFlagsMF);
     }
 
     bool IsInsideAccIntersection(IntersectionFlags flags)

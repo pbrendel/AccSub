@@ -1,26 +1,24 @@
 /*
- * File:   MPIData.h
+ * File:   MPIData.hpp
  * Author: Piotr Brendel
  */
 
-#ifndef MPIDATA_H
-#define	MPIDATA_H
+#ifndef MPIDATA_HPP
+#define	MPIDATA_HPP
 
 #include "IncidenceGraph.h"
 
 #include <set>
 
-namespace MPIData
-{
+////////////////////////////////////////////////////////////////////////////////
 
 template<typename IncidenceGraph>
-class SimplexData
+class MPISimplexData
 {
     typedef typename IncidenceGraph::Vertex Vertex;
     typedef typename IncidenceGraph::Simplex Simplex;
     typedef typename IncidenceGraph::SimplexList SimplexList;
     typedef typename IncidenceGraph::SimplexPtrList SimplexPtrList;
-
 
     int *buffer;
     int size;
@@ -50,13 +48,13 @@ class SimplexData
 
 public:
 
-    SimplexData(int *buffer, int size)
+    MPISimplexData(int *buffer, int size)
     {
         this->buffer = buffer;
         this->size = size;
     }
 
-    SimplexData(const SimplexPtrList &simplexPtrList, const std::set<Vertex> &borderVerts, int accSubAlgorithm, int accTestNumber, int simplexSize)
+    MPISimplexData(const SimplexPtrList &simplexPtrList, const std::set<Vertex> &borderVerts, int accSubAlgorithm, int accTestNumber, int simplexSize)
     {
         size = CalcBufferSize(simplexPtrList, borderVerts.size(), simplexSize);
         buffer = new int[size];
@@ -102,7 +100,7 @@ public:
         }
     }
 
-    ~SimplexData()
+    ~MPISimplexData()
     {
         delete [] buffer;
     }
@@ -151,8 +149,10 @@ public:
 
 };
 
+////////////////////////////////////////////////////////////////////////////////
+
 template<typename IncidenceGraph>
-class IncidenceGraphData
+class MPIIncidenceGraphData
 {
     typedef typename IncidenceGraph::Vertex Vertex;
     typedef typename IncidenceGraph::VertsSet VertsSet;
@@ -211,13 +211,13 @@ class IncidenceGraphData
 
 public:
 
-    IncidenceGraphData(int *buffer, int size)
+    MPIIncidenceGraphData(int *buffer, int size)
     {
         this->buffer = buffer;
         this->size = size;
     }
     
-    IncidenceGraphData(const IncidenceGraph *ig)
+    MPIIncidenceGraphData(const IncidenceGraph *ig)
     {
         size = CalcBufferSize(ig);
         std::vector<int> simplicesOnBorder;
@@ -301,7 +301,7 @@ public:
         }
     }
 
-    ~IncidenceGraphData()
+    ~MPIIncidenceGraphData()
     {
         delete [] buffer;
     }
@@ -322,7 +322,7 @@ public:
         {
             int simplexIndex = buffer[index++];
             int nodeIndex = buffer[index++];
-            typename IncidenceGraph::Node *node = new IncidenceGraph::Node(ig, const_cast<Simplex *>(simplexPtrList.at(simplexIndex)), nodeIndex);
+            typename IncidenceGraph::Node *node = new typename IncidenceGraph::Node(ig, const_cast<Simplex *>(simplexPtrList.at(simplexIndex)), nodeIndex);
             node->GetAccInfo().ReadFromBuffer(buffer, index);
             ig->nodes.push_back(node);
         }
@@ -332,7 +332,7 @@ public:
         {
             typename IncidenceGraph::Node *nodeA = ig->nodes[buffer[index++]];
             typename IncidenceGraph::Node *nodeB = ig->nodes[buffer[index++]];
-            typename IncidenceGraph::Edge *edge = new IncidenceGraph::Edge(nodeA, nodeB);
+            typename IncidenceGraph::Edge *edge = new typename IncidenceGraph::Edge(nodeA, nodeB);
             ig->edges.push_back(edge);
             nodeA->AddEdge(edge);
             nodeB->AddEdge(edge);
@@ -370,7 +370,7 @@ public:
     }
 };
 
-}
+////////////////////////////////////////////////////////////////////////////////
 
-#endif	/* MPIDATA_H */
+#endif	/* MPIDATA_HPP */
 
