@@ -10,13 +10,14 @@
 #include <string>
 
 #include "../AcyclicSubset/IncidenceGraphTraits.h"
-#include "../AcyclicSubset/IncidenceGraph.h"
-#include "../AcyclicSubset/OutputGraph.h"
-#include "../AcyclicSubset/PrepareData.h"
-#include "../AcyclicSubset/ComputationsLocal.h"
-#include "../AcyclicSubset/ComputationsLocalMPITest.h"
-#include "../AcyclicSubset/ComputationsParallelMPI.h"
-#include "../AcyclicSubset/ComputationsParallelOMP.h"
+#include "../AcyclicSubset/IncidenceGraph.hpp"
+#include "../AcyclicSubset/OutputGraph.hpp"
+#include "../AcyclicSubset/PartitionGraph.hpp"
+#include "../AcyclicSubset/PrepareData.hpp"
+#include "../AcyclicSubset/ComputationsLocal.hpp"
+#include "../AcyclicSubset/ComputationsLocalMPITest.hpp"
+#include "../AcyclicSubset/ComputationsParallelMPI.hpp"
+#include "../AcyclicSubset/ComputationsParallelOMP.hpp"
 
 enum ReductionType
 {

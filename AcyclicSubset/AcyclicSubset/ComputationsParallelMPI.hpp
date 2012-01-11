@@ -6,18 +6,18 @@
 #ifndef COMPUTATIONSPARALLELMPI_HPP
 #define	COMPUTATIONSPARALLELMPI_HPP
 
-#include "IncidenceGraphHelpers.h"
+#include "IncidenceGraphHelpers.hpp"
 #include <map>
 
 #ifdef ACCSUB_TRACE
-#include "../Helpers/Utils.h"
+#include "../Helpers/Utils.hpp"
 #endif
 
 #ifdef USE_MPI
 #include <mpi.h>
-#include "MPIData.h"
+#include "MPIData.hpp"
 #ifdef DEBUG_MPI
-#include "../Helpers/Utils.h"
+#include "../Helpers/Utils.hpp"
 #endif
 #endif
 

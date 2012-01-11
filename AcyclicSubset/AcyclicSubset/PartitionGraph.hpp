@@ -6,11 +6,11 @@
 #ifndef PARTITIONGRAPH_HPP
 #define PARTITIONGRAPH_HPP
 
-#include "AccSpanningTree.h"
+#include "AccSpanningTree.hpp"
 #include <cmath> // ceil()
 
 #ifdef ACCSUB_TRACE
-#include "../Helpers/Utils.h"
+#include "../Helpers/Utils.hpp"
 #endif
 
 template <typename IncidenceGraphType, template <typename> class PrepareDataPolicy, template <typename> class ComputationsPolicy>

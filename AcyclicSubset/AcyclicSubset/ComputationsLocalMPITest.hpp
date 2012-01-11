@@ -6,11 +6,11 @@
 #ifndef COMPUTATIONSLOCALMPITEST_HPP
 #define	COMPUTATIONSLOCALMPITEST_HPP
 
-#include "MPIData.h"
-#include "IncidenceGraphHelpers.h"
+#include "MPIData.hpp"
+#include "IncidenceGraphHelpers.hpp"
 
 #ifdef ACCSUB_TRACE
-#include "../Helpers/Utils.h"
+#include "../Helpers/Utils.hpp"
 #endif
 
 template <typename PartitionGraph>

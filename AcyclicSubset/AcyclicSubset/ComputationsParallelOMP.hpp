@@ -6,10 +6,10 @@
 #ifndef COMPUTATIONSPARALLELOMP_HPP
 #define	COMPUTATIONSPARALLELOMP_HPP
 
-#include "ComputationsLocal.h"
+#include "ComputationsLocal.hpp"
 
 #ifdef ACCSUB_TRACE
-#include "../Helpers/Utils.h"
+#include "../Helpers/Utils.hpp"
 #endif
 
 template <typename PartitionGraph>

@@ -6,10 +6,10 @@
 #ifndef COMPUTATIONSLOCAL_HPP
 #define	COMPUTATIONSLOCAL_HPP
 
-#include "IncidenceGraphHelpers.h"
+#include "IncidenceGraphHelpers.hpp"
 
 #ifdef ACCSUB_TRACE
-#include "../Helpers/Utils.h"
+#include "../Helpers/Utils.hpp"
 #endif
 
 template <typename PartitionGraph>

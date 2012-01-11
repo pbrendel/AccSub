@@ -5,14 +5,13 @@
 
 #include "Tests.h"
 #include "RedHomHelpers.hpp"
-#include "Utils.h"
-#include "../AcyclicSubset/SimplexUtils.h"
-#include "../AcyclicSubset/IncidenceGraphHelpers.h"
+#include "Utils.hpp"
+#include "../AcyclicSubset/SimplexUtils.hpp"
+#include "../AcyclicSubset/IncidenceGraphHelpers.hpp"
 
 #include <cassert>
 
 ////////////////////////////////////////////////////////////////////////////////
-// static variables
 
 int Tests::testType = 0;
 int Tests::accTestNumber = 0;

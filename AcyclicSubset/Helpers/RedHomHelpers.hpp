@@ -6,8 +6,8 @@
 #ifndef REDHOMHELPERS_HPP
 #define	REDHOMHELPERS_HPP
 
-#include "../AcyclicSubset/IncidenceGraphHelpers.h"
-#include "Utils.h"
+#include "../AcyclicSubset/IncidenceGraphHelpers.hpp"
+#include "Utils.hpp"
 
 ////////////////////////////////////////////////////////////////////////////////
 // RedHom stuff

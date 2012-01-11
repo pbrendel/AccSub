@@ -6,10 +6,8 @@
 #ifndef INCIDENCEGRAPHHELPERS_HPP
 #define	INCIDENCEGRAPHHELPERS_HPP
 
-#include "PartitionGraph.h"
-
 #ifdef ACCSUB_TRACE
-#include "../Helpers/Utils.h"
+#include "../Helpers/Utils.hpp"
 #endif
 
 template <typename IncidenceGraph>

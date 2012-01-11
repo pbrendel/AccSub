@@ -3,7 +3,7 @@
  * Author: Piotr Brendel
  */
 
-#include "Utils.h"
+#include "Utils.hpp"
 
 #include <sys/resource.h>
 

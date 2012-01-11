@@ -12,7 +12,7 @@
 #include <map>
 
 #ifdef ACCSUB_TRACE
-#include "../Helpers/Utils.h"
+#include "../Helpers/Utils.hpp"
 #endif
 
 template <typename PartitionGraph>
