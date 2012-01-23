@@ -1,6 +1,12 @@
 /*
  * File:   AccSpanningTree.hpp
  * Author: Piotr Brendel
+ *         piotr.brendel@ii.uj.edu.pl
+ *
+ *         AccSub - constructing and removing acyclic subset
+ *                  for simplicial complexes
+ *         This code is a part of RedHom library
+ *         http://redhom.ii.uj.edu.pl
  */
 
 #ifndef ACCSPANNINGTREE_HPP
@@ -60,12 +66,12 @@ public:
         {
             edges.push_back(edge);
         }
-        
+
         void FindAccSubToBorderConnection(Vertex borderVertex, Path &path)
         {
             if (accSubSize > 0)
             {
-                // szukanie sciezki od wierzcholka w brzegu do najbliszego acyklicznego sempleksu
+                // finding path from boundary vertex to nearest acyclic subset
                 path = FindPath(FindNode(parent->ig->nodes, FindNodeWithVertex<IncidenceGraph>(borderVertex)), FindPathToNodeWithAccIntersection<IncidenceGraph>());
                 assert(path.size() > 0);
             }
@@ -81,45 +87,38 @@ public:
             {
                 if (isConnectedToAccSub)
                 {
-                    // std::cout<<"is connected to acyclic subset"<<std::endl;
                     UpdatePathFromBorderToAccSub(borderVertex, path);
                 }
                 else
                 {
-                    // std::cout<<"connecting to acyclic subset"<<std::endl;
                     UpdatePathFromAccSubToBorder(borderVertex, path);
                     isConnectedToAccSub = true;
                 }
             }
             else
             {
-                // std::cout<<"updating border verts: "<<singleBorderVerts.size()<<std::endl;
                 UpdateBoundaryVertsConnectingPaths();
                 boundaryVertsConnectingPaths.clear();
                 isConnectedToAccSub = true;
             }
         }
 
-////////////////////////////////////////////////////////////////////////////////
-// w ten funkcji dodajemy sciezke do podzbioru acyklicznego zaczynajac od
-// wierzcholka na brzegu. zadaniem tej funkcji jest zagwarantowanie, zeby
-// podany wierzcholek z brzegu mial polaczenie ze zbiorem acyklicznym,
-// nie musimy zatem dojsc do koncowego node'a na sciezce, wystarczy ze gdzies
-// wczesniej natrafimy na inny kawalek podzbioru acyklicznego
-// zakladamy, ze jestesmy w "kawalku" kompleksu, ktory ma juz polaczenie
-// ze zbiorem acyklicznym
+        // we assume we're in the part of acyclic subset that is already
+        // "connected" to "big" acyclic subset.
+        // this function's task is to connect boundary vertex to a part
+        // of acyclic subset. we move along path starting from vertex
+        // towards acyclic subset. once we find simplex that intersects
+        // with acyclic subset (which can be part of other path) we stop.
         void UpdatePathFromBorderToAccSub(Vertex borderVertex, Path &path)
         {
             IncidenceGraphNode *prevNode = path.front();
             typename Path::iterator i = path.begin();
             i++;
-            // jezeli zaczynamy od acyklicznego wierzcholka to jestesmy w domu
-            // (musimy zagwarantowac, ze wierzcholek na brzegu bedzie mial "dojscie"
-            // do zbioru acyklicznego, wiec jezeli juz w nim jest, to znaczy, ze wczesniej
-            // zostal do niego dolaczony)
+            // we have to guarantee that boundary vertex is connected to
+            // acyclic subset. if we start with vertex that is already
+            // added to acyclic subset then we don't need to do anything more
             if (prevNode->GetAccInfo().IsVertexInAccIntersection(borderVertex))
             {
-                // std::cout<<"vertex "<<borderVertex<<" is in acyclic subset -> finishing"<<std::endl;
                 return;
             }
             Vertex lastVertex = borderVertex;
@@ -134,7 +133,6 @@ public:
                 }
                 else if ((*i)->GetAccInfo().IsVertexInAccIntersection(vertex))
                 {
-                    // std::cout<<"adding acyclic edge "<<lastVertex<<" " <<vertex<<" -> finishing 1b"<<std::endl;
                     prevNode->GetAccInfo().UpdateAccIntersectionWithEdge(lastVertex, vertex);
                     prevNode = 0;
                     break;
@@ -142,50 +140,45 @@ public:
                 else
                 {
                     vertsOnPath.insert(vertex);
-                    // std::cout<<"adding acyclic edge "<<lastVertex<<" " <<vertex<<std::endl;
                     prevNode->GetAccInfo().UpdateAccIntersectionWithEdge(lastVertex, vertex);
                     prevNode = (*i);
                     lastVertex = vertex;
                     vertex = prevNode->GetAccInfo().FindAccVertexNotIn(vertsOnPath);
                     if (vertex != Vertex(-1))
                     {
-                        // std::cout<<"adding acyclic edge "<<lastVertex<<" " <<vertex<<" -> finishing 2b"<<std::endl;
                         prevNode->GetAccInfo().UpdateAccIntersectionWithEdge(lastVertex, vertex);
                         prevNode = 0;
                         break;
                     }
                 }
             }
-            // jezeli na liscie byl tylko jeden node
+            // if there were only one on on the path
             if (prevNode != 0)
             {
                 Vertex vertex = prevNode->GetAccInfo().FindAccVertexNotEqual(lastVertex);
                 assert(vertex != Vertex(-1));
-                // std::cout<<"adding acyclic edge "<<lastVertex<<" " <<vertex<<" -> finishing 3"<<std::endl;
                 prevNode->GetAccInfo().UpdateAccIntersectionWithEdge(lastVertex, vertex);
 
             }
         }
 
-////////////////////////////////////////////////////////////////////////////////
-// ta funkcja rozni sie od poprzedniej tym, ze tutaj dodajemy wierzcholki
-// do sciezki zaczynajac od podzbioru acyklicznego. zadaniem tej funkcji
-// jest "podlaczenie" zbioru acyklicznego do dodanego juz innego kawalka
-// podzbioru acyklicznego. jezeli zatem trafimy na podzbior acykliczny to
-// albo trafilismy na wierzcholek w brzegu, ktorego podlaczenie gwarantuje
-// poprzednia funkcja albo trafilismy na inny podzbior acykliczny znajdujacy
-// sie w brzegu => tez ok
+        // no we assume that we're in a part of acyclic subset that needs
+        // to be "connected" to "big" acyclic subset.
+        // this function's task is to connect acyclic subset to a part
+        // of already constructed "big" acyclic subset. we start with
+        // a vertex from part of acyclic subset that we want to connect
+        // and move along path towards boundary vertex (of which we are
+        // sure that has been already connected to "big" acyclic subset
+        // - see previous function). once we reach boundary vertex or 
+        // another part of acyclic subset we stop.
         void UpdatePathFromAccSubToBorder(Vertex borderVertex, Path &path)
         {
             path.reverse();
             typename Path::iterator i = path.begin();
-            // pierwszy node sasiaduje ze zbiorem acyklicznym
             IncidenceGraphNode *prevNode = *i;
             i++;
-            // pierwszy node musi zawierac wierzcholek znajdujacy sie w zbiorze
-            // acyklicznym, bo takie byly warunki szukania sciezki
+            // first node has to intersects acyclic subset
             Vertex lastVertex = prevNode->GetAccInfo().FindAccVertexNotIn(borderVerts);
-            // std::cout<<"vertex "<<lastVertex<<" is acyclic"<<std::endl;
             assert(lastVertex != Vertex(-1));
             for (; i != path.end(); i++)
             {
@@ -196,42 +189,37 @@ public:
                 }
                 else if ((*i)->GetAccInfo().IsVertexInAccIntersection(vertex))
                 {
-                    // std::cout<<"adding acyclic edge "<<lastVertex<<" " <<vertex<<" -> finishing 1a"<<std::endl;
                     prevNode->GetAccInfo().UpdateAccIntersectionWithEdge(lastVertex, vertex);
                     prevNode = 0;
                     break;
                 }
                 else
                 {
-                    // std::cout<<"adding acyclic edge "<<lastVertex<<" " <<vertex<<std::endl;
                     prevNode->GetAccInfo().UpdateAccIntersectionWithEdge(lastVertex, vertex);
                     prevNode = (*i);
                     lastVertex = vertex;
                 }
             }
-            // jezeli prevNode == 0 to znaczy ze trafilismy na podzbior acykliczny
-            // i konczymy szukanie sciezki, wpp. musimy jeszcze wierzcholek z przeciecia
-            // dwoch osatnich node'ow polaczyc z wierzcholkiem na brzegu
+            // if prevNode == 0 this means we have reached a part of acyclic
+            // subset and we can stop whole procedure
+            // in other case we have to connect last vertex to boundary vertex
             if (prevNode != 0)
             {
-                // moze sie zdazyc, ze w ostatnie dwa sympleksy beda sasiadowaly
-                // wlasnie na wierzcholku w brzegu, dlatego sprawdzamy, czy nie
-                // dodajemy zdegenerowanej krawedzi
+                // it may happen that last two simplices intersection is
+                // just our boundary vertex. because of that we have to
+                // check that we don't add degenerated edge
                 if (lastVertex != borderVertex)
                 {
-                    // std::cout<<"adding acyclic edge "<<lastVertex<<" " <<borderVertex<<" -> finishing 2a"<<std::endl;
                     prevNode->GetAccInfo().UpdateAccIntersectionWithEdge(lastVertex, borderVertex);
                 }
             }
         }
         
-// szukanie sciezek laczacych wszystkie punkty lezace na brzegu
-// docelowo powstaje drzewo, ktorego "korzeniem" jest pierwszy wierzcholek
-// na liscie
+        // finding paths connect boundary vertices
         void FindBoundaryVertsConnectingPaths()
         {
-            // jezeli sa mniej niz dwa wierzcholki, to znaczy, ze ta czesc kompleksu
-            // nie laczy zadnych zbiorow acyklicznych wiec mozna ja zignorowac
+            // if there is less than 2 vertices it means that this part
+            // does not connect any two acyclic subsets so we can ignore it
             if (boundaryVertsToConnect.size() < 2)
             {
                 return;
@@ -243,26 +231,22 @@ public:
             vertex++;
             for (; vertex != boundaryVertsToConnect.end(); vertex++)
             {
-                // szukanie sciezki pomiedzy wierzcholkami
                 Path path = FindPath(firstNode, FindPathToVertex<IncidenceGraph>(*vertex));
                 assert(path.size() > 0);
                 boundaryVertsConnectingPaths.push_back(path);
             }
         }
 
-////////////////////////////////////////////////////////////////////////////////
-// uprzednio wyliczone sciezki laczace poszczegolne punkty na brzegu
-// dodajemy do zbioru acyklicznego
-// jezeli w trakcie dodawania sciezki trafimy ma
-// zbior acykliczny to konczymy dodawanie sciezki => "podlaczylismy" nowy
-// pozdbior acykliczny do juz utworzonego
+        // paths founded in previous function are formed into tree
+        // the root if the tree is first vertex on the list
+        // we move from currently added vertex towards root at stop once
+        // we intersect a part of acyclic subset (in the worst case -> root)
         void UpdateBoundaryVertsConnectingPaths()
         {
-            // jezeli sa mniej niz dwa wierzcholki, to znaczy, ze ta czesc kompleksu
-            // nie laczy zadnych zbiorow acyklicznych wiec mozna ja zignorowac
+            // if there is less than one path it means that part
+            // does not connect any two acyclic subsets so we can ignore it
             if (boundaryVertsConnectingPaths.size() < 1)
             {
-                // std::cout<<"less than 1 -> finishing"<<std::endl;
                 return;
             }
 
@@ -275,15 +259,14 @@ public:
             {
                 assert(vertex != boundaryVertsToConnect.end());
                 IncidenceGraphNode *prevNode = path->back();
-                // jezeli wierzcholek jest juz w zbiorze acyklicznym, to kontynuujemy
-                // znaczy to, ze jakas wczesniejsza sciezka przeszla przez niego
-                // i dolaczyla go do zbioru acyklicznego
+                // if vertex is already in the acyclic subset, then we
+                // stop adding path for this vertex. it means we have reached
+                // a part of acyclic subset (path added before).
                 if (prevNode->GetAccInfo().IsVertexInAccIntersection(*vertex))
                 {
                     continue;
                 }
                 Vertex lastVertex = *vertex;
-                // std::cout<<"vertex: "<<lastVertex<<std::endl;
                 typename Path::reverse_iterator i = path->rbegin();
                 i++;
                 VertsSet vertsOnPath;
@@ -297,7 +280,6 @@ public:
                     }
                     else if ((*i)->GetAccInfo().IsVertexInAccIntersection(vertex))
                     {
-                        // std::cout<<"adding acyclic edge "<<lastVertex<<" " <<vertex<<" -> finishing 2c"<<std::endl;
                         prevNode->GetAccInfo().UpdateAccIntersectionWithEdge(lastVertex, vertex);
                         prevNode = 0;
                         break;
@@ -305,31 +287,27 @@ public:
                     else
                     {
                         vertsOnPath.insert(vertex);
-                        // std::cout<<"adding acyclic edge "<<lastVertex<<" " <<vertex<<std::endl;
                         prevNode->GetAccInfo().UpdateAccIntersectionWithEdge(lastVertex, vertex);
                         prevNode = (*i);
                         lastVertex = vertex;
                         vertex = prevNode->GetAccInfo().FindAccVertexNotIn(vertsOnPath);
                         if (vertex != Vertex(-1))
                         {
-                            // std::cout<<"adding acyclic edge "<<lastVertex<<" " <<vertex<<" -> finishing 2b"<<std::endl;
                             prevNode->GetAccInfo().UpdateAccIntersectionWithEdge(lastVertex, vertex);
                             prevNode = 0;
                             break;
                         }
                     }
                 }
-                // jezeli doszlismy tutaj, to znaczy ze nie trafilismy wczesniej
-                // na podzbior acykliczny i musimy polaczyc sciezke z pierwszym
-                // wierzcholkiem
+                // if we are here it means we didn't intersect acyclic subset
+                // so have to connect path to root (first vertex on the list)
                 if (prevNode != 0)
                 {
-                    // moze sie zdazyc, ze w ostatnie dwa sympleksy beda sasiadowaly
-                    // wlasnie na wierzcholku w brzegu, dlatego sprawdzamy, czy nie
-                    // dodajemy zdegenerowanej krawedzi
+                    // it may happen that last two simplices intersection is
+                    // just our boundary vertex. because of that we have to
+                    // check that we don't add degenerated edge
                     if (lastVertex != firstVertex)
                     {
-                        // std::cout<<"adding acyclic edge "<<lastVertex<<" " <<firstVertex<<" -> finishing 2c"<<std::endl;
                         prevNode->GetAccInfo().UpdateAccIntersectionWithEdge(lastVertex, firstVertex);
                     }
                 }
@@ -362,25 +340,19 @@ public:
 
         void UpdateAccConnections()
         {
-            // najpierw uaktualnbiamy sciezke zbioru, ktory juz jest
-            // dolaczony do drzewa
-            // mamy wtedy pewnosc, ze jezeli pierwszy wierzcholek jest zaznaczony
-            // jako acykliczny, to znaczy, ze zostal dodany do zbioru acyklicznego
-            // juz wczesniej i mozna pod niego podpiac nowo dodawana czesc zbioru ac.
-
-            // std::cout<<"intersection vertex: "<<intersectionVertex<<std::endl;
+            // first we add path that connects part of acyclic subset
+            // already added to spanning tree with boundary vertex.
+            // it gives us certainty that every time we connect another
+            // path to this boundary vertex the path will be also connected
+            // to spanning tree
             if (nodeA->isConnectedToAccSub)
             {
-                // Debug::Print(std::cout, pathToA);
                 nodeA->UpdateAccSubToBorderConnection(intersectionVertex, pathToA);
-                // Debug::Print(std::cout, pathToB);
                 nodeB->UpdateAccSubToBorderConnection(intersectionVertex, pathToB);
             }
             else
             {
-                // Debug::Print(std::cout, pathToB);
                 nodeB->UpdateAccSubToBorderConnection(intersectionVertex, pathToB);
-                // Debug::Print(std::cout, pathToA);
                 nodeA->UpdateAccSubToBorderConnection(intersectionVertex, pathToA);
             }
         }
@@ -394,9 +366,10 @@ public:
 
     AccSpanningTreeT(PartitionGraph *pg)
     {
-        // budujemy graf, w ktorym wierzcholkami beda podzbiory acykliczne
-        // (czyli de facto skladowe spojne poszczegolnych paczek), ktore potem
-        // polaczymy drzewem rozpinajacym
+        // we build a graph in which nodes are disjoint parts of acyclic
+        // subset and edges are paths connecting them
+        // we then use this graph to build spanning tree connecting smaller
+        // paths into one big acyclic subset
         typename std::map<PartitionGraphNode *, std::vector<Node *> > dataNodeChildren;
         int currentID = 1;
         for (typename PartitionGraph::Nodes::iterator i = pg->nodes.begin(); i != pg->nodes.end(); i++)
@@ -418,7 +391,6 @@ public:
         Timer::Update("creating acyclic tree nodes");
 #endif
 
-        // tworzymy krawedzie w grafie
         for (typename Nodes::iterator node = nodes.begin(); node != nodes.end(); node++)
         {
             PartitionGraphNode *parent = (*node)->parent;
@@ -450,15 +422,14 @@ public:
         Timer::Update("creating acyclic tree edges");
 #endif
 
-        // tworzymy hasha, w ktorym dla kazdego ID poddrzewa bedziemy przechowywali
-        // rozmiar podzbioru acyklicznego w nim zawartego (w poddrzewie)
+        // we create hash in which keys are IDs of every part
+        // of acyclic subset and values are sizes of this sets/
         std::map<int, int> spanningTreeAccSubSize;
         for (typename Nodes::iterator node = nodes.begin(); node != nodes.end(); node++)
         {
             spanningTreeAccSubSize[(*node)->subtreeID] = (*node)->accSubSize;
         }
 
-        // i na koncu drzewo rozpinajace
         for (typename Edges::iterator edge = edges.begin(); edge != edges.end(); edge++)
         {
             if ((*edge)->nodeA->subtreeID == (*edge)->nodeB->subtreeID)
@@ -468,8 +439,8 @@ public:
             (*edge)->isInSpanningTree = true;
             int newID = (*edge)->nodeA->subtreeID;
             int oldID = (*edge)->nodeB->subtreeID;
-            // przy laczeniu poddrzew sumujemy rozmiary podzbiorow acyklicznych
-            // w nich zawartych
+            // while connecting two trees into one we also sum the sizes
+            // of acyclic subsets in each tree
             spanningTreeAccSubSize[newID] = spanningTreeAccSubSize[newID] + spanningTreeAccSubSize[oldID];
             for (typename Nodes::iterator node = nodes.begin(); node != nodes.end(); node++)
             {
@@ -484,21 +455,22 @@ public:
         Timer::Update("creating spanning tree");
 #endif
 
-        // jezeli zostalo jakies poddrzewo, ktore nie zawiera podzbioru acyklicznego
-        // to usuwamy wszystkie sympleksy z utworzonego grafu, dodajemy do wspolnej
-        // listy, a nastepnie traktujemy jako jedna spojna skladowa i jeszcze raz
-        // wysylamy do obliczen, ale tym razem nie laczymy juz brzegow, tylko po
-        // prostu "przenosimy" nowo utworzony graf jako osobna spojna skladowa
-        // duzego grafu
+        // if there is a tree with acyclic subset size equal to zero this
+        // mean that there is a connected component in simplicial complex
+        // in which we didn't found any acyclic subset (probably beacuse
+        // of boundary simplices restriction). since acyclic subset can be
+        // found in ANY sonnected component (namely: single vertex), we remove
+        // all simplices contained in this tree and construct acyclic subset
+        // for such component without boundary simplices restriction (since
+        // this is connected component it does not have neighbours in other
+        // packages)
         typename std::map<int, SimplexPtrList> simplexPtrLists;
         typename Nodes::iterator node = nodes.begin();
         while (node != nodes.end())
         {
             if (spanningTreeAccSubSize[(*node)->subtreeID] == 0)
             {
-                // usuwamy spojna skladowa i kopiujemy jej liste sympleksow
                 (*node)->parent->ig->RemoveConnectedComponentAndCopySimplexList((*node)->connectedComponent, simplexPtrLists[(*node)->subtreeID]);
-                // usuwamy krawedzie drzewa rozpinajacego laczace tego node'a
                 typename Edges::iterator edge = edges.begin();
                 while (edge != edges.end())
                 {
@@ -519,10 +491,9 @@ public:
             }
         }
 
-        // dla kazdej listy sympleksow, ktora otrzymalismy w poprzednim kroku
-        // tworzymy osobny data node (nie interesuje nas zupelnie jego brzeg,
-        // poniewaz wiemy, ze jest to oddzielna spojna skladowa i nie sasiaduje
-        // z innymi sympleksami)
+        // for every connected component from previous step we create
+        // new data node that will be used to computin acyclic subset
+        // and incidence graph
         for (typename std::map<int, SimplexPtrList>::iterator i = simplexPtrLists.begin(); i != simplexPtrLists.end(); i++)
         {
             pg->isolatedNodes.push_back(new PartitionGraphNode(i->second));
@@ -532,10 +503,8 @@ public:
         Timer::Update("finding isolated data nodes");
 #endif
 
-        // na drzewie rozpinajacym
-        // szukamny polaczen acyklicznych zbiorow, ale na razie ich nie laczymy
-        // bedziemy robic to po polaczeniu wszystkich sympleksow, zeby dobrze
-        // zaktualizowac podzbior acykliczny
+        // we find connections between acyclic subset but do not add it
+        // to acyclic subset yet
         for (typename Edges::iterator i = edges.begin(); i != edges.end(); i++)
         {
             if ((*i)->isInSpanningTree) (*i)->FindAccConnections();
@@ -564,7 +533,7 @@ public:
     
     void JoinAccSubsets()
     {
-        // aktualizujemy zbior acykliczny o polaczenia pomiedzy podgrafami
+        // paths need to be founded in previous steps
         for (typename Edges::iterator i = edges.begin(); i != edges.end(); i++)
         {
             if ((*i)->isInSpanningTree) (*i)->UpdateAccConnections();
@@ -573,7 +542,6 @@ public:
         Timer::Update("adding paths to acyclic subset");
 #endif
     }
- 
 };
 
 #endif /* ACCSPANNINGTREE_HPP */

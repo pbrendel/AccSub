@@ -1,6 +1,12 @@
 /* 
  * File:   AccSubAlgorithmType.h
  * Author: Piotr Brendel
+ *         piotr.brendel@ii.uj.edu.pl
+ *
+ *         AccSub - constructing and removing acyclic subset
+ *                  for simplicial complexes
+ *         This code is a part of RedHom library
+ *         http://redhom.ii.uj.edu.pl
  */
 
 #ifndef ACCSUBALGORITHMTYPE_H
@@ -29,6 +35,11 @@ public:
     AccSubAlgorithmType(int t)
     {
         type = t;
+    }
+
+    operator int()
+    {
+        return type;
     }
 
     bool operator==(const AccSubAlgorithmType &a)

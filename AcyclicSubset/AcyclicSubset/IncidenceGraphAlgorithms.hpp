@@ -1,6 +1,12 @@
 /*
  * File:   IncidenceGraphAlgorithms.hpp
  * Author: Piotr Brendel
+ *         piotr.brendel@ii.uj.edu.pl
+ *
+ *         AccSub - constructing and removing acyclic subset
+ *                  for simplicial complexes
+ *         This code is a part of RedHom library
+ *         http://redhom.ii.uj.edu.pl
  */
 
 #ifndef INCIDENCEGRAPHALGORITHMS_HPP
@@ -279,7 +285,6 @@ typename IncidenceGraph::Path FindPath(typename IncidenceGraph::Node *firstNode,
         }
     }
 
-    // zerujemy ustawione flagi pomocnicze
     for (typename Nodes::iterator i = tmp.begin(); i != tmp.end(); i++)
     {
         (*i)->IsHelperFlag1(false);
@@ -329,7 +334,6 @@ void RemoveNodesWithPredicate(IncidenceGraph *graph, RemovePredicate<IncidenceGr
     typedef typename IncidenceGraph::Nodes Nodes;
     typedef typename IncidenceGraph::Edges Edges;
 
-    // na koncu wszystkie zaznaczone node'y i krawedzie usuwamy z grafu
     Edges newEdges;
     for (typename Edges::iterator i = graph->edges.begin(); i != graph->edges.end(); i++)
     {

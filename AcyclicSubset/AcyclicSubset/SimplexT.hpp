@@ -1,6 +1,12 @@
 /* 
  * File:   SimplexT.hpp
  * Author: Piotr Brendel
+ *         piotr.brendel@ii.uj.edu.pl
+ *
+ *         AccSub - constructing and removing acyclic subset
+ *                  for simplicial complexes
+ *         This code is a part of RedHom library
+ *         http://redhom.ii.uj.edu.pl
  */
 
 #ifndef SIMPLEXT_HPP
@@ -244,11 +250,11 @@ public:
     template <template <typename S, typename A = std::allocator<S> > class SimplexListT>
     void AddMissingProperFaces(SimplexListT<SimplexT> &faces)
     {
-        // generujemy wszystkie podsympleksy
+        // generating all faces
         SimplexListT<SimplexT> newFaces;
         GenerateProperFaces(newFaces);
 
-        // dodajemy tylko te, ktorych jeszcze nie ma
+        // adding only those tha have not been yet added
         for (typename SimplexListT<SimplexT>::iterator i = newFaces.begin(); i != newFaces.end(); i++)
         {
             if (std::find(faces.begin(), faces.end(), (*i)) == faces.end())

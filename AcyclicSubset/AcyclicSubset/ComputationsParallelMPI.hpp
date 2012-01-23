@@ -1,6 +1,12 @@
 /* 
  * File:   ComputationsParallelMPI.hpp
  * Author: Piotr Brendel
+ *         piotr.brendel@ii.uj.edu.pl
+ *
+ *         AccSub - constructing and removing acyclic subset
+ *                  for simplicial complexes
+ *         This code is a part of RedHom library
+ *         http://redhom.ii.uj.edu.pl
  */
 
 #ifndef COMPUTATIONSPARALLELMPI_HPP
@@ -95,7 +101,7 @@ public:
 
         int size = (tasksCount < (nodesCount + 1)) ? tasksCount : (nodesCount + 1);
 
-        // dopoki starczy nam node'ow wysylamy paczki
+        // as long as we have free nodes we send data to them
         for (int rank = 1; rank < size; rank++)
         {
             std::cout<<"sending node "<<currentNode<<" to process: "<<rank<<std::endl;
@@ -103,14 +109,14 @@ public:
             SendMPISimplexData(nodes[currentNode++], rank);
         }
 
-        // potem czekamy na dane i wysylamy kolejne
+        // then we find for a node to finish
         while (currentNode < nodesCount)
         {
-            // najpierw pobieramy rozmiar danych
+            // getting size of the data
             MPI_Recv(&dataSize, 1, MPI_INT, MPI_ANY_SOURCE, MPI_MY_DATASIZE_TAG, MPI_COMM_WORLD, &status);
             int *buffer = new int[dataSize];
 
-            // teraz dane od node'a od ktorego dostalismy info o rozmiarze danych
+            // getting data
             MPI_Recv(buffer, dataSize, MPI_INT, status.MPI_SOURCE, MPI_MY_DATA_TAG, MPI_COMM_WORLD, &status);
 #ifdef DEBUG_MPI
             std::cout<<"process 0 ";
@@ -122,13 +128,13 @@ public:
             SendMPISimplexData(nodes[currentNode++], status.MPI_SOURCE);
         }
 
-        // na koncu odbieramy to co jeszcze jest liczone
+        // finally we wait for all nodes that sill compute
         for (int rank = 1; rank < size; ++rank)
         {
-            // najpierw pobieramy rozmiar danych
+            // getting size of the data
             MPI_Recv(&dataSize, 1, MPI_INT, MPI_ANY_SOURCE, MPI_MY_DATASIZE_TAG, MPI_COMM_WORLD, &status);
             int *buffer = new int[dataSize];
-            // teraz dane od node'a od ktorego dostalismy info o rozmiarze danych
+            // getting data
             MPI_Recv(buffer, dataSize, MPI_INT, status.MPI_SOURCE, MPI_MY_DATA_TAG, MPI_COMM_WORLD, &status);
 #ifdef DEBUG_MPI
             std::cout<<"process 0 ";
@@ -148,10 +154,10 @@ public:
 
         while (1)
         {
-            // pobieramy pierwszy komunikat
+            // first message
             MPI_Recv(&dataSize, 1, MPI_INT, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
 
-            // jezeli polecenie zakonczenia pracy to konczymy
+            // if it is die command
             if (status.MPI_TAG == MPI_MY_DIE_TAG)
             {
                 return;
@@ -165,10 +171,9 @@ public:
                 continue;
             }
 
-            // wpp. musi to byc MPI_MY_DATASIZE_TAG
             assert(status.MPI_TAG == MPI_MY_DATASIZE_TAG);
 
-            // pobieramy bufor z danymi
+            // getting data to compute
             int *buffer = new int[dataSize];
             MPI_Recv(buffer, dataSize, MPI_INT, 0, MPI_MY_WORK_TAG, MPI_COMM_WORLD, &status);
 #ifdef DEBUG_MPI
@@ -176,7 +181,7 @@ public:
             Timer::TimeStamp("received data");
 #endif
 
-            // z pobranego bufora budujemy dane wejsciowe
+            // formatting buffer into input data
             MPISimplexData<IncidenceGraph> *data = new MPISimplexData<IncidenceGraph>(buffer, dataSize);
             SimplexList simplexList;
             std::set<Vertex> borderVerts;
@@ -189,7 +194,7 @@ public:
 #endif
             AccTest *accTest = AccTest::Create(accTestNumber, Simplex::GetSimplexListDimension(simplexList));
 
-            // tworzymy graf incydencji z policzonym podzbiorem acyklicznym
+            // main computations
             IncidenceGraph *ig = 0;
             if (accSubAlgorithm == AccSubAlgorithm::AccSubIG)
             {
@@ -205,7 +210,7 @@ public:
             delete data;
             delete accTest;
 
-            // zamieniamy na bufor danych
+            // writting results into buffer
             MPIIncidenceGraphData<IncidenceGraph> *igData = new MPIIncidenceGraphData<IncidenceGraph>(ig);
 #ifdef DEBUG_MPI
             std::cout<<"process "<<processRank<<" ";
@@ -217,7 +222,7 @@ public:
             std::cout<<"process "<<processRank<<" ";
             Timer::TimeStamp("sending data");
 #endif
-            // i odsylamy do mastera
+            // sending to master node
             MPI_Send(&dataSize, 1, MPI_INT, 0, MPI_MY_DATASIZE_TAG, MPI_COMM_WORLD);
             MPI_Send(igData->GetBuffer(), dataSize, MPI_INT,0, MPI_MY_DATA_TAG, MPI_COMM_WORLD);
 
@@ -250,9 +255,8 @@ public:
         for (int rank = 1; rank < tasksCount; ++rank)
         {
             MPI_Send(0, 0, MPI_INT, rank, MPI_MY_MEMORY_INFO_TAG, MPI_COMM_WORLD);
-            MPI_Recv(&mem, 1, MPI_INT, rank, MPI_MY_MEMORY_INFO_TAG, MPI_COMM_WORLD, &status);
-            // todo!!!
-            // MemoryInfo::AddSlaveMemoryInfo(rank, mem);
+            MPI_Recv(&mem, 1, MPI_INT, rank, MPI_MY_MEMORY_INFO_TAG, MPI_COMM_WORLD, &status);          
+            MemoryInfo::AddSlaveMemoryInfo(rank, mem);
         }
         std::cout<<"slaves killed"<<std::endl;
 #endif

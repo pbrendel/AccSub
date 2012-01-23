@@ -1,6 +1,12 @@
 /*
  * File:   AccTest.hpp
  * Author: Piotr Brendel
+ *         piotr.brendel@ii.uj.edu.pl
+ *
+ *         AccSub - constructing and removing acyclic subset
+ *                  for simplicial complexes
+ *         This code is a part of RedHom library
+ *         http://redhom.ii.uj.edu.pl
  */
 
 #ifndef ACCTEST_HPP
@@ -137,12 +143,12 @@ public:
 
     bool IsAcyclic(Simplex &simplex, SimplexList &intersectionMF)
     {
-        // jezeli w przecieciu jest tylko jedna sciana -> jest acykliczne
+        // if there is only one face in the intersection -> it is acyclic
         if (intersectionMF.size() == 1)
         {
             return true;
         }
-        // zakladamy, ze wejsciowe simpleksy sa w wersji "indeksowej"
+        // we assume that simplices are normalized
         int index = 0;
         for (typename SimplexList::iterator i = intersectionMF.begin(); i != intersectionMF.end(); i++)
         {
@@ -166,7 +172,7 @@ private:
 
     bool GetValue(int index)
     {
-        // 8 bo pakowane na bajtach
+        // packed on 8 bytes
         int i = index / 8;
         if (i < 0 || i >= dataSize)
         {
@@ -235,9 +241,9 @@ public:
         int d= simplex.size();
         if (d > maxSimplexSize) return false;
         IntersectionFlags flags = codim1flags[d];
-        // w przecieciu sa wszystkie podsympleksy z codim == 1
+        // intersection contains all faces with CoDim == 1
         if ((intersectionFlagsMF & flags) == flags) return false;
-        // w przecieciu jest cos poza podsympleksami z codim == 1
+        // intersection contains faces with CoDim != 1
         if ((intersectionFlagsMF & (~flags)) != 0) return false;
         return true;
     }
@@ -317,7 +323,7 @@ public:
             int count = 0;
             for (typename SimplexList::iterator face = intersectionMF.begin(); face != intersectionMF.end(); face++)
             {
-                // omijamy wierzcholki
+                // skipping vertices (0-dimensional simplices)
                 if (face->size() > 1 && std::find(face->begin(), face->end(), *vertex) != face->end())
                 {
                     count++;
@@ -334,8 +340,8 @@ public:
     bool IsAcyclic(Simplex &simplex, IntersectionFlags intersectionFlags, IntersectionFlags intersectionFlagsMF)
     {
         TRIVIAL_TEST_F(simplex, intersectionFlags, intersectionFlagsMF);
-        // sprawdzamy liczbe wierzcholkow, ktore sa maksymalnymi podscianami
-        // jezeli wiecej niz 1 -> przeciecie nie jest acykliczne
+        // if we have more than one vertex that is maximal face
+        // the intersection is not acyclic
         IntersectionFlags flag = 1;
         int vertsCount = 0;
         for (int i = 0; i < firstMaximalFacePower; i++)
@@ -350,8 +356,7 @@ public:
             }
             flag = flag << 1;
         }
-        // teraz obliczamy flagi przeciec dla wszystkich maksymalnych
-        // scian o wymiarze wiekszym niz 1
+        // computing flags for faces of dimension greater than 0
         std::vector<IntersectionFlags> maximalFacesFlags;
         for (int i = firstMaximalFacePower; i < lastMaximalFacePower; i++)
         {
@@ -361,19 +366,22 @@ public:
             }
             flag = flag << 1;
         }
-        // jezeli nie ma scian o wymiarze wiekszym niz 1 -> przeciecie acykliczne
+        // if there are no faces of dimension greater than 0
+        // then the intersection is acyclic
         if (maximalFacesFlags.size() == 0)
         {
             return true;
         }
-        // jezeli sa takie sciany, a jest co najmniej jeden wolnu wierzcholek
-        // to przeciecie nie jest acykliczne
+        // if there are faces of dimension greater than 0 and there is
+        // at least one vertex being maximal face then the intersection
+        // is not acyclic
         else if (vertsCount > 0)
         {
             return false;
         }
-        // teraz dla kazdego wierzcholka sprawdzamy do ilu scian nalezy
-        // jezeli nalezy do wszystkich z przeciecia -> przeciecie jest acykliczne
+        // finally we try to find a vertex that is contained in all
+        // maximal faces. if we find such then we have a start topology
+        // and the intersection is acyclic.
         flag = 1;
         for (int i = 0; i < firstMaximalFacePower; i++)
         {
@@ -581,7 +589,7 @@ private:
                 continue;
             }
             IntersectionFlags intersection = (*f)->subconfFlags & face->subconfFlags;
-            // jezeli flagi juz sa ustawione to nic nie robimy
+            // if flags have been already set we do nothing
             if (((*f)->accIntersectionFlags & intersection) == intersection)
             {
                 continue;
@@ -659,7 +667,7 @@ template <typename Traits>
 AccTestT<Traits> *AccTestT<Traits>::Create(int accTestNumber, int dim)
 {
     if (dim < 2) dim = 2;
-    if (accTestNumber == 0) // jezeli tablice, to gorne ograniczenie na wymiar == 4
+    if (accTestNumber == 0) // if we have chosen tabs then maximal dim is 4
     {
         if (dim > 4) dim = 4;
     }

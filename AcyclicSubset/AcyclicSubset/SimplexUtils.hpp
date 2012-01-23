@@ -1,6 +1,12 @@
 /* 
  * File:   SimplexUtils.hpp
  * Author: Piotr Brendel
+ *         piotr.brendel@ii.uj.edu.pl
+ *
+ *         AccSub - constructing and removing acyclic subset
+ *                  for simplicial complexes
+ *         This code is a part of RedHom library
+ *         http://redhom.ii.uj.edu.pl
  */
 
 #ifndef SIMPLEXUTILS_HPP
@@ -56,12 +62,10 @@ public:
         srand(time(0));
         while (simplicesCount--)
         {
-            //generujeny nowy sympleks:
             Simplex s;
             while (s.size() != dim + 1)
             {
                 int r = rand() % vertsCount + 1;
-                // zabezpieczenie przed powtarzajacymi sie wierzcholkami
                 if (std::find(s.begin(), s.end(), r) == s.end())
                 {
                     s.push_back(r);
@@ -88,7 +92,6 @@ private:
             }
             else
             {
-                // nie znaleziono indeksu w pomijanych indeksach wiec dodajemy
                 if (excludedIndices.find(index) == excludedIndices.end())
                 {
                     simplexList.push_back(simplex);
@@ -121,96 +124,9 @@ public:
 
         int index = 0;
         Simplex simplex;
-        for (int i = 0; i < dim; i++) simplex.push_back(0); // dodajemy dim elementow
+        for (int i = 0; i < dim; i++) simplex.push_back(0);
         GenerateReverseSimplexList(simplexList, simplex, 1, vertsCount, 0, dim, index, excludedIndices);
         return totalSimplices;
-    }
-
-    static void GenerateAccTree(SimplexList &simplexList, int simplicesCount, int nodesCount)
-    {
-        int n = (int)ceil(sqrt(simplicesCount / nodesCount * 0.5f));
-
-        int nodeBase = 1;
-        int nodeBaseOffset = (n + 1) * (n + 1) + nodesCount * 2 + 2;
-        int nc = nodesCount;
-        Simplex s = Simplex::WithSize(3);
-
-        // najpierw generujemy wszystkie "node'y"
-        while (nc > 0)
-        {
-
-            int vertex = nodeBase;
-            nodeBase += nodeBaseOffset;
-            bool up = true;
-            int count = simplicesCount / nodesCount;
-            while (count > 0)
-            {
-                if (up)
-                {
-                    s[0] = vertex;
-                    s[1] = vertex + 1;
-                    s[2] = vertex + n + 2;
-                    up = false;
-                }
-                else
-                {
-                    s[0] = vertex;
-                    s[1] = vertex + n + 1;
-                    s[2] = vertex + n + 2;
-                    up = true;
-                    vertex++;
-                    if ((vertex % (n + 1)) == 0)
-                    {
-                        vertex++;
-                    }
-                }
-                simplexList.push_back(s);
-                count--;
-            }
-
-            nc--;
-        }
-
-        // potem losowo laczymy je tak, zeby powstaly "nieacykliczne" polaczenia
-        for (int i = 0; i < 1; i++)
-        {
-            for (int j = i + 1; j < nodesCount; j++)
-            {
-                int fromMin = 1 + nodeBaseOffset * i;
-                int fromMax = fromMin + n * n - 2;
-    //            int fromMax = fromMin + n - 2;
-                int from = fromMin + (rand() % (fromMax - fromMin + 1));
-                int toMin = 1 + nodeBaseOffset * j;
-    //            int toMax = toMin + n * n - 1;
-                int toMax = toMin + n - 1;
-                int to = toMin + (rand() % (toMax - toMin + 1));
-
-    //            int n1 = fromMin + (n + 1) * (n + 1) + newVert;
-    //            int n2 = n1 + 1;
-    //            newVert += 2;
-    //            s[0] = from;
-    //            s[1] = from + 1;
-    //            s[2] = n1;
-    //            simplexList.push_back(s);
-    //            s[0] = from + 1;
-    //            s[1] = from + 2;
-    //            s[2] = n2;
-    //            simplexList.push_back(s);
-    //            s[0] = n1;
-    //            s[1] = n2;
-    //            s[2] = to;
-    //            simplexList.push_back(s);
-
-                s[0] = from;
-                s[1] = from + 1;
-                s[2] = to;
-                simplexList.push_back(s);
-                s[0] = from + 1;
-                s[1] = from + 2;
-                s[2] = to + 1;
-                simplexList.push_back(s);
-            }
-        }
     }
 
     static bool FindDuplicates(SimplexList &simplexList)

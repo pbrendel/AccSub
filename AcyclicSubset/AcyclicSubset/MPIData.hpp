@@ -1,6 +1,12 @@
 /*
  * File:   MPIData.hpp
  * Author: Piotr Brendel
+ *         piotr.brendel@ii.uj.edu.pl
+ *
+ *         AccSub - constructing and removing acyclic subset
+ *                  for simplicial complexes
+ *         This code is a part of RedHom library
+ *         http://redhom.ii.uj.edu.pl
  */
 
 #ifndef MPIDATA_HPP
@@ -35,12 +41,12 @@ class MPISimplexData
         {
             size = simplexSize * simplexPtrList.size();
         }
-        // dodatkowe inty to:
-        // - wartosc simplexSize
-        // - rozmiar simplexList
-        // - rozmiar borderVerts
-        // - rodzaj testu acyklicznosci
-        // - rodzaj algorytmu
+        // additional ints are:
+        // - simplexSize
+        // - simplexList size
+        // - borderVerts size
+        // - accSubAlgorithm
+        // - accTest id
         return size + borderVertsCount + 5;
     }
 
@@ -59,17 +65,13 @@ public:
 
         int index = 0;
 
-        // ilosc punktow sympleksu
-        // jezeli == 0 to dla kazdego sympleksu zapisujemy odpowiednia wartosc
-        // jezeli != 0 to wszystkie sympleksy maja taka sama ilosc punktow
+        // number of vertices in each simplex
+        // if == 0 then we write this value for each simplex
+        // if != 0 then all simplices share the same value
         buffer[index++] = simplexSize;
-        // ilosc sympleksow
         buffer[index++] = simplexPtrList.size();
-        // typ algorytmu obliczania podzbioru acyklicznego
         buffer[index++] = accSubAlgorithm;
-        // numer testu acyklicznosci
         buffer[index++] = accTestNumber;
-        // dane sympleksow
         if (simplexSize == 0)
         {
             for (typename SimplexPtrList::const_iterator i = simplexPtrList.begin(); i != simplexPtrList.end(); i++)
@@ -165,18 +167,16 @@ class MPIIncidenceGraphData
         int size = 0;
         for (typename IncidenceGraph::Nodes::const_iterator node = ig->nodes.begin(); node != ig->nodes.end(); node++)
         {
-            // nie zapisujemy sympleksow ze zbioru acyklicznego
             if ((*node)->IsInAccSub())
             {
                 continue;
             }
-            // jezeli jest na brzegu to bedziemy zapisywali jego indeks
             if ((*node)->IsOnBorder())
             {
                 size++;
             }
             size += (*node)->GetAccInfo().BufferSize();
-            // 2 inty to:
+            // additional 2 ints are:
             // - index
             // - newIndex
             size += 2;
@@ -191,19 +191,18 @@ class MPIIncidenceGraphData
         int connectedComponentsCount = ig->connectedComponents.size();
         for (typename std::vector<VertsSet>::const_iterator i = ig->connectedComponentsBorders.begin(); i != ig->connectedComponentsBorders.end(); i++)
         {
-            // ilosc wierzcholkow + same wierzcholki
+            // number of vertices + vertices
             size += (i->size() + 1);
         }
-        // dodatkowe inty to:
-        // - wymiar
-        // - ilosc wierzcholkow grafu
-        // - ilosc krawedzi grafu
-        // - ilosc sympleksow na brzegu
-        // - ilosc sympleksow w zbiorze acyklicznym
-        // - ilosc skladowych spojnych
-        // connectedComponentsCount mnozymy razy 2 bo bedziemy zapisywali
-        // dla kazdej skladowej indeks jej reprezentanta i rozmiar podzbioru
-        // acyklicznego
+        // additional ints are:
+        // - dim
+        // - graph nodes count
+        // - graph edges count
+        // - number of boundary simplices
+        // - size of acylic subset
+        // - number of connected components
+        // connected components are multiplied by two because for each
+        // connected component we write its id and size of acyclic subset
         return size + connectedComponentsCount * 2 + 6;
     }
 
@@ -221,9 +220,7 @@ public:
         std::vector<int> simplicesOnBorder;
         buffer = new int[size];
         int index = 0;
-        // wymiar
         buffer[index++] = ig->dim;
-        // ilosc wierzcholkow grafu
         int nodesCount = 0;
         for (typename IncidenceGraph::Nodes::const_iterator node = ig->nodes.begin(); node != ig->nodes.end(); node++)
         {
@@ -233,10 +230,8 @@ public:
             }
         }
         buffer[index++] = nodesCount;
-        // wierzcholki grafu
         for (typename IncidenceGraph::Nodes::const_iterator node = ig->nodes.begin(); node != ig->nodes.end(); node++)
         {
-             // nie zapisujemy sympleksow ze zbioru acyklicznego
             if ((*node)->IsInAccSub())
             {
                 continue;
@@ -249,7 +244,6 @@ public:
             buffer[index++] = (*node)->index;
             (*node)->GetAccInfo().WriteToBuffer(buffer, index);
         }
-        // ilosc krawedzi grafu
         int edgesCount = 0;
         for (typename IncidenceGraph::Edges::const_iterator edge = ig->edges.begin(); edge != ig->edges.end(); edge++)
         {
@@ -259,11 +253,8 @@ public:
             }
         }
         buffer[index++] = edgesCount;
-        // krawedzie grafu
         for (typename IncidenceGraph::Edges::const_iterator edge = ig->edges.begin(); edge != ig->edges.end(); edge++)
         {
-            // nie zapisujemy krawedzi pomiedzy wierzcholkami
-            // ktore znajduja sie w zbiorze acyklicznym
             if ((*edge)->nodeA->IsInAccSub() || (*edge)->nodeB->IsInAccSub())
             {
                 continue;
@@ -271,19 +262,16 @@ public:
             buffer[index++] = (*edge)->nodeA->index;
             buffer[index++] = (*edge)->nodeB->index;
         }
-        // sympleksy brzegowe
         buffer[index++] = simplicesOnBorder.size();
         for (std::vector<int>::iterator i = simplicesOnBorder.begin(); i != simplicesOnBorder.end(); i++)
         {
             buffer[index++] = (*i);
         }
-        // spojne skladowe
         buffer[index++] = ig->connectedComponents.size();
         for (typename IncidenceGraph::ConnectedComponents::const_iterator i = ig->connectedComponents.begin(); i != ig->connectedComponents.end(); i++)
         {
             buffer[index++] = (*i)->index;
         }
-        // wierzcholki brzegowe dla spojnych skladowych
         for (typename std::vector<VertsSet>::const_iterator i = ig->connectedComponentsBorders.begin(); i != ig->connectedComponentsBorders.end(); i++)
         {
             buffer[index++] = i->size();
@@ -292,7 +280,6 @@ public:
                 buffer[index++] = (*v);
             }
         }
-        // rozmiary podzbiorow acyklicznych w spojnych skladowych
         for (std::vector<int>::const_iterator i = ig->connectedComponentsAccSubSize.begin(); i != ig->connectedComponentsAccSubSize.end(); i++)
         {
             buffer[index++] = (*i);
@@ -314,7 +301,6 @@ public:
         int dim = buffer[index++];
         IncidenceGraph *ig = new IncidenceGraph(dim);
 
-        // tworzymy node'y
         int nodesCount = buffer[index++];
         for (int i = 0; i < nodesCount; i++)
         {
@@ -324,7 +310,6 @@ public:
             node->GetAccInfo().ReadFromBuffer(buffer, index);
             ig->nodes.push_back(node);
         }
-        // tworzymy krawedzie
         int edgesCount = buffer[index++];
         for (int i = 0; i < edgesCount; i++)
         {
@@ -335,20 +320,16 @@ public:
             nodeA->AddEdge(edge);
             nodeB->AddEdge(edge);
         }
-        // zaznaczamy sympleksy brzegu
         int simplicesOnBorderCount = buffer[index++];
         for (int i = 0; i < simplicesOnBorderCount; i++)
         {
             ig->nodes.at(buffer[index++])->IsOnBorder(true);
         }
-        // dane poszczegolnych skladowych spojnych
         int connectedComponentsCount = buffer[index++];
-        // reprezentanci
         for (int i = 0; i < connectedComponentsCount; i++)
         {
             ig->connectedComponents.push_back(ig->nodes.at(buffer[index++]));
         }
-        // wierzcholki w brzegu
         for (int i = 0; i < connectedComponentsCount; i++)
         {
             int size = buffer[index++];
@@ -359,7 +340,6 @@ public:
             }
             ig->connectedComponentsBorders.push_back(vs);
         }
-        // rozmiar podzbioru acyklicznego
         for (int i = 0; i < connectedComponentsCount; i++)
         {
             ig->connectedComponentsAccSubSize.push_back(buffer[index++]);

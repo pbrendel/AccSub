@@ -1,13 +1,17 @@
 /*
  * File:   PartitionGraph.hpp
  * Author: Piotr Brendel
+ *         piotr.brendel@ii.uj.edu.pl
+ *
+ *         This code is a part of RedHom library
+ *         http://redhom.ii.uj.edu.pl
  */
 
 #ifndef PARTITIONGRAPH_HPP
 #define PARTITIONGRAPH_HPP
 
 #include "AccSpanningTree.hpp"
-#include <cmath> // ceil()
+#include <cmath> // ceil
 
 #ifdef ACCSUB_TRACE
 #include "../Helpers/Utils.hpp"
@@ -71,7 +75,6 @@ public:
         {
             if (H.size() > 0)
             {
-                // juz zbudowany
                 return;
             }
             for (typename IncidenceGraph::Nodes::iterator node = ig->nodes.begin(); node != ig->nodes.end(); node++)
@@ -224,7 +227,6 @@ private:
 
     void CombineGraphs()
     {
-        // laczymy sympleksy
         for (typename Edges::iterator edge = edges.begin(); edge != edges.end(); edge++)
         {
             typename IncidenceGraph::Nodes nodesA = (*edge)->nodeA->ig->nodes;
@@ -258,7 +260,7 @@ private:
         Timer::Update("connecting simplices on border");
 #endif
 
-        // przenosimy wszystkie sympleksy do jednego grafu
+        // moving all nodes and edges to a single incidence graph
         for (typename Nodes::iterator i = nodes.begin(); i != nodes.end(); i++)
         {
             incidenceGraph->nodes.insert(incidenceGraph->nodes.end(), (*i)->ig->nodes.begin(), (*i)->ig->nodes.end());
@@ -266,8 +268,7 @@ private:
             incidenceGraph->edges.insert(incidenceGraph->edges.end(), (*i)->ig->edges.begin(), (*i)->ig->edges.end());
             (*i)->ig->edges.clear();
         }
-
-        // to samo ze spojnymi skladowymi z drugiej fazy obliczen
+        
         for (typename Nodes::iterator i = isolatedNodes.begin(); i != isolatedNodes.end(); i++)
         {
             incidenceGraph->nodes.insert(incidenceGraph->nodes.end(), (*i)->ig->nodes.begin(), (*i)->ig->nodes.end());
@@ -276,7 +277,6 @@ private:
             (*i)->ig->edges.clear();
         }
 
-        // przypisywanie nowego grafu do nodow
         for (typename IncidenceGraph::Nodes::iterator i = incidenceGraph->nodes.begin(); i != incidenceGraph->nodes.end(); i++)
         {
             (*i)->SetParentGraph(incidenceGraph);

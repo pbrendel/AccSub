@@ -1,6 +1,12 @@
 /*
  * File:   IncidenceGraph.hpp
  * Author: Piotr Brendel
+ *         piotr.brendel@ii.uj.edu.pl
+ *
+ *         AccSub - constructing and removing acyclic subset
+ *                  for simplicial complexes
+ *         This code is a part of RedHom library
+ *         http://redhom.ii.uj.edu.pl
  */
 
 #ifndef INCIDENCEGRAPH_HPP
@@ -10,6 +16,7 @@
 #include "ConfigurationsFlags.hpp"
 #include "AccTest.hpp"
 
+#include <cstring> // memset
 #include <list>
 #include <queue>
 #include <set>
@@ -91,9 +98,6 @@ public:
 
         void AddEdge(Edge *edge)
         {
-            // mozemy w ramach debugowania sprawdzic, czy krawedz nie zostala juz dodana
-            // w rzeczywistosci taka sytuacja nie moze miec miejsca (sprawdzamy to
-            // przed wywolaniem AddNeighbour)
             edges.push_back(edge);
         }
 
@@ -213,7 +217,6 @@ public:
 
     IncidenceGraphT(SimplexList &simplexList)
     {
-        // najpierw tworzymy wszystkie node'y
         int index = 0;
         for (typename SimplexList::iterator i = simplexList.begin(); i != simplexList.end(); i++)
         {
@@ -226,7 +229,6 @@ public:
 
     IncidenceGraphT(SimplexPtrList &simplexPtrList)
     {
-        // najpierw tworzymy wszystkie node'y
         int index = 0;
         for (typename SimplexPtrList::iterator i = simplexPtrList.begin(); i != simplexPtrList.end(); i++)
         {
@@ -258,15 +260,11 @@ public:
 
         for (typename Nodes::iterator i = nodes.begin(); i != nodes.end(); i++)
         {
-            // w tym miejscu zaczynamy budowanie nowej spojnek skladowej
-            // zatem jesli wierzcholek byl odwiedzony, znaczy, ze nalezy
-            // do zbudowanej juz (innej) spojnej skladowej
             if ((*i)->IsAddedToGraph())
             {
                 continue;
             }
-            // spojne skladowe identyfikujemy przez wskaznik do pierwszego
-            // wierzcholka (tyle nam wystarczy)
+            // starting new connected component
             connectedComponents.push_back(*i);
             Q.push(*i);
             while (!Q.empty())
@@ -275,14 +273,11 @@ public:
                 Q.pop();
                 currentNode->IsAddedToQueue(false);
                 currentNode->IsAddedToGraph(true);
-                // sprawdzamy wszytkie punkty nalezace do sympleksu w tym wierzcholku
                 for (typename Simplex::iterator vertex = currentNode->simplex->begin(); vertex != currentNode->simplex->end(); vertex++)
                 {
-                    // dla kazdego punktu pobieramy liste wierzcholkow do ktorej nalezy
                     Nodes nodes = H[*vertex];
                     for (typename Nodes::iterator neighbour = nodes.begin(); neighbour != nodes.end(); neighbour++)
                     {
-                        // jezeli to wierzcholek w ktorym aktualnie jestesmy -> dalej
                         if ((*neighbour) == currentNode)
                         {
                             continue;
@@ -329,17 +324,11 @@ public:
         std::queue<Node *> Q;
         for (typename Nodes::iterator i = nodes.begin(); i != nodes.end(); i++)
         {
-            // w tym miejscu zaczynamy budowanie nowej spojnek skladowej
-            // zatem jesli wierzcholek byl odwiedzony, znaczy, ze nalezy
-            // do zbudowanej juz (innej) spojnej skladowej
             if ((*i)->IsAddedToGraph())
             {
                 continue;
             }
-            // tutaj bedziemy wrzucac wierzcholki w brzegu dla tej spojnej skladowej
             VertsSet connectedComponentBorderVerts;
-            // spojne skladowe identyfikujemy przez wskaznik do pierwszego
-            // wierzcholka (tyle nam wystarczy)
             connectedComponents.push_back(*i);
             Q.push(*i);
             while (!Q.empty())
@@ -351,14 +340,11 @@ public:
                 {
                     connectedComponentBorderVerts.insert(currentNode->simplex->begin(), currentNode->simplex->end());
                 }
-                // sprawdzamy wszytkie punkty nalezace do sympleksu w tym wierzcholku
                 for (typename Simplex::iterator vertex = currentNode->simplex->begin(); vertex != currentNode->simplex->end(); vertex++)
                 {
-                    // dla kazdego punktu pobieramy liste wierzcholkow do ktorej nalezy
                     Nodes nodes = H[*vertex];
                     for (typename Nodes::iterator neighbour = nodes.begin(); neighbour != nodes.end(); neighbour++)
                     {
-                        // jezeli to wierzcholek w ktorym aktualnie jestesmy -> dalej
                         if ((*neighbour) == currentNode)
                         {
                             continue;
@@ -392,7 +378,8 @@ public:
         std::queue<Node *> Q;
         for (typename std::vector<ConnectedComponent>::iterator i = connectedComponents.begin(); i != connectedComponents.end(); i++)
         {
-            // pierwszy wierzcholek w skladowej zaznaczamy jako acykliczny
+            // first node in connected component is also first simplex
+            // in constructed acyclic subset
             (*i)->IsInAccSub(true);
             (*i)->GetAccInfo().UpdateNeighboursAccIntersection();
             Q.push(*i);
@@ -425,12 +412,13 @@ public:
         for (typename std::vector<ConnectedComponent>::iterator i = connectedComponents.begin(); i != connectedComponents.end(); i++)
         {
             Node *first = FindNode(*i, FindNodeNotOnBorder<IncidenceGraphT>());
-            // wszystkie sympleksy w tej spojnej sa w brzegu
+            // if (first == null) it means all simplices are boundary simplices
             if (first == 0)
             {
                 continue;
             }
-            // pierwszy wierzcholek w skladowej zaznaczamy jako acykliczny
+            // first simplex that is not boundary simplex is also first simplex
+            // in constructed acyclic subset
             first->IsInAccSub(true);
             first->GetAccInfo().UpdateNeighboursAccIntersection();
             Q.push(first);
@@ -471,7 +459,6 @@ public:
             while (first != 0)
             {
                 accSubID++;
-                // pierwszy wierzcholek w skladowej zaznaczamy jako acykliczny
                 firstNodes.push_back(first);
                 first->IsInAccSub(true);
                 first->GetAccInfo().SetAccSubID(accSubID);
@@ -513,7 +500,6 @@ public:
 
             connectedComponentsAccSubSize.push_back(size);
 
-            // jezeli wiecej niz jeden podzbior acykliczny, to tworzymy graf
             if (firstNodes.size() > 1)
             {
                 CreateAccSpanningTree(paths, ++accSubID);
@@ -534,7 +520,6 @@ public:
             while (first != 0)
             {
                 accSubID++;
-                // pierwszy wierzcholek w skladowej zaznaczamy jako acykliczny
                 firstNodes.push_back(first);
                 first->IsInAccSub(true);
                 first->GetAccInfo().SetAccSubID(accSubID);
@@ -576,7 +561,6 @@ public:
 
             connectedComponentsAccSubSize.push_back(size);
 
-            // jezeli wiecej niz jeden podzbior acykliczny, to tworzymy graf
             if (firstNodes.size() > 1)
             {
                 CreateAccSpanningTree(paths, ++accSubID);
@@ -591,8 +575,7 @@ private:
         char *addedToAccTree = new char[maxAccSubID];
         memset(addedToAccTree, 0, sizeof(char) * maxAccSubID);
 
-        // dodajemy pierwszy wierzcholek pierwszej sciezki do drzewa
-        // acyklicznego (tak naprawde jest to jakis losowy wierzcholek)
+        // we start building spanning tree by adding first node on the list
         assert(paths.size() > 0);
         addedToAccTree[paths[0].front()->GetAccInfo().GetAccSubID()] = true;
 
@@ -609,17 +592,15 @@ private:
                 }
             }
             assert(!addedToAccTree[path.front()->GetAccInfo().GetAccSubID()] || !addedToAccTree[path.back()->GetAccInfo().GetAccSubID()]);
-            // ze wzgledu na to jak budujemy podzbiory acykliczne zazwyczaj wierzcholki
-            // juz dodane do drzewa rozpinajacego beda na poczatku sciezek
-            // jezeli natomiast zdarzy sie, ze sa na koncu, to musimy odwrocic liste
+            // we do this to ensure that last node on path is not yet added
+            // to acyclic spanning tree (by the way we construct paths we
+            // are sure that in that case first node is added to tree)
             if (addedToAccTree[path.back()->GetAccInfo().GetAccSubID()])
             {
                 path.reverse();
             }
             addedToAccTree[path.back()->GetAccInfo().GetAccSubID()] = 1;
 
-            // idziemy od konca listy i dodajemy dowolny wierzcholek z przeciecia
-            // dwoch sasiednich sympleksow
             typename Path::reverse_iterator current = path.rbegin();
             typename Path::reverse_iterator next = current;
             next++;
@@ -629,24 +610,17 @@ private:
             while (next != path.rend())
             {
                 Node *n = *next;
-
-                // sprawdzamy przeciecie z nastepnym sympleksem
                 Vertex vertex = Simplex::GetVertexFromIntersection((*current)->simplex, n->simplex);
 
-                // jezeli wierzcholek jest w zbiorze acyklicznym -> konczymy
-                // przy sprawdzaniu warunku korzystamy z faktu, ze flaga podsciany
-                // bedacej pojedynczym wierzcholkiem jest rowna 1 << i gdzie
-                // i to indeks wierzcholka
+                // if we found a vertex that is already added to acyclic subset
+                // we finish adding path
                 if (n->GetAccInfo().IsVertexInAccIntersection(vertex))
                 {
-                    // aktualizujemy w aktualnym nodzie flagi acyklicznego przeciecia
                     (*current)->GetAccInfo().UpdateAccIntersectionWithEdge(vertex, lastVertex);
                     break;
                 }
-                // wpp oznacza, ze mozemy isc dalej
                 else
                 {
-                    // aktualizujemy w aktualnym nodzie flagi acyklicznego przeciecia
                     (*current)->GetAccInfo().UpdateAccIntersectionWithEdge(vertex, lastVertex);
                     lastVertex = vertex;
                 }
@@ -692,7 +666,7 @@ public:
                 {
                     if (currentNode->IsAddedToGraph())
                     {
-                        // nie robimy nic, po prostu usuwamy z listy
+                        // we do nothing here, just remove simplex from queue
                     }
                     else
                     {
@@ -777,7 +751,7 @@ public:
                 {
                     if (currentNode->IsAddedToGraph())
                     {
-                        // nie robimy nic, po prostu usuwamy z listy
+                        // we do nothing here, just remove simplex from queue
                     }
                     else
                     {
@@ -788,7 +762,6 @@ public:
             }
             if (connectedComponent != 0)
             {
-            //    assert(accSubSize > 0);
                 connectedComponents.push_back(connectedComponent);
                 VertsSet tempSet;
                 GetIntersectionOfUnsortedSetAndSortedVector(tempSet, connectedComponentBorderVerts, vectorBorderVerts);
@@ -808,14 +781,11 @@ private:
     void EnqNeighboursAndUpdateAccIntersection(Node *node, VertexHash &H, std::queue<Node *> &Q)
     {
         Simplex intersection;
-        // sprawdzamy wszytkie punkty nalezace do sympleksu w tym wierzcholku
         for (typename Simplex::iterator vertex = node->simplex->begin(); vertex != node->simplex->end(); vertex++)
         {
-            // dla kazdego punktu pobieramy liste wierzcholkow do ktorej nalezy
             Nodes nodes = H[*vertex];
             for (typename Nodes::iterator neighbour = nodes.begin(); neighbour != nodes.end(); neighbour++)
             {
-                // jezeli to wierzcholek w ktorym aktualnie jestesmy -> dalej
                 if ((*neighbour)->IsInAccSub() || (*neighbour) == node)
                 {
                     continue;
@@ -835,14 +805,11 @@ private:
     void AddToGraphAndEnqNeighbours(Node *node, VertexHash &H, std::queue<Node *> &Q)
     {
         node->IsAddedToGraph(true);
-        // sprawdzamy wszytkie punkty nalezace do sympleksu w tym wierzcholku
         for (typename Simplex::iterator vertex = node->simplex->begin(); vertex != node->simplex->end(); vertex++)
         {
-            // dla kazdego punktu pobieramy liste wierzcholkow do ktorej nalezy
             Nodes nodes = H[*vertex];
             for (typename Nodes::iterator neighbour = nodes.begin(); neighbour != nodes.end(); neighbour++)
             {
-                // jezeli to wierzcholek w ktorym aktualnie jestesmy -> dalej
                 if ((*neighbour)->IsInAccSub() || (*neighbour) == node)
                 {
                     continue;
@@ -903,8 +870,9 @@ public:
             if ((*cc)->IsInAccSub())
             {
                 Node *node = FindNode(*cc, FindNodeNotInAccSub<IncidenceGraphT>());
-                // jezeli nie ma zadnego sympleksu nieacyklicznego, to usuwamy
-                // informacje o spojnej skladowej
+                // if we cannot find a simplex that has no intersection with
+                // acyclic subset it means that the whole connected component
+                // is acyclic and we can remove it from the graph
                 if (node == 0)
                 {
                     cc = connectedComponents.erase(cc);
@@ -972,8 +940,6 @@ public:
 
     void RemoveConnectedComponentAndCopySimplexList(ConnectedComponent cc, SimplexPtrList &simplexPtrList)
     {
-        // przelatujemy cala spojna skladowa i zaznaczamy elementy do niej nalezace
-        // dodatkowo dodajemy do listy sympleksy z tej spojnej skladowej
         std::queue<Node *> Q;
         Q.push(cc);
         cc->IsHelperFlag2(true);

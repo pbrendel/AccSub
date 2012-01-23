@@ -1,6 +1,12 @@
 /*
  * File:   OutputGraph.hpp
  * Author: Piotr Brendel
+ *         piotr.brendel@ii.uj.edu.pl
+ *
+ *         AccSub - constructing and removing acyclic subset
+ *                  for simplicial complexes
+ *         This code is a part of RedHom library
+ *         http://redhom.ii.uj.edu.pl
  */
 
 #ifndef OUTPUTGRAPH_HPP
@@ -90,8 +96,6 @@ public:
         std::queue<typename IncidenceGraph::Node *> Q;
         for (typename IncidenceGraph::Nodes::iterator i = ig->nodes.begin(); i != ig->nodes.end(); i++)
         {
-            // omijamy sympleksy nalezace do zbioru acyklicznego
-            // albo te juz dodane do grafu
             if ((*i)->IsInAccSub() || (*i)->IsAddedToOutput())
             {
                 continue;
@@ -100,27 +104,22 @@ public:
             (*i)->IsAddedToQueue(true);
             while (!Q.empty())
             {
-                // bierzemy pierwszy na liscie wierzcholek
                 typename IncidenceGraph::Node *currentNode = Q.front();
                 Q.pop();
-                // flagi wygenerowanych podsympleksow
+                // flags of already generated simplices
                 IntersectionFlags subnodesFlags = 0;
-                // wygenerowane podsympleksy
+                // generated faces
                 Nodes subnodes;
                 for (typename IncidenceGraph::Edges::iterator edge = currentNode->edges.begin(); edge != currentNode->edges.end(); edge++)
                 {
                     typename IncidenceGraph::Node *neighbour = (*edge)->GetNeighbour(currentNode);
-                    // jezeli jest acykliczny to znaczy, ze przeciecie napewno bylo
-                    // wyliczone wczesniej, wiec aktualizujemy flagi przeciecia acyklicznego
                     if (!neighbour->IsInAccSub())
                     {
-                        // jezeli byl juz dodany do wyjscia
                         if (neighbour->IsAddedToOutput())
                         {
-                            // jezeli przeciecie nie jest w zbiorze acyklicznym
+                            // if intresection is not in acyclic subset
                             IntersectionFlags intersectionFlags = (*edge)->intersection.GetFlags(currentNode);
                             if (!currentNode->GetAccInfo().IsInsideAccIntersection(intersectionFlags))
-                            //if ((intersectionFlags & currentNode->GetAccInfo().GetAccIntersectionFlags()) != intersectionFlags)
                             {
                                 Node *outputNode = ((Node *)neighbour->helpers.ptr)->FindNodeWithSimplex((*edge)->intersection.Get());
                                 assert(outputNode != 0);
@@ -128,7 +127,6 @@ public:
                                 subnodesFlags |= intersectionFlags;
                             }
                         }
-                        // wpp. dodajemy sasiada do listy
                         else
                         {
                             if (!neighbour->IsAddedToQueue())
@@ -181,12 +179,12 @@ private:
     int             nodeIndex;
     IncidenceGraph  *incidenceGraph;
 
-    // za pomoca flag sprawdzamy, czy generowany sympleks nie jest w zbiorze acyklicznym
-    // jezeli sympleks byl juz wczesniej dodany do wyjsciowego grafu, to szukamy go
-    // baseNode - node z sympleksem maksymalnym, ktorego sciana jest aktualny sympleks
-    // baseSimplex - sympleks dla ktorego aktualnie generujemy node
-    // generatedSubnodes - aktualnie wygenerowane podsympleksy
-    // subnodesFlags - flagi sympleksow juz wygenerowanych
+    // using flahs we check if generated simplex is contained in acyclic subset
+    // if simplex has been already generated we're looking for it in neighbours
+    // baseNode - node with maximal simplex which given simplex is face of
+    // baseSimplex - simplex which we're generating node for
+    // generatedSubnodes - already generated faces
+    // subnodesFlags - flags of already generated faces
     Node *GenerateNode(typename IncidenceGraph::Node *baseNode, Simplex &baseSimplex, Nodes &generatedSubnodes, IntersectionFlags &subnodesFlags)
     {
         IntersectionFlags flags = incidenceGraph->configurationsFlags[baseNode->Normalize(baseSimplex)];
@@ -198,40 +196,38 @@ private:
 
         Node *newNode = 0;
 
-        // jezeli sciana nie jest w przecieciu ze zbiorem acyklicznym
-        // ale juz ja wygenerowalismy, to szukamy jej w liscie wygenerowanych sympleksow
-        // jezeli subnodes flags == 0 to zadna z podscian nie zostala jeszcze wygenerowana
+        // if face is disjoint with acyclic intersection but has been already generated
+        // then we are looking for it in the list of already generated faces
+        // if subnodesFlags == 0 then no faces have been yet generated
         if (baseNode->GetAccInfo().IsDisjointWithAccIntersection(flags) && (subnodesFlags & flags) == flags)
         {
             return Node::FindNodeWithSimplex(generatedSubnodes, baseSimplex);
         }
-        // jezeli sciana nie jest w przecieciu ze zbiorem acyklicznym
-        // ani nie byla wczesniej dodana -> dodajemy
+        // if face is disjoint with acyclic subset and has not been yet generated
+        // we generate new node and add it to the list of generated faces
         else if (baseNode->GetAccInfo().IsDisjointWithAccIntersection(flags)/* && (subnodesFlags & flags) == 0 */)
         {
             assert(baseSimplex.size() != 0);
             newNode = AddNode(baseSimplex);
             generatedSubnodes.push_back(newNode);
-            // zaznaczamy, ze sympleks jest juz wygenerowany
-            // ustawiamy tylko flagi dla aktualnego sympleksu (bez podscian)
+            // we set flags only for given simplex (not included its faces)
             subnodesFlags |= flags;
         }
-        // calkowicie pokrywa sie ze zbiorem acyklicznym -> nie generujemy juz nic w dol
+        // if faces is completely contained in acyclic subset
+        // we do not generate nothing more
         else if (baseNode->GetAccInfo().IsInsideAccIntersection(flags))
         {
             return 0;
         }
         else /* if (!baseNode->GetAccInfo().IsDisjointWithAccIntersection(flags)) */
         {
-            // nie mozemy tutaj wejsc, bo flags moze miec czesc wspolna ze zbiorem acyklicznym
-            // tylko w jednym miejscu (czyli sama siebie)
             assert(false);
             return 0;
         }
 
         assert(newNode != 0);
 
-        // jezeli mozemy zejsc w dol
+        // if it is possible to generate lower dimensional faces
         if (baseSimplex.size() > 1)
         {
             int kappa = 1;

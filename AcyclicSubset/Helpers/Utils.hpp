@@ -1,6 +1,12 @@
 /*
  * File:   Utils.hpp
  * Author: Piotr Brendel
+ *         piotr.brendel@ii.uj.edu.pl
+ *
+ *         AccSub - constructing and removing acyclic subset
+ *                  for simplicial complexes
+ *         This code is a part of RedHom library
+ *         http://redhom.ii.uj.edu.pl
  */
 
 #ifndef UTILS_HPP
@@ -213,10 +219,16 @@ public:
 class MemoryInfo
 {
 
+    static std::map<int, int> slavesMemoryInfo;
+
 public:
 
     static void Print();
     static int GetUsage();
+
+    static void AddSlavesMemoryInfo(int rank, int mem);
+    static void PrintSlavesMemoryInfo();
+    static void ClearSlavesMemoryInfo();
 
 };
 

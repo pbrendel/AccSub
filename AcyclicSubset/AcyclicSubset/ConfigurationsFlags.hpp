@@ -1,6 +1,12 @@
 /* 
  * File:   ConfigurationsFlags.hpp
  * Author: Piotr Brendel
+ *         piotr.brendel@ii.uj.edu.pl
+ *
+ *         AccSub - constructing and removing acyclic subset
+ *                  for simplicial complexes
+ *         This code is a part of RedHom library
+ *         http://redhom.ii.uj.edu.pl
  */
 
 #ifndef CONFIGURATIONSFLAGS_HPP
@@ -26,41 +32,36 @@ public:
         Create(dim, subconfigurations, addMaximalSimplex);
     }
 
+    // for a given d-dimensional simplex represented by "normalized"
+    // vertex labels (from 0 to d+1) we create a hash in which keys
+    // are proper faces of such simplex and values are unique flags for
+    // each face. moreover, if subconfigurations == true flag also contain
+    // flags or all its faces.
     void Create(int dim, bool subconfigurations, bool addMaximalSimplex)
     {
-        // uwaga: ponizszy kod jest identyczny z tym w klasie IncidenceGraph
-        // do tworzenia flag wszystkich podkonfiguracji
-        // generowanie hasha konfiguracja->flaga
-        // najpierw tworzymy "bazowy" sympleks maksymalne wymiarowy
+        // "base" simplex
         SimplexType s;
         for (int i = 0; i <= dim; i++)
         {
             s.push_back(i);
         }
-        // potem generujemy wszystkie sciany posortowane rosnaco wymiarami
-        // w kolejnosci leksykograficznej
         std::vector<SimplexType> faces;
         s.GenerateProperFaces(faces);
         if (addMaximalSimplex)
         {
             faces.push_back(s);
         }
-        // i tworzymy hasha z flagami konfiguracji
         FlagsType flag = 1;
         for (typename std::vector<SimplexType>::iterator i = faces.begin(); i != faces.end(); i++)
         {
-            // tylko flagi dla aktualnego sympleksu, bez podscian
             if (!subconfigurations)
             {
                 flags[*i] = flag;
             }
-            // dolaczamy flagi podscian
             else
             {
                 FlagsType subFlags = flag;
-                // teraz generujemy wszystkie podkonfiguracje i aktualizujemy flagi
-                // mozemy to zrobic w tym miejscu, bo flagi nizej wymiarowych konfiguracji
-                // sa juz ustawione
+                // generating all proper faces of given face
                 std::vector<SimplexType> subconfigurations;
                 i->GenerateProperFaces(subconfigurations);
                 for (typename std::vector<SimplexType>::iterator j = subconfigurations.begin(); j != subconfigurations.end(); j++)

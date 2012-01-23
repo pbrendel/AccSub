@@ -1,6 +1,12 @@
 /* 
  * File:   AccInfoFlags.hpp
  * Author: Piotr Brendel
+ *         piotr.brendel@ii.uj.edu.pl
+ *
+ *         AccSub - constructing and removing acyclic subset
+ *                  for simplicial complexes
+ *         This code is a part of RedHom library
+ *         http://redhom.ii.uj.edu.pl
  */
 
 #ifndef ACCINFOFLAGS_HPP
@@ -119,11 +125,8 @@ public:
             {
                 continue;
             }
-            // obliczamy czesc wspolna (przeciecie) krawedzi i przeciecia z sasiadem
             Simplex s;
             Simplex::GetIntersection((*edge)->intersection.Get(), simplex, s);
-            // jezeli przeciecie to jest niepuste (maja wspolne punkty)
-            // to aktualizujemy jego acyclic flags
             if (s.size() > 0)
             {
                 Node *neighbour = (*edge)->GetNeighbour(node);
@@ -200,8 +203,6 @@ public:
         buffer[index++] = intersectionFlags;
     }
 
-    // IntersectionFlags GetAccIntersectionFlags() const { return intersectionFlags; }
-    // IntersectionFlags GetAccIntersectionFlagsMF() const { return intersectionFlagsMF; }
     int GetAccSubID() const { return accSubID; }
     void SetAccSubID(int id) { accSubID = id; }
 
@@ -209,7 +210,7 @@ private:
 
     void UpdateAccIntersectionFlags(IntersectionFlags flags, IntersectionFlags flagsMF)
     {
-        // jezeli flagi juz sa ustawione to nic nie robimy
+        // if flags are already set then we're done
         if ((intersectionFlags & flags) == flags)
         {
             return;

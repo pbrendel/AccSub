@@ -1,6 +1,12 @@
 /*
  * File:   Tests.h
  * Author: Piotr Brendel
+ *         piotr.brendel@ii.uj.edu.pl
+ *
+ *         AccSub - constructing and removing acyclic subset
+ *                  for simplicial complexes
+ *         This code is a part of RedHom library
+ *         http://redhom.ii.uj.edu.pl
  */
 
 #ifndef TESTS_H
@@ -38,7 +44,16 @@ class Tests
     typedef IncidenceGraph::AccSubAlgorithm AccSubAlgorithm;
 
     typedef OutputGraphT<IncidenceGraph> OutputGraph;
-    typedef PartitionGraphT<IncidenceGraph, PrepareDataNone, ComputationsLocal> PartitionGraph;
+    
+#ifdef USE_MPI
+    typedef PartitionGraphT<IncidenceGraph, PrepareDataNone, ComputationsParallelMPI> PartitionGraph;
+#else
+#ifdef USE_OMP
+    typedef PartitionGraphT<IncidenceGraph, PrepareDataNone, ComputationsParallelOMP> PartitionGraph;
+#else
+    typedef PartitionGraphT<IncidenceGraph, PrepareDataBFS, ComputationsLocal> PartitionGraph;
+#endif
+#endif
 
 public:
 

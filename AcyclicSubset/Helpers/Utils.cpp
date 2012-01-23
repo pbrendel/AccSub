@@ -1,6 +1,12 @@
 /*
  * File:   Utils.cpp
  * Author: Piotr Brendel
+ *         piotr.brendel@ii.uj.edu.pl
+ *
+ *         AccSub - constructing and removing acyclic subset
+ *                  for simplicial complexes
+ *         This code is a part of RedHom library
+ *         http://redhom.ii.uj.edu.pl
  */
 
 #include "Utils.hpp"
@@ -92,6 +98,8 @@ void Timer::TimeStamp(const char* msg)
 
 ////////////////////////////////////////////////////////////////////////////////
 
+std::map<int, int> MemoryInfo::slavesMemoryInfo;
+
 void MemoryInfo::Print()
 {
     std::cout<<"memory usage: "<<GetUsage()<<" MB"<<std::endl;
@@ -103,6 +111,41 @@ int MemoryInfo::GetUsage()
     getrusage(RUSAGE_SELF, &usage);
     return (usage.ru_maxrss >> 10);
 
+}
+
+void MemoryInfo::AddSlavesMemoryInfo(int rank, int mem)
+{
+    slavesMemoryInfo[rank] = mem;
+}
+
+void MemoryInfo::PrintSlavesMemoryInfo()
+{
+    int count = 0;
+    int total = 0;
+    int min = INT_MAX;
+    int max = 0;
+
+    for (std::map<int, int>::iterator i = slavesMemoryInfo.begin(); i != slavesMemoryInfo.end(); i++)
+    {
+        count++;
+        std::cout<<"process: "<<i->first<<" memory: "<<i->second<<std::endl;
+        int mem = i->first;
+        total += mem;
+        if (mem < min) min = mem;
+        if (mem > max) max = mem;
+    }
+
+    if (count > 0)
+    {
+        std::cout<<"min: "<<min<<std::endl;
+        std::cout<<"max: "<<max<<std::endl;
+        std::cout<<"avg: "<<(total / count)<<std::endl;
+    }
+}
+
+void MemoryInfo::ClearSlavesMemoryInfo()
+{
+    slavesMemoryInfo.clear();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
