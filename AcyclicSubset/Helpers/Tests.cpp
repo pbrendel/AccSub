@@ -17,144 +17,161 @@
 
 #include <cassert>
 
+#include <boost/algorithm/string.hpp>
+
 ////////////////////////////////////////////////////////////////////////////////
 
-int Tests::testType = 0;
+int Tests::inputType = 0;
 int Tests::accTestNumber = 0;
 std::string Tests::inputFilename = "tests.txt";
-int Tests::simplicesCount = 1000;
-int Tests::simplicesDim = 3;
-int Tests::vertsCount = 100;
-int Tests::sortSimplices = 0;
 int Tests::sortVerts = 0;
 int Tests::useAlgebraic = 0;
-int Tests::useCoreduction = 0;
+int Tests::useCoreductions = 0;
 int Tests::useAccSub = 0;
 int Tests::useAccSubIG = 1;
 int Tests::useAccSubST = 0;
-int Tests::useAccSubParallel = 0;
+int Tests::useAccSubDist = 0;
 int Tests::packsCount = 6;
-int Tests::parallelAccSubAlgorithm = 0;
-int Tests::prepareData = 1;
+int Tests::distAccSubAlgorithm = 0;
 int Tests::processRank = 0;
 
 ////////////////////////////////////////////////////////////////////////////////
 
 void Tests::PrintHelp()
 {
-    std::cout<<"-input [[-r ilosc_sympleksow] | [-i nazwa_pliku] | [-l nazwa_pliku]] [-opcje]"<<std::endl;
-    std::cout<<"    -r ilosc_sympleksow wymiar_sympleksow - losowe zbiory okresonego rozmiaru"<<std::endl;
-    std::cout<<"    -i nazwa_pliku - pojedynczy zbior wczytany z okreslonego pliku"<<std::endl;
-    std::cout<<"    -l nazwa_pliku - lista zbiorow okreslonych w podanym pliku"<<std::endl;
-    std::cout<<"  opcje:"<<std::endl;
-    std::cout<<"    -test numer - numer testu acyklicznosci:"<<std::endl;
-    std::cout<<"                    - 0 - tablice"<<std::endl;
-    std::cout<<"                    - 1 - test CoDim 1"<<std::endl;
-    std::cout<<"                  (def. "<<accTestNumber<<")"<<std::endl;
-    std::cout<<"    -verts vc - ilosc wierzcholkow z ktorych losujemy sympleksy"<<std::endl;
-    std::cout<<"                (def. "<<vertsCount<<")"<<std::endl;
-    std::cout<<"    -ss [0|1] - sortuj sympleksy przed rozpoczeciem obliczen"<<std::endl;
-    std::cout<<"                (def. "<<sortSimplices<<")"<<std::endl;
-    std::cout<<"    -sv [0|1] - sortuj wierzcholki w kazdym sympleksie"<<std::endl;
-    std::cout<<"                (def. "<<sortVerts<<")"<<std::endl;
-    std::cout<<"    -use_alg [0|1] - wykonaj obliczenia bez zadnych redukcji"<<std::endl;
-    std::cout<<"                     (def. "<<useAlgebraic<<")"<<std::endl;
-    std::cout<<"    -use_cored [0|1] - wykonaj obliczenia dla koredukcji"<<std::endl;
-    std::cout<<"                       (def. "<<useCoreduction<<")"<<std::endl;
-    std::cout<<"    -use_acc [0|1] - wykonaj obliczenia dla podzbioru acyklicznego uzywajac algorytmu Acc"<<std::endl;
-    std::cout<<"                       (def. "<<useAccSub<<")"<<std::endl;
-    std::cout<<"    -use_accig [0|1] - wykonaj obliczenia dla podzbioru acyklicznegoo uzywajac algorytmu AccIG"<<std::endl;
-    std::cout<<"                         (def. "<<useAccSubIG<<")"<<std::endl;
-    std::cout<<"    -use_accst [0|1] - wykonaj obliczenia dla podzbioru acyklicznegoo uzywajac algorytmu AccST"<<std::endl;
-    std::cout<<"                         (def. "<<useAccSubST<<")"<<std::endl;
-    std::cout<<"    -parallel [0|1] pc alg pd - wykonaj rownolegle obliczenia dla podzbioru acyklicznego"<<std::endl;
-    std::cout<<"                                   - pc - ilosc paczek dla obliczen rownoleglych"<<std::endl;
-    std::cout<<"                                     (def. "<<packsCount<<")"<<std::endl;
-    std::cout<<"                                   - alg - numer algorytmu obliczajacego podzbior acykliczny"<<std::endl;
-    std::cout<<"                                       - 0 - Acc"<<std::endl;
-    std::cout<<"                                       - 1 - AccIG"<<std::endl;
-    std::cout<<"                                       - 2 - AccST"<<std::endl;
-    std::cout<<"                                     (def. "<<parallelAccSubAlgorithm<<")"<<std::endl;
-    std::cout<<"                                   - pd [0|1] - przetworz dane przed podzialem na paczki"<<std::endl;
-    std::cout<<"                                     (def. "<<prepareData<<")"<<std::endl;
+    std::cout<<std::endl;
+    std::cout<<"usage: AccSub input options"<<std::endl;
+    std::cout<<std::endl;
+    std::cout<<"input:"<<std::endl;
+    std::cout<<"  --i filename - use filename as input ["<<inputFilename<<"]"<<std::endl;
+    std::cout<<"  --l filename - use filename as list of inputs ["<<inputFilename<<"]"<<std::endl;
+    std::cout<<std::endl;
+    std::cout<<"options:"<<std::endl;
+    std::cout<<"  --use_alg [0|1]      - compute homology without reductions ["<<useAlgebraic<<"]"<<std::endl;
+    std::cout<<"  --use_cored [0|1]    - use coreductions ["<<useCoreductions<<"]"<<std::endl;
+    std::cout<<"  --use_accsub [0|1]   - use AccSub algorithm ["<<useAccSub<<"]"<<std::endl;
+    std::cout<<"  --use_accsubig [0|1] - use AccSubIG algorithm ["<<useAccSubIG<<"]"<<std::endl;
+    std::cout<<"  --use_accsubst [0|1] - use AccSubST algorithm ["<<useAccSubST<<"]"<<std::endl;
+    std::cout<<"  --dist [0|1] pc alg  - use distributed computations with specified"<<std::endl;
+    std::cout<<"                         packs count and selected algorithm ["<<useAccSubDist<<"]["<<packsCount<<"]["<<distAccSubAlgorithm<<"]"<<std::endl;
+    std::cout<<"                          - 0 - AccSub"<<std::endl;
+    std::cout<<"                          - 1 - AccSubIG"<<std::endl;
+    std::cout<<"                          - 2 - AccSubST"<<std::endl;
+    std::cout<<"  --test number        - select acyclicity test number ["<<accTestNumber<<"]"<<std::endl;
+    std::cout<<"                          - 0 - tabulated configurations (full)"<<std::endl;
+    std::cout<<"                          - 1 - CoDim 1 (partial)"<<std::endl;
+    std::cout<<"                          - 2 - star (partial)"<<std::endl;
+    std::cout<<"                          - 3 - recursive (partial)"<<std::endl;
+    std::cout<<"                          - 4 - homology (full)"<<std::endl;
+    std::cout<<"  --sv [0|1] - sort vertices before performing computations ["<<sortVerts<<"] "<<std::endl;
+    std::cout<<std::endl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
+void Tests::ProcessArgument(std::vector<std::string> &args)
+{
+#define CC(a, n) if (args.size() != n + 1) { std::cout<<"Error: "<<a<<" expects "<<n<<" params"<<std::endl; return; }
+
+    std::string arg = args[0];
+    if (arg == "help")
+    {
+        CC("help", 0)
+        PrintHelp();
+    }
+    else if (arg == "i")
+    {
+        CC("i", 1)
+        inputType = 0;
+        inputFilename = args[1];
+    }
+    else if (arg == "l")
+    {
+        CC("l", 1)
+        inputType = 1;
+        inputFilename = args[1];
+    }
+    else if (arg == "use_alg")
+    {
+        CC("use_alg", 1)
+        useAlgebraic = atoi(args[1].c_str());
+    }
+    else if (arg == "use_cored")
+    {
+        CC("use_cored", 1)
+        useCoreductions = atoi(args[1].c_str());
+    }
+    else if (arg == "use_accsub")
+    {
+        CC("use_accsub", 1)
+        useAccSub = atoi(args[1].c_str());
+    }
+    else if (arg == "use_accsubig")
+    {
+        CC("use_accsubig", 1)
+        useAccSubIG = atoi(args[1].c_str());
+    }
+    else if (arg == "use_accsubst")
+    {
+        CC("use_accsubst", 1)
+        useAccSub = atoi(args[1].c_str());
+    }
+    else if (arg == "use_dist")
+    {
+        CC("use_dist", 3)
+        useAccSubDist = atoi(args[1].c_str());
+        packsCount = atoi(args[2].c_str());
+        distAccSubAlgorithm = atoi(args[3].c_str());
+    }
+    else if (arg == "test")
+    {
+        CC("test", 1)
+        accTestNumber = atoi(args[1].c_str());
+    }
+    else if (arg == "sv")
+    {
+        CC("sv", 1)
+        sortVerts = atoi(args[1].c_str());
+    }
+    else
+    {
+        std::cout<<"Unknown argument: "<<arg<<std::endl;
+    }
+
+#undef CC
+}
+
 void Tests::ProcessArguments(int argc, char **argv)
 {
-#define CHECK_ARG(s) !strcmp(argv[index], s)
-#define CHECK_ARG_NEXT(s) !strcmp(argv[index], s) && index + 1 < argc
-
-    int index = 1;
-    while (index < argc)
+    std::vector<std::string> args;
+    for (int i = 1; i < argc; i++)
     {
-        if (CHECK_ARG("-help")) { PrintHelp(); index++; }
-        else if (CHECK_ARG_NEXT("-r"))
+        std::string s = std::string(argv[i]);
+        if (s.size() > 2 && s[0] == '-' && s[1] == '-')
         {
-            testType = 0;
-            simplicesCount = atoi(argv[index + 1]);
-            simplicesDim = atoi(argv[index + 2]);
-            index += 3;
-        }
-        else if (CHECK_ARG_NEXT("-i"))
-        {
-            testType = 1;
-            inputFilename = argv[index + 1];
-            index += 2;
-        }
-        else if (CHECK_ARG_NEXT("-l"))
-        {
-            testType = 2;
-            inputFilename = argv[index + 1];
-            index += 2;
-        }
-        else if (CHECK_ARG_NEXT("-test")) { accTestNumber = atoi(argv[index + 1]); index += 2; }
-        else if (CHECK_ARG_NEXT("-verts")) { vertsCount = atoi(argv[index + 1]); index += 2; }
-        else if (CHECK_ARG_NEXT("-ss")) { sortSimplices = atoi(argv[index + 1]); index += 2; }
-        else if (CHECK_ARG_NEXT("-sv")) { sortVerts = atoi(argv[index + 1]); index += 2; }
-        else if (CHECK_ARG_NEXT("-use_alg")) { useAlgebraic = atoi(argv[index + 1]); index += 2; }
-        else if (CHECK_ARG_NEXT("-use_cored")) { useCoreduction = atoi(argv[index + 1]); index += 2; }
-        else if (CHECK_ARG_NEXT("-use_acc")) { useAccSub = atoi(argv[index + 1]); index += 2; }
-        else if (CHECK_ARG_NEXT("-use_accig")) { useAccSubIG = atoi(argv[index + 1]); index += 2; }
-        else if (CHECK_ARG_NEXT("-use_accst")) { useAccSubST = atoi(argv[index + 1]); index += 2; }
-        else if (CHECK_ARG_NEXT("-use_parallel"))
-        {
-            useAccSubParallel = atoi(argv[index + 1]);
-            packsCount = atoi(argv[index + 2]);
-            parallelAccSubAlgorithm = atoi(argv[index + 3]);
-            prepareData = atoi(argv[index + 4]);
-            index += 5;
+            if (args.size() > 0)
+            {
+                ProcessArgument(args);
+            }
+            args.clear();
+            args.push_back(s.substr(2));
         }
         else
         {
-            std::cout<<"nieznany parametr: "<<argv[index]<<std::endl;
-            index++;
+            args.push_back(s);
         }
     }
-#undef CHECK_ARG
-#undef CHECH_ARG_NEXT
+    if (args.size() > 0)
+    {
+        ProcessArgument(args);
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 void Tests::GenerateData(SimplexList &simplexList)
 {
-    switch (testType)
-    {
-        case 0:
-            SimplexUtils<Simplex>::GenerateSimplexList(simplexList, simplicesCount, vertsCount, simplicesDim);
-            break;
-        case 1:
-            SimplexUtils<Simplex>::ReadSimplexList(simplexList, inputFilename.c_str(), sortVerts);
-            break;
-        default:
-            break;
-    }
-    if (sortSimplices)
-    {
-        std::sort(simplexList.begin(), simplexList.end(), Simplex::SortBySize);
-    }
+    SimplexUtils<Simplex>::ReadSimplexList(simplexList, inputFilename.c_str(), sortVerts);
     Timer::Update("data generated");
     MemoryInfo::Print();
 }
@@ -163,7 +180,7 @@ void Tests::GenerateData(SimplexList &simplexList)
 
 bool Tests::IsAccSubReduction(ReductionType rt)
 {
-    return (rt == RT_AccSub || rt == RT_AccSubIG || rt == RT_AccSubST || rt == RT_AccSubParallel);
+    return (rt == RT_AccSub || rt == RT_AccSubIG || rt == RT_AccSubST || rt == RT_AccSubDist);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -193,13 +210,17 @@ void Tests::Test(SimplexList &simplexList, ReductionType reductionType)
     {
         ig = IncidenceGraphHelpers<IncidenceGraph>::CreateAndCalculateAccSubST(simplexList, accTest);
     }
-    else if (reductionType == RT_AccSubParallel)
+    else if (reductionType == RT_AccSubDist)
     {
-        ig = IncidenceGraphHelpers<IncidenceGraph>::CreateAndCalculateAccSubParallel<PartitionGraph>(simplexList, packsCount, (AccSubAlgorithm)parallelAccSubAlgorithm, accTest);
+        ig = IncidenceGraphHelpers<IncidenceGraph>::CreateAndCalculateAccSubDist<PartitionGraph>(simplexList, packsCount, (AccSubAlgorithm)distAccSubAlgorithm, accTest);
     }
     else // (reductionType == RT_Coreduction || reductionType == RT_None)
     {
+#ifdef USE_SIMPLEX_S_COMPLEX
+        ig = 0;
+#else
         ig = IncidenceGraphHelpers<IncidenceGraph>::Create(simplexList);
+#endif
     }
     if (accTest)
     {
@@ -214,17 +235,29 @@ void Tests::Test(SimplexList &simplexList, ReductionType reductionType)
     }
 
     Timer::Update();
-    OutputGraph *og = new OutputGraph(ig);
-    total += Timer::Update("creating output");
-    MemoryInfo::Print();
 
-    timeStart = Timer::Now();
-    RedHomHelpers<OutputGraph>::ComputeHomology(og, reductionType == RT_Coreduction);
-    total += Timer::TimeFrom(timeStart);
+    if (ig != 0)
+    {
+        OutputGraph *og = new OutputGraph(ig);
+        total += Timer::Update("creating output");
+        MemoryInfo::Print();
+
+        timeStart = Timer::Now();
+        RedHomHelpers::ComputeHomology(og, reductionType == RT_Coreduction);
+        total += Timer::TimeFrom(timeStart);
+
+        delete og;
+    }
+    else
+    {
+        timeStart = Timer::Now();
+        RedHomHelpers::ComputeHomology(simplexList, reductionType == RT_Coreduction);
+        total += Timer::TimeFrom(timeStart);
+    }
+
     std::cout<<"total: "<<total<<std::endl;
     MemoryInfo::Print();
     
-    delete og;
     delete ig;
 }
 
@@ -240,7 +273,7 @@ void Tests::TestAndCompare(SimplexList &simplexList)
         cout<<std::endl;
     }
 
-    if (useCoreduction)
+    if (useCoreductions)
     {
         std::cout<<std::endl<<"coreduction:"<<std::endl;
         Test(simplexList, RT_Coreduction);
@@ -266,36 +299,21 @@ void Tests::TestAndCompare(SimplexList &simplexList)
         Test(simplexList, RT_AccSubST);
     }
 
-    if (useAccSubParallel)
+    if (useAccSubDist)
     {
-        std::cout<<std::endl<<"parallel:"<<std::endl;
-        Test(simplexList, RT_AccSubParallel);
+        std::cout<<std::endl<<"AccSubDist:"<<std::endl;
+        Test(simplexList, RT_AccSubDist);
     }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void Tests::StandardTest()
+void Tests::TestSingleFile()
 {
     SimplexList simplexList;
     Timer::Init();
     GenerateData(simplexList);
-
-    char buff[100] = { 0 };
-    switch (testType)
-    {
-        case 0:
-            sprintf(buff, "random set of size: %d", (int)simplexList.size());
-            break;
-        case 1:
-            sprintf(buff, "testing %s", inputFilename.c_str());
-            break;
-        default:
-            break;
-    }
-
-    std::cout<<buff<<std::endl;
-
+    std::cout<<"testing "<<inputFilename<<std::endl;
     TestAndCompare(simplexList);
 }
 
@@ -307,13 +325,12 @@ void Tests::TestFromList()
         throw std::string("Can't open file ") + inputFilename;
     }
 
-    testType = 1; // dane z pliku
     while (!input.eof())
     {
         input>>inputFilename;
         if (inputFilename != "")
         {
-            StandardTest();
+            TestSingleFile();
         }
         else
         {
@@ -327,17 +344,16 @@ void Tests::TestFromList()
 
 void Tests::TestFromCommandLine(int argc, char **argv)
 {
+    std::cout<<"Use AccSub --help for more info"<<std::endl;
+
     ProcessArguments(argc, argv);
 
-    std::cout<<"Aby uzyskac wiecej informacji uruchom z parametrem -help"<<std::endl;
-
-    switch (testType)
+    switch (inputType)
     {
         case 0:
-        case 1:
-            StandardTest();
+            TestSingleFile();
             break;
-        case 2:
+        case 1:
             TestFromList();
             break;
         default:
@@ -345,7 +361,7 @@ void Tests::TestFromCommandLine(int argc, char **argv)
     }
 
     MemoryInfo::Print();
-
+    
 }
 
 ////////////////////////////////////////////////////////////////////////////////

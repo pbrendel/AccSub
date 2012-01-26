@@ -52,7 +52,7 @@ public:
         }
 #ifdef ACCSUB_TRACE
         Timer::TimeStamp("ComputationsLocal end");
-        Timer::TimeFrom(start, "total parallel computations");
+        Timer::TimeFrom(start, "total distributed computations");
 #endif
     }
 

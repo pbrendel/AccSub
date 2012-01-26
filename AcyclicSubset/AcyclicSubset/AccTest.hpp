@@ -19,6 +19,9 @@
 
 #include <cassert>
 
+#include "ConfigurationsFlags.hpp"
+#include "../Helpers/RedHomHelpers.hpp"
+
 ////////////////////////////////////////////////////////////////////////////////
 
 template <typename Traits>
@@ -114,7 +117,7 @@ public:
     {
         if (dim < 2 || dim > 4)
         {
-            throw std::string("dim < 2 || dim > 4");
+            throw std::string("AccTestTabs: dim < 2 || dim > 4");
         }
 
         configurationsFlags.Create(dim, true, false);
@@ -663,6 +666,53 @@ private:
 
 ////////////////////////////////////////////////////////////////////////////////
 
+template <typename Traits, typename HomologyHelper>
+class AccTestHomology : public AccTestT<Traits>
+{
+    typedef typename Traits::Simplex Simplex;
+    typedef typename Traits::SimplexList SimplexList;
+    typedef typename Traits::IntersectionFlags IntersectionFlags;
+
+    std::map<IntersectionFlags, Simplex> simplexMap;
+    int lastMaximalFacePower;
+
+public:
+
+    AccTestHomology(int dim)
+    {
+        lastMaximalFacePower = (1 << (dim + 1)) - 2;
+        ConfigurationsFlags<Simplex, IntersectionFlags> configurationsFlags(dim, false, true);
+        configurationsFlags.GetReverseMap(simplexMap);
+    }
+
+    bool IsAcyclic(Simplex &simplex, SimplexList &intersectionMF)
+    {
+        TRIVIAL_TEST_I(simplex, intersectionMF);
+        return HomologyHelper::IsTrivialHomology(intersectionMF);
+    }
+
+    bool IsAcyclic(Simplex &simplex, IntersectionFlags intersectionFlags, IntersectionFlags intersectionFlagsMF)
+    {
+        TRIVIAL_TEST_F(simplex, intersectionFlags, intersectionFlagsMF);
+        IntersectionFlags flag = 1;
+        SimplexList simplexList;
+        for (int i = 0; i < lastMaximalFacePower; i++)
+        {
+            if ((intersectionFlagsMF & flag) == flag)
+            {
+                simplexList.push_back(simplexMap[flag]);
+            }
+            flag = flag << 1;
+        }
+        return HomologyHelper::IsTrivialHomology(simplexList);
+    }
+
+    int GetID() { return 4; }
+
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
 template <typename Traits>
 AccTestT<Traits> *AccTestT<Traits>::Create(int accTestNumber, int dim)
 {
@@ -674,6 +724,7 @@ AccTestT<Traits> *AccTestT<Traits>::Create(int accTestNumber, int dim)
     if (accTestNumber == 1) return new AccTestCodim1<Traits>(dim);
     if (accTestNumber == 2) return new AccTestStar<Traits>(dim);
     if (accTestNumber == 3) return new AccTestRecursive<Traits>(dim);
+    if (accTestNumber == 4) return new AccTestHomology<Traits, RedHomHelpers>(dim);
     return new AccTestTabs<Traits>(dim); // default
 }
 

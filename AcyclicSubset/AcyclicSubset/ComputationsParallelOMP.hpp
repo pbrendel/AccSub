@@ -51,7 +51,7 @@ public:
         }
 #ifdef ACCSUB_TRACE
         Timer::TimeStamp("ComputationsParallelOMP end");
-        Timer::TimeFrom(start, "total parallel computations");
+        Timer::TimeFrom(start, "total distributed computations");
 #endif
     }
 };

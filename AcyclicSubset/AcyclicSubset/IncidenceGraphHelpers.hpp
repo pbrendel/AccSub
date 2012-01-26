@@ -248,7 +248,7 @@ public:
     }
 
     template <typename PartitionGraph>
-    static IncidenceGraph *CreateAndCalculateAccSubParallel(SimplexList &simplexList, int packsCount, AccSubAlgorithm accSubAlgorithm, AccTest *accTest)
+    static IncidenceGraph *CreateAndCalculateAccSubDist(SimplexList &simplexList, int packsCount, AccSubAlgorithm accSubAlgorithm, AccTest *accTest)
     {
         PartitionGraph *pg = new PartitionGraph(simplexList, packsCount, accSubAlgorithm, accTest);
         IncidenceGraph *ig = pg->GetIncidenceGraph();

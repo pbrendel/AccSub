@@ -91,6 +91,14 @@ public:
         }
         return false;
     }
+
+    void GetReverseMap(std::map<FlagsType, SimplexType> &reverseMap)
+    {
+        for (typename std::map<SimplexType, FlagsType>::iterator i = flags.begin(); i != flags.end(); i++)
+        {
+            reverseMap[i->second] = i->first;
+        }
+    }
 };
 
 #endif	/* CONFIGURATIONSFLAGS_HPP */

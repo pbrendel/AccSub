@@ -11,6 +11,7 @@
 
 #include "Utils.hpp"
 
+#include <limits>
 #include <sys/resource.h>
 
 #ifdef USE_MPI
@@ -122,7 +123,7 @@ void MemoryInfo::PrintSlavesMemoryInfo()
 {
     int count = 0;
     int total = 0;
-    int min = INT_MAX;
+    int min = std::numeric_limits<int>::max();
     int max = 0;
 
     for (std::map<int, int>::iterator i = slavesMemoryInfo.begin(); i != slavesMemoryInfo.end(); i++)

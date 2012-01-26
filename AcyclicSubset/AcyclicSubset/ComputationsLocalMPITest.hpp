@@ -86,7 +86,7 @@ public:
         }
 #ifdef ACCSUB_TRACE
         Timer::TimeStamp("ComputationsLocalMPITest end");
-        Timer::TimeFrom(start, "total parallel computations");
+        Timer::TimeFrom(start, "total distributed computations");
 #endif
     }
 };

@@ -32,7 +32,7 @@ enum ReductionType
     RT_AccSub,
     RT_AccSubIG,
     RT_AccSubST,
-    RT_AccSubParallel
+    RT_AccSubDist
 };
 
 class Tests
@@ -62,30 +62,25 @@ public:
 
 private:
     
-    // testType:
-    // 0 - random
-    // 1 - single file
-    // 2 - list
-    static int              testType;
+    // inputType:
+    // 0 - single file
+    // 1 - list
+    static int              inputType;
     static int              accTestNumber;
     static std::string      inputFilename;
-    static int              simplicesCount;
-    static int              simplicesDim;
-    static int              vertsCount;
-    static int              sortSimplices;
     static int              sortVerts;
     static int              useAlgebraic;
-    static int              useCoreduction;
+    static int              useCoreductions;
     static int              useAccSub;
     static int              useAccSubIG;
     static int              useAccSubST;
-    static int              useAccSubParallel;
+    static int              useAccSubDist;
     static int              packsCount;
-    static int              parallelAccSubAlgorithm;
-    static int              prepareData;
+    static int              distAccSubAlgorithm;
     static int              processRank;
 
     static void PrintHelp();
+    static void ProcessArgument(std::vector<std::string> &args);
     static void ProcessArguments(int, char **);
 
     static void GenerateData(SimplexList &);
@@ -95,7 +90,7 @@ private:
     static void Test(SimplexList &, ReductionType);
     static void TestAndCompare(SimplexList &);
 
-    static void StandardTest();
+    static void TestSingleFile();
     static void TestFromList();
 
     static void MPIMaster(int argc, char **argv);

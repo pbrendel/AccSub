@@ -18,11 +18,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 // RedHom stuff
 
-#ifndef LINUX
-#define LINUX
-long double powl(long double, int);
-#endif
-
 #include <cstdlib>
 #include <iostream>
 #include <string>
@@ -38,6 +33,8 @@ long double powl(long double, int);
 #include <boost/lambda/lambda.hpp>
 #include <boost/assign/list_of.hpp>
 #include <boost/assign/list_inserter.hpp>
+
+#include <redHom/complex/simplicial/SimplexSComplex.hpp>
 
 using namespace boost;
 using namespace boost::assign;
@@ -55,11 +52,11 @@ typedef int Id;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template <typename OutputGraph>
 class RedHomHelpers
 {
 public:
 
+    template <typename OutputGraph>
     static void GetDimsAndKappaMap(OutputGraph *og, Complex::Dims &dims, Complex::KappaMap &kappaMap)
     {
         for (typename OutputGraph::Nodes::iterator i = og->nodes.begin(); i != og->nodes.end(); i++)
@@ -75,6 +72,7 @@ public:
         }
     }
 
+    template <typename OutputGraph>
     static void ComputeHomology(OutputGraph *og, bool performCoreductions)
     {
         Complex::Dims dims;
@@ -86,41 +84,81 @@ public:
 
         if (performCoreductions)
         {
-            (*CoreductionAlgorithmFactory<Complex>::createDefault(complex))();
+            (*CoreductionAlgorithmFactory<Complex, int>::createDefault(complex))();
             Timer::Update("performing coreductions");
             MemoryInfo::Print();
         }
 
-        CRef<ReducibleFreeChainComplexType> RFCComplexCR = (ReducibleFreeChainComplexOverZFromSComplexAlgorithm<SComplex<SComplexDefaultTraits>, ReducibleFreeChainComplexType>(complex))();
+        CRef<ReducibleFreeChainComplexType> RFCComplexCR = (ReducibleFreeChainComplexOverZFromSComplexAlgorithm<Complex, ReducibleFreeChainComplexType>(complex))();
         CRef<HomologySignature<int> > homSignCR = HomAlgFunctors<FreeModuleType>::homSignViaAR_Random(RFCComplexCR);
 
         Timer::Update("computing homology");
 
         std::cout<<homSignCR();
     }
-    
-    static int GetBettiNumber(typename OutputGraph::SimplexList &simplexList, int n)
+
+    template <typename SimplexList>
+    static void ComputeHomology(SimplexList &simplexList, bool performCoreductions)
     {
-        typedef typename OutputGraph::IncidenceGraph IncidenceGraph;
-        
-        IncidenceGraph *ig = IncidenceGraphHelpers<IncidenceGraph>::Create(simplexList);
-        OutputGraph *og = new OutputGraph(ig);
+        SimplexSComplex complex;
+        for (typename SimplexList::iterator i = simplexList.begin(); i != simplexList.end(); i++)
+        {
+            std::set<int> simplex;
+            simplex.insert(i->begin(), i->end());
+            complex.addSimplex(simplex);
+        }
 
-        Complex::Dims dims;
-        Complex::KappaMap kappaMap;
-        GetDimsAndKappaMap(og, dims, kappaMap);
+        Timer::Update("creating complex");
 
-        delete og;
-        delete ig;
+        if (performCoreductions)
+        {
+            (*CoreductionAlgorithmFactory<SimplexSComplex, int>::createDefault(complex))();
+            Timer::Update("performing coreductions");
+            MemoryInfo::Print();
+        }
 
-        Complex complex(3, dims, kappaMap, 1);
-        (*CoreductionAlgorithmFactory<Complex>::createDefault(complex))();
+        CRef<ReducibleFreeChainComplexType> RFCComplexCR = (ReducibleFreeChainComplexOverZFromSComplexAlgorithm<SimplexSComplex, ReducibleFreeChainComplexType>(complex))();
+        CRef<HomologySignature<int> > homSignCR = HomAlgFunctors<FreeModuleType>::homSignViaAR_Random(RFCComplexCR);
+
+        Timer::Update("computing homology");
+
+        std::cout<<homSignCR();
+    }
+
+    template <typename SimplexList>
+    static int GetBettiNumber(SimplexList &simplexList, int n)
+    {
+        SimplexSComplex complex;
+        for (typename SimplexList::iterator i = simplexList.begin(); i != simplexList.end(); i++)
+        {
+            std::set<int> simplex;
+            simplex.insert(i->begin(), i->end());
+            complex.addSimplex(simplex);
+        }
+
+        (*CoreductionAlgorithmFactory<SimplexSComplex, float>::createDefault(complex))();
         CRef<ReducibleFreeChainComplexType> RFCComplexCR=
-            (ReducibleFreeChainComplexOverZFromSComplexAlgorithm<SComplex<SComplexDefaultTraits>, ReducibleFreeChainComplexType>(complex))();
+            (ReducibleFreeChainComplexOverZFromSComplexAlgorithm<SimplexSComplex, ReducibleFreeChainComplexType>(complex))();
         CRef<HomologySignature<int> > homSignCR = HomAlgFunctors<FreeModuleType>::homSignViaAR_Random(RFCComplexCR);
 
         return homSignCR().bettiNumber(n);
-    }    
+    }
+
+    template <typename SimplexList>
+    static bool IsTrivialHomology(SimplexList &simplexList)
+    {
+        SimplexSComplex complex;
+        for (typename SimplexList::iterator i = simplexList.begin(); i != simplexList.end(); i++)
+        {
+            std::set<int> simplex;
+            simplex.insert(i->begin(), i->end());
+            complex.addSimplex(simplex);
+        }
+
+        CRef<ReducibleFreeChainComplexType> RFCComplexCR = (ReducibleFreeChainComplexOverZFromSComplexAlgorithm<SimplexSComplex, ReducibleFreeChainComplexType>(complex))();
+        CRef<HomologySignature<int> > homSignCR = HomAlgFunctors<FreeModuleType>::homSignViaAR_Random(RFCComplexCR);
+        return (homSignCR().topDim() < 0 || (homSignCR().topDim() == 0 && homSignCR().bettiNumber(0) == 1));
+    }
 };
 
 #endif	/* REDHOMHELPERS_HPP */
