@@ -36,6 +36,7 @@ public:
     typedef typename Traits::SimplexPtrList SimplexPtrList;
     typedef typename Traits::IntersectionFlags IntersectionFlags;
     typedef IntersectionInfoT<IncidenceGraphT> IntersectionInfo;
+    typedef typename Traits::SimplexNormalization SimplexNormalization;
     typedef AccInfoT<IncidenceGraphT> AccInfo;
     typedef AccTestT<Traits> AccTest;
     typedef typename Traits::AccSubAlgorithm AccSubAlgorithm;
@@ -83,17 +84,12 @@ public:
 
 #undef GET_SET
 
-        Node(IncidenceGraphT *graph, Simplex *simplex, int index) : accInfo(this)
+        Node(IncidenceGraphT *graph, Simplex *simplex, int index) : accInfo(this), simplexNormalization(simplex)
         {
             this->graph = graph;
             this->simplex = simplex;
             this->index = index;
             this->propertiesFlags = 0;
-
-            for (int i = 0; i < simplex->size(); i++)
-            {
-                v2i[(*simplex)[i]] = i;
-            }
         }
 
         void AddEdge(Edge *edge)
@@ -124,18 +120,12 @@ public:
 
         Simplex Normalize(const Simplex &simplex)
         {
-            Simplex s = Simplex::WithSize(simplex.size());
-            int index = 0;
-            for (typename Simplex::const_iterator i = simplex.begin(); i != simplex.end(); i++)
-            {
-                s[index++] = v2i[(*i)];
-            }
-            return s;
+            return simplexNormalization.Normalize(this->simplex, simplex);
         }
 
         int NormalizeVertex(Vertex v)
         {
-            return v2i[v];    
+            return simplexNormalization.NormalizeVertex(this->simplex, v);
         }
 
         IntersectionFlags GetNormalizedIntersectionFlags(const Simplex &intersection)
@@ -169,8 +159,8 @@ public:
 
         IncidenceGraphT         *graph;
         PropertiesFlags         propertiesFlags;
+        SimplexNormalization    simplexNormalization;
         AccInfo                 accInfo;
-        std::map<Vertex, int>   v2i;    // vertex to index map
 
     };
 
@@ -178,9 +168,8 @@ public:
     {
         Node                *nodeA;
         Node                *nodeB;
-        IntersectionInfo    intersection;
 
-        Edge(Node *na, Node *nb) : intersection(this)
+        Edge(Node *na, Node *nb)
         {
             nodeA = na;
             nodeB = nb;
@@ -195,6 +184,21 @@ public:
         {
             return (node == nodeA || node == nodeB);
         }
+
+        Simplex &GetIntersection()
+        {
+            return intersection.Get(this);
+        }
+
+        IntersectionFlags &GetIntersectionFlags(Node *node)
+        {
+            return intersection.GetFlags(this, node);
+        }
+
+    private:
+
+        IntersectionInfo    intersection;
+        
     };
 
     ConfigurationsFlags<Simplex, IntersectionFlags> configurationsFlags;
@@ -257,7 +261,7 @@ public:
         VertexHash H;
         CreateVertexHash(H);
         std::queue<Node *> Q;
-
+        
         for (typename Nodes::iterator i = nodes.begin(); i != nodes.end(); i++)
         {
             if ((*i)->IsAddedToGraph())
@@ -275,7 +279,7 @@ public:
                 currentNode->IsAddedToGraph(true);
                 for (typename Simplex::iterator vertex = currentNode->simplex->begin(); vertex != currentNode->simplex->end(); vertex++)
                 {
-                    Nodes nodes = H[*vertex];
+                    Nodes &nodes = H[*vertex];
                     for (typename Nodes::iterator neighbour = nodes.begin(); neighbour != nodes.end(); neighbour++)
                     {
                         if ((*neighbour) == currentNode)

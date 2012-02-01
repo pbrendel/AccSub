@@ -1,5 +1,5 @@
 /* 
- * File:   IntersectionInfoFlags.hpp
+ * File:   IntersectionInfoFlagsSimplex.hpp
  * Author: Piotr Brendel
  *         piotr.brendel@ii.uj.edu.pl
  *
@@ -9,8 +9,8 @@
  *         http://redhom.ii.uj.edu.pl
  */
 
-#ifndef INTERSECTIONINFOFLAGS_HPP
-#define	INTERSECTIONINFOFLAGS_HPP
+#ifndef INTERSECTIONINFOFLAGSSIMPLEX_HPP
+#define	INTERSECTIONINFOFLAGSSIMPLEX_HPP
 
 template <typename IncidenceGraph>
 class IntersectionInfoFlags
@@ -19,7 +19,8 @@ class IntersectionInfoFlags
     typedef typename IncidenceGraph::IntersectionFlags IntersectionFlags;
     typedef typename IncidenceGraph::Node Node;
     typedef typename IncidenceGraph::Edge Edge;
-    
+
+    Simplex             intersection;
     IntersectionFlags   intersectionFlagsA;
     IntersectionFlags   intersectionFlagsB;
 
@@ -30,7 +31,6 @@ class IntersectionInfoFlags
 
     void Calculate(Edge *edge)
     {
-        Simplex intersection;
         if (Simplex::GetIntersection(edge->nodeA->simplex, edge->nodeB->simplex, intersection))
         {
             intersectionFlagsA = edge->nodeA->GetNormalizedIntersectionFlags(intersection);
@@ -48,8 +48,10 @@ public:
 
     Simplex &Get(Edge *edge)
     {
-        static Simplex intersection;
-        Simplex::GetIntersection(edge->nodeA->simplex, edge->nodeB->simplex, intersection);
+        if (!IsCalculated())
+        {
+            Calculate(edge);
+        }
         return intersection;
     }
 
@@ -63,5 +65,5 @@ public:
     }
 };
 
-#endif	/* INTERSECTIONINFOFLAGS_HPP */
+#endif	/* INTERSECTIONINFOFLAGSSIMPLEX_HPP */
 

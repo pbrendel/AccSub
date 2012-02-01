@@ -16,6 +16,7 @@
 #include <sstream>
 #include <cmath>
 #include <algorithm>
+#include "../Helpers/Rips/rips.hpp"
 
 template <typename Simplex>
 class SimplexUtils
@@ -29,7 +30,7 @@ public:
         std::ifstream input(filename);
         if (!input.is_open())
         {
-            throw std::string("Can't open file ") + filename + "|";
+            throw std::string("Can't open file ") + filename;
         }
 
         simplexList.clear();
@@ -55,6 +56,35 @@ public:
             simplexList.push_back(simplex);
         }
         input.close();
+    }
+
+    static void WriteSimplexList(SimplexList &simplexList, const char *filename, bool sortVerts)
+    {
+        std::ofstream output(filename);
+        if (!output.is_open())
+        {
+            throw std::string("Can't create file ") + filename;
+        }
+
+        for (typename SimplexList::iterator s = simplexList.begin(); s != simplexList.end(); s++)
+        {
+            if (sortVerts)
+            {
+                std::sort(s->begin(), s->end());
+            }
+            bool space = false;
+            for (typename Simplex::iterator v = s->begin(); v != s->end(); v++)
+            {
+                if (space)
+                {
+                    output<<" ";
+                }
+                space = true;
+                output<<(*v);
+            }
+            output<<std::endl;
+        }
+        output.close();
     }
 
     static void GenerateSimplexList(SimplexList &simplexList, int simplicesCount, int vertsCount, int dim)
@@ -127,6 +157,39 @@ public:
         for (int i = 0; i < dim; i++) simplex.push_back(0);
         GenerateReverseSimplexList(simplexList, simplex, 1, vertsCount, 0, dim, index, excludedIndices);
         return totalSimplices;
+    }
+
+    static bool GenerateRandomRipsComplex(SimplexList &simplexList, int pointsCount, float pointsDiam, int pointsDim, float ripsComplexEpsilon, float ripsComplexDim)
+    {
+        typedef rips::euclidanPoint EuclideanPoint;
+        typedef rips::simplicialComplex<EuclideanPoint> RipsComplex;
+
+        srand(time(0));
+        float radius = pointsDiam * 0.5f;
+        std::vector<EuclideanPoint> points;
+        for (int i = 0; i < pointsCount; i++)
+        {
+            std::vector<double> coords;
+            for (int j = 0; j < pointsDim; j++)
+            {
+                float c = ((rand() % RAND_MAX) * pointsDiam - radius) / RAND_MAX;
+                coords.push_back(c);
+            }
+            points.push_back(EuclideanPoint(coords));
+        }
+        RipsComplex complex(points, ripsComplexEpsilon, ripsComplexDim);
+        std::vector<std::set<int> > tempSimplexList;
+        complex.outputMaxSimplices(tempSimplexList);
+        for (std::vector<std::set<int> >::iterator i = tempSimplexList.begin(); i != tempSimplexList.end(); i++)
+        {
+            Simplex s;
+            for (std::set<int>::iterator j = i->begin(); j != i->end(); j++)
+            {
+                s.push_back(*j);
+            }
+            simplexList.push_back(s);
+        }
+        std::sort(simplexList.begin(), simplexList.end(), Simplex::SortBySizeDesc);
     }
 
     static bool FindDuplicates(SimplexList &simplexList)

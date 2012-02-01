@@ -34,6 +34,11 @@ int Tests::useAccSubDist = 0;
 int Tests::packsCount = 6;
 int Tests::distAccSubAlgorithm = 0;
 int Tests::processRank = 0;
+int Tests::randomPointsCount = 100;
+float Tests::randomPointsDiam = 1;
+int Tests::randomPointsDim = 4;
+float Tests::ripsComplexEpsilon = 0.05f;
+int Tests::ripsComplexDim = 4;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -45,6 +50,12 @@ void Tests::PrintHelp()
     std::cout<<"input:"<<std::endl;
     std::cout<<"  --i filename - use filename as input ["<<inputFilename<<"]"<<std::endl;
     std::cout<<"  --l filename - use filename as list of inputs ["<<inputFilename<<"]"<<std::endl;
+    std::cout<<"  --r count diam s_dim epsilon c_dim - random Rips complex where"<<std::endl;
+    std::cout<<"                                       - count - number of points ["<<randomPointsCount<<"]"<<std::endl;
+    std::cout<<"                                       - diam - diam of set of random points ["<<randomPointsDiam<<"]"<<std::endl;
+    std::cout<<"                                       - s_dim - dimension of space ["<<randomPointsDim<<"]"<<std::endl;
+    std::cout<<"                                       - epsilon - epsilon of complex ["<<ripsComplexEpsilon<<"]"<<std::endl;
+    std::cout<<"                                       - c_dim - max dimension of complex ["<<ripsComplexDim<<"]"<<std::endl;
     std::cout<<std::endl;
     std::cout<<"options:"<<std::endl;
     std::cout<<"  --use_alg [0|1]      - compute homology without reductions ["<<useAlgebraic<<"]"<<std::endl;
@@ -91,6 +102,16 @@ void Tests::ProcessArgument(std::vector<std::string> &args)
         inputType = 1;
         inputFilename = args[1];
     }
+    else if (arg == "r")
+    {
+        CC("r", 5)
+        inputType = 2;
+        randomPointsCount = atoi(args[1].c_str());
+        randomPointsDiam = atof(args[2].c_str());
+        randomPointsDim = atoi(args[3].c_str());
+        ripsComplexEpsilon = atof(args[4].c_str());
+        ripsComplexDim = atoi(args[5].c_str());
+    }
     else if (arg == "use_alg")
     {
         CC("use_alg", 1)
@@ -114,7 +135,7 @@ void Tests::ProcessArgument(std::vector<std::string> &args)
     else if (arg == "use_accsubst")
     {
         CC("use_accsubst", 1)
-        useAccSub = atoi(args[1].c_str());
+        useAccSubST = atoi(args[1].c_str());
     }
     else if (arg == "use_dist")
     {
@@ -165,15 +186,6 @@ void Tests::ProcessArguments(int argc, char **argv)
     {
         ProcessArgument(args);
     }
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-void Tests::GenerateData(SimplexList &simplexList)
-{
-    SimplexUtils<Simplex>::ReadSimplexList(simplexList, inputFilename.c_str(), sortVerts);
-    Timer::Update("data generated");
-    MemoryInfo::Print();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -310,10 +322,13 @@ void Tests::TestAndCompare(SimplexList &simplexList)
 
 void Tests::TestSingleFile()
 {
+    std::cout<<"testing "<<inputFilename<<std::endl;
     SimplexList simplexList;
     Timer::Init();
-    GenerateData(simplexList);
-    std::cout<<"testing "<<inputFilename<<std::endl;
+    SimplexUtils<Simplex>::ReadSimplexList(simplexList, inputFilename.c_str(), sortVerts);
+    std::cout<<"input size: "<<simplexList.size()<<std::endl;
+    Timer::Update("data read");
+    MemoryInfo::Print();
     TestAndCompare(simplexList);
 }
 
@@ -340,6 +355,23 @@ void Tests::TestFromList()
     input.close();
 }
 
+void Tests::TestRandomRipsComplex()
+{
+    std::cout<<"generating Rips complex with:"<<std::endl;
+    std::cout<<"count = "<<randomPointsCount<<std::endl;
+    std::cout<<"diam = "<<randomPointsDiam<<std::endl;
+    std::cout<<"s_dim = "<<randomPointsDim<<std::endl;
+    std::cout<<"epsilon = "<<ripsComplexEpsilon<<std::endl;
+    std::cout<<"c_dim = "<<ripsComplexDim<<std::endl;
+    SimplexList simplexList;
+    Timer::Init();
+    SimplexUtils<Simplex>::GenerateRandomRipsComplex(simplexList, randomPointsCount, randomPointsDiam, randomPointsDim, ripsComplexEpsilon, ripsComplexDim);
+    std::cout<<"input size: "<<simplexList.size()<<std::endl;
+    Timer::Update("data generated");
+    MemoryInfo::Print();
+    TestAndCompare(simplexList);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 void Tests::TestFromCommandLine(int argc, char **argv)
@@ -355,6 +387,9 @@ void Tests::TestFromCommandLine(int argc, char **argv)
             break;
         case 1:
             TestFromList();
+            break;
+        case 2:
+            TestRandomRipsComplex();
             break;
         default:
             break;

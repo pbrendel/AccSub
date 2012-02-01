@@ -118,10 +118,10 @@ public:
                         if (neighbour->IsAddedToOutput())
                         {
                             // if intresection is not in acyclic subset
-                            IntersectionFlags intersectionFlags = (*edge)->intersection.GetFlags(currentNode);
+                            IntersectionFlags intersectionFlags = (*edge)->GetIntersectionFlags(currentNode);
                             if (!currentNode->GetAccInfo().IsInsideAccIntersection(intersectionFlags))
                             {
-                                Node *outputNode = ((Node *)neighbour->helpers.ptr)->FindNodeWithSimplex((*edge)->intersection.Get());
+                                Node *outputNode = ((Node *)neighbour->helpers.ptr)->FindNodeWithSimplex((*edge)->GetIntersection());
                                 assert(outputNode != 0);
                                 outputNode->GetSubnodes(subnodes);
                                 subnodesFlags |= intersectionFlags;

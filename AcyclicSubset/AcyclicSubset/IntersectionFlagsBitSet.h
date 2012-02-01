@@ -20,7 +20,7 @@ const int N = 4;
 
 class IntersectionFlagsBitSet
 {
-    int data[N];
+    unsigned int data[N];
 
 public:
 
@@ -34,7 +34,7 @@ public:
         (*this) = set;
     }
 
-    IntersectionFlagsBitSet(int a)
+    IntersectionFlagsBitSet(unsigned int a)
     {
         (*this) = a;
     }
@@ -45,7 +45,7 @@ public:
         return (*this);
     }
 
-    IntersectionFlagsBitSet &operator=(int a)
+    IntersectionFlagsBitSet &operator=(unsigned int a)
     {
         data[0] = a;
         for (int i = 1; i < N; i++) data[i] = 0;
@@ -98,19 +98,19 @@ public:
         return (*this);
     }
     
-    operator int()
+    operator unsigned int()
     {
         return data[0];
     }
 
     friend bool operator==(const IntersectionFlagsBitSet &a, const IntersectionFlagsBitSet &b);
     friend bool operator!=(const IntersectionFlagsBitSet &a, const IntersectionFlagsBitSet &b);
-    friend bool operator==(const IntersectionFlagsBitSet &a, int b);
-    friend bool operator!=(const IntersectionFlagsBitSet &a, int b);
+    friend bool operator==(const IntersectionFlagsBitSet &a, unsigned int b);
+    friend bool operator!=(const IntersectionFlagsBitSet &a, unsigned int b);
     friend IntersectionFlagsBitSet operator|(const IntersectionFlagsBitSet &a, const IntersectionFlagsBitSet &b);
     friend IntersectionFlagsBitSet operator&(const IntersectionFlagsBitSet &a, const IntersectionFlagsBitSet &b);
-    friend IntersectionFlagsBitSet operator|(const IntersectionFlagsBitSet &a, int b);
-    friend IntersectionFlagsBitSet operator&(const IntersectionFlagsBitSet &a, int b);
+    friend IntersectionFlagsBitSet operator|(const IntersectionFlagsBitSet &a, unsigned int b);
+    friend IntersectionFlagsBitSet operator&(const IntersectionFlagsBitSet &a, unsigned int b);
     friend std::ostream &operator<<(std::ostream &str, const IntersectionFlagsBitSet &a);
     friend std::istream &operator>>(std::istream &str, IntersectionFlagsBitSet &a);
 };
@@ -124,7 +124,6 @@ inline bool operator==(const IntersectionFlagsBitSet &a, const IntersectionFlags
     return true;
 }
 
-
 inline bool operator!=(const IntersectionFlagsBitSet &a, const IntersectionFlagsBitSet &b)
 {
     for (int i = 0; i < N; i++)
@@ -132,8 +131,7 @@ inline bool operator!=(const IntersectionFlagsBitSet &a, const IntersectionFlags
     return false;
 }
 
-
-inline bool operator==(const IntersectionFlagsBitSet &a, int b)
+inline bool operator==(const IntersectionFlagsBitSet &a, unsigned int b)
 {
     if (a.data[0] != b) return false;
     for (int i = 1; i < N; i++)
@@ -141,15 +139,13 @@ inline bool operator==(const IntersectionFlagsBitSet &a, int b)
     return true;
 }
 
-
-inline bool operator!=(const IntersectionFlagsBitSet &a, int b)
+inline bool operator!=(const IntersectionFlagsBitSet &a, unsigned int b)
 {
     if (a.data[0] != b) return true;
     for (int i = 1; i < N; i++)
         if (a.data[i] != 0) return true;
     return false;
 }
-
 
 inline IntersectionFlagsBitSet operator|(const IntersectionFlagsBitSet &a, const IntersectionFlagsBitSet &b)
 {
@@ -158,7 +154,6 @@ inline IntersectionFlagsBitSet operator|(const IntersectionFlagsBitSet &a, const
     return c;
 }
 
-
 inline IntersectionFlagsBitSet operator&(const IntersectionFlagsBitSet &a, const IntersectionFlagsBitSet &b)
 {
     IntersectionFlagsBitSet c;
@@ -166,16 +161,14 @@ inline IntersectionFlagsBitSet operator&(const IntersectionFlagsBitSet &a, const
     return c;
 }
 
-
-inline IntersectionFlagsBitSet operator|(const IntersectionFlagsBitSet &a, int b)
+inline IntersectionFlagsBitSet operator|(const IntersectionFlagsBitSet &a, unsigned int b)
 {
     IntersectionFlagsBitSet c;
     c.data[0] = a.data[0] | b;
     return c;
 }
 
-
-inline IntersectionFlagsBitSet operator&(const IntersectionFlagsBitSet &a, int b)
+inline IntersectionFlagsBitSet operator&(const IntersectionFlagsBitSet &a, unsigned int b)
 {
     IntersectionFlagsBitSet c;
     c.data[0] = a.data[0] & b;

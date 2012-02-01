@@ -126,7 +126,7 @@ public:
                 continue;
             }
             Simplex s;
-            Simplex::GetIntersection((*edge)->intersection.Get(), simplex, s);
+            Simplex::GetIntersection((*edge)->GetIntersection(), simplex, s);
             if (s.size() > 0)
             {
                 Node *neighbour = (*edge)->GetNeighbour(node);
@@ -146,7 +146,7 @@ public:
             {
                 continue;
             }
-            if ((*edge)->intersection.Get().ContainsVertex(v))
+            if ((*edge)->GetIntersection().ContainsVertex(v))
             {
                 Node *neighbour = (*edge)->GetNeighbour(node);
                 Simplex s1 = neighbour->Normalize(s);

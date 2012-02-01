@@ -17,19 +17,50 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 template <int N>
+class Min1
+{
+public:
+    enum
+    {
+        value = N,
+    };
+};
+
+template <>
+class Min1<0>
+{
+public:
+    enum
+    {
+        value = 1,
+    };
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+template <int D>
 class IntersectionFlagsBitSet
 {
+public:
 
-    int data[N];
+    enum
+    {
+        dim = D,
+        size = Min1<(1 << (D + 1)) / (8 * sizeof(unsigned int))>::value,
+    };
+
+private:
+
+    unsigned int data[size];
 
 public:
 
     IntersectionFlagsBitSet()
     {
-        for (int i = 0; i < N; i++) data[i] = 0;
+        for (int i = 0; i < size; i++) data[i] = 0;
     }
 
-    IntersectionFlagsBitSet(const IntersectionFlagsBitSet<N> &set)
+    IntersectionFlagsBitSet(const IntersectionFlagsBitSet<D> &set)
     {
         (*this) = set;
     }
@@ -39,43 +70,43 @@ public:
         (*this) = a;
     }
 
-    IntersectionFlagsBitSet<N> &operator=(const IntersectionFlagsBitSet<N> &set)
+    IntersectionFlagsBitSet &operator=(const IntersectionFlagsBitSet &set)
     {
-        for (int i = 0; i < N; i++) data[i] = set.data[i];
+        for (int i = 0; i < size; i++) data[i] = set.data[i];
         return (*this);
     }
 
-    IntersectionFlagsBitSet<N> &operator=(int a)
+    IntersectionFlagsBitSet &operator=(int a)
     {
-        data[0] = a;
-        for (int i = 1; i < N; i++) data[i] = 0;
+        data[0] = (unsigned int)a;
+        for (int i = 1; i < size; i++) data[i] = 0;
         return (*this);
     }
 
-    IntersectionFlagsBitSet<N> &operator|=(const IntersectionFlagsBitSet<N> &set)
+    IntersectionFlagsBitSet &operator|=(const IntersectionFlagsBitSet &set)
     {
-        for (int i = 0; i < N; i++) data[i] |= set.data[i];
+        for (int i = 0; i < size; i++) data[i] |= set.data[i];
         return (*this);
     }
 
-    IntersectionFlagsBitSet<N> &operator&=(const IntersectionFlagsBitSet<N> &set)
+    IntersectionFlagsBitSet &operator&=(const IntersectionFlagsBitSet &set)
     {
-        for (int i = 0; i < N; i++) data[i] &= set.data[i];
+        for (int i = 0; i < size; i++) data[i] &= set.data[i];
         return (*this);
     }
 
-    IntersectionFlagsBitSet<N> &operator~()
+    IntersectionFlagsBitSet &operator~()
     {
-        for (int i = 0; i < N; i++) data[i] = ~data[i];
+        for (int i = 0; i < size; i++) data[i] = ~data[i];
         return (*this);
     }
 
-    IntersectionFlagsBitSet<N> &operator<<(int a)
+    IntersectionFlagsBitSet &operator<<(int a)
     {
         assert(a >= 0);
         while (a-- > 0)
         {
-            for (int i = N - 1; i >= 0; i--)
+            for (int i = size - 1; i >= 0; i--)
             {
                 if (i > 0) data[i] = (data[i] << 1) | ((data[i - 1] & (1 << 31)) ? 1 : 0);
                 else data[i] = data[i] << 1;
@@ -84,14 +115,14 @@ public:
         return (*this);
     }
 
-    IntersectionFlagsBitSet<N> &operator>>(int a)
+    IntersectionFlagsBitSet &operator>>(int a)
     {
         assert(a >= 0);
         while (a-- > 0)
         {
-            for (int i = 0; i < N; i++)
+            for (int i = 0; i < size; i++)
             {
-                if (i < N - 1) data[i] = (data[i] >> 1) | ((data[i + 1] & 1) ? (1 << 31) : 0);
+                if (i < size - 1) data[i] = (data[i] >> 1) | ((data[i + 1] & 1) ? (1 << 31) : 0);
                 else data[i] = data[i] >> 1;
             }
         }
@@ -105,6 +136,8 @@ public:
 
     template <int M> friend bool operator==(const IntersectionFlagsBitSet<M> &a, const IntersectionFlagsBitSet<M> &b);
     template <int M> friend bool operator!=(const IntersectionFlagsBitSet<M> &a, const IntersectionFlagsBitSet<M> &b);
+    template <int M> friend bool operator<(const IntersectionFlagsBitSet<M> &a, const IntersectionFlagsBitSet<M> &b);
+    template <int M> friend bool operator>(const IntersectionFlagsBitSet<M> &a, const IntersectionFlagsBitSet<M> &b);
     template <int M> friend bool operator==(const IntersectionFlagsBitSet<M> &a, int b);
     template <int M> friend bool operator!=(const IntersectionFlagsBitSet<M> &a, int b);
     template <int M> friend IntersectionFlagsBitSet<M> operator|(const IntersectionFlagsBitSet<M> &a, const IntersectionFlagsBitSet<M> &b);
@@ -117,83 +150,101 @@ public:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template <int N>
-bool operator==(const IntersectionFlagsBitSet<N> &a, const IntersectionFlagsBitSet<N> &b)
+template <int D>
+bool operator==(const IntersectionFlagsBitSet<D> &a, const IntersectionFlagsBitSet<D> &b)
 {
-    for (int i = 0; i < N; i++)
+    for (int i = 0; i < IntersectionFlagsBitSet<D>::size; i++)
         if (a.data[i] != b.data[i]) return false;
     return true;
 }
 
-template <int N>
-bool operator!=(const IntersectionFlagsBitSet<N> &a, const IntersectionFlagsBitSet<N> &b)
+template <int D>
+bool operator!=(const IntersectionFlagsBitSet<D> &a, const IntersectionFlagsBitSet<D> &b)
 {
-    for (int i = 0; i < N; i++)
+    for (int i = 0; i < IntersectionFlagsBitSet<D>::size; i++)
         if (a.data[i] != b.data[i]) return true;
     return false;
 }
 
-template <int N>
-inline bool operator==(const IntersectionFlagsBitSet<N> &a, int b)
+template <int D>
+bool operator<(const IntersectionFlagsBitSet<D> &a, const IntersectionFlagsBitSet<D> &b)
 {
-    if (a.data[0] != b) return false;
-    for (int i = 1; i < N; i++)
+    for (int i = 0; i < IntersectionFlagsBitSet<D>::size; i++)
+        if (a.data[i] < b.data[i]) return true;
+        else if (a.data[i] > b.data[i]) return false;
+    return false;
+}
+
+template <int D>
+bool operator>(const IntersectionFlagsBitSet<D> &a, const IntersectionFlagsBitSet<D> &b)
+{
+    for (int i = 0; i < IntersectionFlagsBitSet<D>::size; i++)
+        if (a.data[i] > b.data[i]) return true;
+        else if (a.data[i] < b.data[i]) return false;
+    return false;
+}
+
+template <int D>
+inline bool operator==(const IntersectionFlagsBitSet<D> &a, int b)
+{
+    if (a.data[0] != (unsigned int)b) return false;
+    for (int i = 1; i < IntersectionFlagsBitSet<D>::size; i++)
         if (a.data[i] != 0) return false;
     return true;
 }
 
-template <int N>
-inline bool operator!=(const IntersectionFlagsBitSet<N> &a, int b)
+template <int D>
+inline bool operator!=(const IntersectionFlagsBitSet<D> &a, int b)
 {
-    if (a.data[0] != b) return true;
-    for (int i = 1; i < N; i++)
+    if (a.data[0] != (unsigned int)b) return true;
+    for (int i = 1; i < IntersectionFlagsBitSet<D>::size; i++)
         if (a.data[i] != 0) return true;
     return false;
 }
 
-template <int N>
-IntersectionFlagsBitSet<N> operator|(const IntersectionFlagsBitSet<N> &a, const IntersectionFlagsBitSet<N> &b)
+template <int D>
+IntersectionFlagsBitSet<D> operator|(const IntersectionFlagsBitSet<D> &a, const IntersectionFlagsBitSet<D> &b)
 {
-    IntersectionFlagsBitSet<N> c;
-    for (int i = 0; i < N; i++) c.data[i] = a.data[i] | b.data[i];
+    IntersectionFlagsBitSet<D> c;
+    for (int i = 0; i < IntersectionFlagsBitSet<D>::size; i++) c.data[i] = a.data[i] | b.data[i];
     return c;
 }
 
-template <int N>
-IntersectionFlagsBitSet<N> operator&(const IntersectionFlagsBitSet<N> &a, const IntersectionFlagsBitSet<N> &b)
+template <int D>
+IntersectionFlagsBitSet<D> operator&(const IntersectionFlagsBitSet<D> &a, const IntersectionFlagsBitSet<D> &b)
 {
-    IntersectionFlagsBitSet<N> c;
-    for (int i = 0; i < N; i++) c.data[i] = a.data[i] & b.data[i];
+    IntersectionFlagsBitSet<D> c;
+    for (int i = 0; i < IntersectionFlagsBitSet<D>::size; i++) c.data[i] = a.data[i] & b.data[i];
     return c;
 }
 
-template <int N>
-IntersectionFlagsBitSet<N> operator|(const IntersectionFlagsBitSet<N> &a, int b)
+template <int D>
+IntersectionFlagsBitSet<D> operator|(const IntersectionFlagsBitSet<D> &a, int b)
 {
-    IntersectionFlagsBitSet<N> c;
-    c.data[0] = a.data[0] | b;
+    IntersectionFlagsBitSet<D> c;
+    c.data[0] = a.data[0] | (unsigned int)b;
     return c;
 }
 
-template <int N>
-IntersectionFlagsBitSet<N> operator&(const IntersectionFlagsBitSet<N> &a, int b)
+template <int D>
+IntersectionFlagsBitSet<D> operator&(const IntersectionFlagsBitSet<D> &a, int b)
 {
-    IntersectionFlagsBitSet<N> c;
-    c.data[0] = a.data[0] & b;
+    IntersectionFlagsBitSet<D> c;
+    c.data[0] = a.data[0] & (unsigned int)b;
     return c;
 }
 
-template <int N>
-std::ostream &operator<<(std::ostream &str, const IntersectionFlagsBitSet<N> &a)
+template <int D>
+std::ostream &operator<<(std::ostream &str, const IntersectionFlagsBitSet<D> &a)
 {
-    for (int i = N - 1; i >= 0; i--) str<<a.data[i];
+    for (int i = IntersectionFlagsBitSet<D>::size - 1; i >= 0; i--) str<<a.data[i];
     return str;
 }
 
-template <int N>
-std::istream &operator>>(std::istream &str, IntersectionFlagsBitSet<N> &a)
+template <int D>
+std::istream &operator>>(std::istream &str, IntersectionFlagsBitSet<D> &a)
 {
-    for (int i = N - 1; i >= 0; i--) str>>a.data[i];
+    for (int i = IntersectionFlagsBitSet<D>::size - 1; i >= 0; i--) str>>a.data[i];
     return str;
 }
 

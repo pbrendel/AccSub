@@ -264,9 +264,14 @@ public:
         }
     }
 
-    static bool SortBySize(const SimplexT &a, const SimplexT &b)
+    static bool SortBySizeAsc(const SimplexT &a, const SimplexT &b)
     {
         return (a.size() < b.size());
+    }
+
+    static bool SortBySizeDesc(const SimplexT &a, const SimplexT &b)
+    {
+        return (a.size() > b.size());
     }
 };
 

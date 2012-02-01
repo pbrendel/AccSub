@@ -65,6 +65,7 @@ private:
     // inputType:
     // 0 - single file
     // 1 - list
+    // 2 - random rips complex
     static int              inputType;
     static int              accTestNumber;
     static std::string      inputFilename;
@@ -78,12 +79,15 @@ private:
     static int              packsCount;
     static int              distAccSubAlgorithm;
     static int              processRank;
+    static int              randomPointsCount;
+    static float            randomPointsDiam;
+    static int              randomPointsDim;
+    static float            ripsComplexEpsilon;
+    static int              ripsComplexDim;
 
     static void PrintHelp();
     static void ProcessArgument(std::vector<std::string> &args);
     static void ProcessArguments(int, char **);
-
-    static void GenerateData(SimplexList &);
 
     static bool IsAccSubReduction(ReductionType);
 
@@ -92,6 +96,7 @@ private:
 
     static void TestSingleFile();
     static void TestFromList();
+    static void TestRandomRipsComplex();
 
     static void MPIMaster(int argc, char **argv);
     static void MPISlave(int processRank);
