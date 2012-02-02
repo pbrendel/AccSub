@@ -12,12 +12,10 @@
 #include "Tests.h"
 #include "RedHomHelpers.hpp"
 #include "Utils.hpp"
-#include "../AcyclicSubset/SimplexUtils.hpp"
+#include "SimplexUtils.hpp"
 #include "../AcyclicSubset/IncidenceGraphHelpers.hpp"
 
 #include <cassert>
-
-#include <boost/algorithm/string.hpp>
 
 ////////////////////////////////////////////////////////////////////////////////
 

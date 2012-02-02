@@ -13,7 +13,7 @@
 #define	INTERSECTIONINFOFLAGSSIMPLEX_HPP
 
 template <typename IncidenceGraph>
-class IntersectionInfoFlags
+class IntersectionInfoFlagsSimplex
 {
     typedef typename IncidenceGraph::Simplex Simplex;
     typedef typename IncidenceGraph::IntersectionFlags IntersectionFlags;
@@ -40,7 +40,7 @@ class IntersectionInfoFlags
 
 public:
 
-    IntersectionInfoFlags()
+    IntersectionInfoFlagsSimplex()
     {
         this->intersectionFlagsA = 0;
         this->intersectionFlagsB = 0;

@@ -14,6 +14,7 @@
 
 #include "SimplexT.hpp"
 #include "IntersectionInfoFlags.hpp"
+#include "IntersectionInfoFlagsSimplex.hpp"
 #include "AccInfoFlags.hpp"
 #include "AccSubAlgorithmType.h"
 #include "IntersectionFlagsBitSet.hpp"
@@ -33,7 +34,7 @@ public:
     typedef Simplex *                       SimplexPtr;
     typedef std::vector<SimplexPtr>         SimplexPtrList;
     typedef unsigned int                    IntersectionFlags;
-    typedef SimplexNormalizationMap<Vertex, Simplex> SimplexNormalization;
+    typedef SimplexNormalizationNone<Vertex, Simplex> SimplexNormalization;
     typedef AccSubAlgorithmType             AccSubAlgorithm;
 
 };
@@ -50,7 +51,7 @@ public:
     typedef Simplex *                       SimplexPtr;
     typedef std::vector<SimplexPtr>         SimplexPtrList;
     typedef IntersectionFlagsBitSet<D>      IntersectionFlags;
-    typedef SimplexNormalizationMap<Vertex, Simplex> SimplexNormalization;
+    typedef SimplexNormalizationNone<Vertex, Simplex> SimplexNormalization;
     typedef AccSubAlgorithmType             AccSubAlgorithm;
 
 };

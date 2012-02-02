@@ -37,7 +37,7 @@ enum ReductionType
 
 class Tests
 {
-    typedef IncidenceGraphT<IncidenceGraphDefaultTraits, IntersectionInfoFlags, AccInfoFlags> IncidenceGraph;
+    typedef IncidenceGraphT<IncidenceGraphTraitsDim<5>, IntersectionInfoFlags, AccInfoFlags> IncidenceGraph;
     typedef IncidenceGraph::Simplex Simplex;
     typedef IncidenceGraph::SimplexList SimplexList;
     typedef IncidenceGraph::AccTest AccTest;

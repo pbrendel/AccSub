@@ -138,7 +138,9 @@ public:
                     }
                 }
                 currentNode->IsAddedToOutput(true);
-                currentNode->helpers.ptr = GenerateNode(currentNode, *currentNode->simplex, subnodes, subnodesFlags);
+                // we have to make copy to prevent from changing simplex in base node
+                Simplex baseSimplex = *currentNode->simplex;
+                currentNode->helpers.ptr = GenerateNode(currentNode, baseSimplex, subnodes, subnodesFlags);
             }
         }
     }
@@ -188,24 +190,22 @@ private:
     Node *GenerateNode(typename IncidenceGraph::Node *baseNode, Simplex &baseSimplex, Nodes &generatedSubnodes, IntersectionFlags &subnodesFlags)
     {
         IntersectionFlags flags = incidenceGraph->configurationsFlags[baseNode->Normalize(baseSimplex)];
-        if (flags == 0)
-        {
-            baseSimplex = baseNode->Normalize(baseSimplex);
-        }
         assert(flags != 0);
 
         Node *newNode = 0;
 
-        // if face is disjoint with acyclic intersection but has been already generated
+        // if face is not inside acyclic intersection but has been already generated
         // then we are looking for it in the list of already generated faces
         // if subnodesFlags == 0 then no faces have been yet generated
-        if (baseNode->GetAccInfo().IsDisjointWithAccIntersection(flags) && (subnodesFlags & flags) == flags)
+        // if (baseNode->GetAccInfo().IsDisjointWithAccIntersection(flags) && (subnodesFlags & flags) == flags)
+        if (!baseNode->GetAccInfo().IsInsideAccIntersection(flags) && (subnodesFlags & flags) == flags)
         {
             return Node::FindNodeWithSimplex(generatedSubnodes, baseSimplex);
         }
-        // if face is disjoint with acyclic subset and has not been yet generated
+        // if face is not inside acyclic subset and has not been yet generated
         // we generate new node and add it to the list of generated faces
-        else if (baseNode->GetAccInfo().IsDisjointWithAccIntersection(flags)/* && (subnodesFlags & flags) == 0 */)
+        // else if (baseNode->GetAccInfo().IsDisjointWithAccIntersection(flags)/* && (subnodesFlags & flags) == 0 */)
+        else if (!baseNode->GetAccInfo().IsInsideAccIntersection(flags)/* && (subnodesFlags & flags) == 0 */)
         {
             assert(baseSimplex.size() != 0);
             newNode = AddNode(baseSimplex);
