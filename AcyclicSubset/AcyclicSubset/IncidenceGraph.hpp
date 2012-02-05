@@ -795,7 +795,6 @@ private:
                     continue;
                 }
                 Simplex::GetIntersection(node->simplex, (*neighbour)->simplex, intersection);
-                intersection = (*neighbour)->Normalize(intersection);
                 (*neighbour)->GetAccInfo().UpdateAccIntersection(intersection);
                 if (!(*neighbour)->IsAddedToQueue())
                 {

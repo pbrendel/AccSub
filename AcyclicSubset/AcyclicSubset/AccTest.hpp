@@ -34,19 +34,15 @@ class AccTestT
 public:
 
     virtual ~AccTestT() { };
-    virtual bool IsAcyclic(Simplex &simplex, SimplexList &intersectionMF) = 0;
-    virtual bool IsAcyclic(Simplex &simplex, const IntersectionFlags &intersectionFlags, const IntersectionFlags &intersectionFlagsMF) = 0;
+    virtual bool IsAcyclic(const Simplex &simplex, SimplexList &intersectionMF) = 0;
+    virtual bool IsAcyclic(const Simplex &simplex, const IntersectionFlags &intersectionFlags, const IntersectionFlags &intersectionFlagsMF) = 0;
     virtual int GetID() = 0;
 
-    int TrivialTest(Simplex &simplex, SimplexList &intersectionMF)
+    int TrivialTest(const Simplex &simplex, SimplexList &intersectionMF)
     {
         if (intersectionMF.size() == 0)
         {
             return -1;
-        }
-        if (intersectionMF.size() == 1)
-        {
-            return 1;
         }
         if (simplex.size() < 2)
         {
@@ -55,7 +51,7 @@ public:
         return 0;
     }
 
-    int TrivialTest(Simplex &simplex, const IntersectionFlags &intersectionFlags, const IntersectionFlags &intersectionFlagsMF)
+    int TrivialTest(const Simplex &simplex, const IntersectionFlags &intersectionFlags, const IntersectionFlags &intersectionFlagsMF)
     {
         if (intersectionFlags == 0 || intersectionFlagsMF == 0)
         {
@@ -86,11 +82,11 @@ class AccTestFalse : public AccTestT<Traits>
     
 public:
 
-    bool IsAcyclic(Simplex &simplex, SimplexList &intersectionMF)
+    bool IsAcyclic(const Simplex &simplex, SimplexList &intersectionMF)
     {
         return false;
     }
-    bool IsAcyclic(Simplex &simplex, const IntersectionFlags &intersectionFlags, const IntersectionFlags &intersectionFlagsMF)
+    bool IsAcyclic(const Simplex &simplex, const IntersectionFlags &intersectionFlags, const IntersectionFlags &intersectionFlagsMF)
     {
         return false;
     }
@@ -144,7 +140,7 @@ public:
         delete [] data;
     }
 
-    bool IsAcyclic(Simplex &simplex, SimplexList &intersectionMF)
+    bool IsAcyclic(const Simplex &simplex, SimplexList &intersectionMF)
     {
         // if there is only one face in the intersection -> it is acyclic
         if (intersectionMF.size() == 1)
@@ -160,7 +156,7 @@ public:
         return GetValue(index);
     }
 
-    bool IsAcyclic(Simplex &simplex, const IntersectionFlags &intersectionFlags, const IntersectionFlags &intersectionFlagsMF)
+    bool IsAcyclic(const Simplex &simplex, const IntersectionFlags &intersectionFlags, const IntersectionFlags &intersectionFlagsMF)
     {
         return GetValue((int)intersectionFlags);
     }
@@ -224,7 +220,7 @@ public:
         }
     }
 
-    bool IsAcyclic(Simplex &simplex, SimplexList &intersectionMF)
+    bool IsAcyclic(const Simplex &simplex, SimplexList &intersectionMF)
     {
         TRIVIAL_TEST_I(simplex, intersectionMF);
         int d = simplex.size() - 1;
@@ -232,16 +228,16 @@ public:
         {
             if (i->size() != d)
             {
-                return false;
+                  return false;
             }
         }
         return intersectionMF.size() < simplex.size();
     }
 
-    bool IsAcyclic(Simplex &simplex, const IntersectionFlags &intersectionFlags, const IntersectionFlags &intersectionFlagsMF)
+    bool IsAcyclic(const Simplex &simplex, const IntersectionFlags &intersectionFlags, const IntersectionFlags &intersectionFlagsMF)
     {
         TRIVIAL_TEST_F(simplex, intersectionFlags, intersectionFlagsMF);
-        int d= simplex.size();
+        int d = simplex.size();
         if (d > maxSimplexSize) return false;
         IntersectionFlags flags = codim1flags[d];
         // intersection contains all faces with CoDim == 1
@@ -259,12 +255,15 @@ public:
 template <typename Traits>
 class AccTestStar : public AccTestT<Traits>
 {
+    typedef typename Traits::Vertex Vertex;
     typedef typename Traits::Simplex Simplex;
     typedef typename Traits::SimplexList SimplexList;
     typedef typename Traits::IntersectionFlags IntersectionFlags;
     
     int firstMaximalFacePower;
     int lastMaximalFacePower;
+    Vertex firstVertex;
+    Vertex lastVertex;
     std::map<IntersectionFlags, IntersectionFlags> confToSubconf;
 
 public:
@@ -273,12 +272,14 @@ public:
     {
         firstMaximalFacePower = dim + 1;
         lastMaximalFacePower = (1 << (dim + 1)) - 2;
+        firstVertex = Vertex(0);
+        lastVertex = Vertex(dim);
 
         ConfigurationsFlags<Simplex, IntersectionFlags> configurationsFlags(dim, false, false);
         ConfigurationsFlags<Simplex, IntersectionFlags> subconfigurationsFlags(dim, true, false);
 
         IntersectionFlags flag = 1 << firstMaximalFacePower;
-                for (int i = firstMaximalFacePower; i < lastMaximalFacePower; i++)
+        for (int i = firstMaximalFacePower; i < lastMaximalFacePower; i++)
         {
             Simplex s;
             if (configurationsFlags.GetSimplex(flag, s))
@@ -293,7 +294,7 @@ public:
         }
     }
 
-    bool IsAcyclic(Simplex &simplex, SimplexList &intersectionMF)
+    bool IsAcyclic(const Simplex &simplex, SimplexList &intersectionMF)
     {
         TRIVIAL_TEST_I(simplex, intersectionMF);
         int totalMaximalFaces = 0;
@@ -321,13 +322,13 @@ public:
         {
             return false;
         }
-        for (typename Simplex::iterator vertex = simplex.begin(); vertex != simplex.end(); vertex++)
+        for (Vertex vertex = firstVertex; vertex <= lastVertex; vertex++)
         {
             int count = 0;
             for (typename SimplexList::iterator face = intersectionMF.begin(); face != intersectionMF.end(); face++)
             {
                 // skipping vertices (0-dimensional simplices)
-                if (face->size() > 1 && std::find(face->begin(), face->end(), *vertex) != face->end())
+                if (face->size() > 1 && std::find(face->begin(), face->end(), vertex) != face->end())
                 {
                     count++;
                 }
@@ -340,7 +341,7 @@ public:
         return false;
     }
 
-    bool IsAcyclic(Simplex &simplex, const IntersectionFlags &intersectionFlags, const IntersectionFlags &intersectionFlagsMF)
+    bool IsAcyclic(const Simplex &simplex, const IntersectionFlags &intersectionFlags, const IntersectionFlags &intersectionFlagsMF)
     {
         TRIVIAL_TEST_F(simplex, intersectionFlags, intersectionFlagsMF);
         // if we have more than one vertex that is maximal face
@@ -486,7 +487,7 @@ public:
         }
     }        
     
-    bool IsAcyclic(Simplex &simplex, SimplexList &intersectionMF)
+    bool IsAcyclic(const Simplex &simplex, SimplexList &intersectionMF)
     {
         TRIVIAL_TEST_I(simplex, intersectionMF);
 
@@ -523,7 +524,7 @@ public:
         return (simplicesInAccSub.size() == intersectionMF.size());
     }
     
-    bool IsAcyclic(Simplex &simplex, const IntersectionFlags &intersectionFlags, const IntersectionFlags &intersectionFlagsMF)
+    bool IsAcyclic(const Simplex &simplex, const IntersectionFlags &intersectionFlags, const IntersectionFlags &intersectionFlagsMF)
     {
         TRIVIAL_TEST_F(simplex, intersectionFlags, intersectionFlagsMF);
         
@@ -685,13 +686,13 @@ public:
         configurationsFlags.GetReverseMap(simplexMap);
     }
 
-    bool IsAcyclic(Simplex &simplex, SimplexList &intersectionMF)
+    bool IsAcyclic(const Simplex &simplex, SimplexList &intersectionMF)
     {
         TRIVIAL_TEST_I(simplex, intersectionMF);
         return HomologyHelper::IsTrivialHomology(intersectionMF);
     }
 
-    bool IsAcyclic(Simplex &simplex, const IntersectionFlags &intersectionFlags, const IntersectionFlags &intersectionFlagsMF)
+    bool IsAcyclic(const Simplex &simplex, const IntersectionFlags &intersectionFlags, const IntersectionFlags &intersectionFlagsMF)
     {
         TRIVIAL_TEST_F(simplex, intersectionFlags, intersectionFlagsMF);
         IntersectionFlags flag = 1;

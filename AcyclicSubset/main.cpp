@@ -7,12 +7,6 @@
  *                  for simplicial complexes
  *         This code is a part of RedHom library
  *         http://redhom.ii.uj.edu.pl
- *
- * todo:
- * - AccInfo as maximal simplex list - AccInfoSimplexMF
- * - AccInfo storing no data (computing it each time) - AccInfoNone
- * - full tests of AccTest classes in maximal simplex list case
- *
  */
 
 #include "Helpers/Tests.h"

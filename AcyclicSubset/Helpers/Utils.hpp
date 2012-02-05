@@ -32,9 +32,9 @@ class Debug
 public:
 
     template <typename Simplex>
-    static void PrintSimplex(std::ostream &str, Simplex &simplex)
+    static void PrintSimplex(std::ostream &str, const Simplex &simplex)
     {
-        for (typename Simplex::iterator i = simplex.begin(); i != simplex.end(); i++)
+        for (typename Simplex::const_iterator i = simplex.begin(); i != simplex.end(); i++)
         {
             str<<(*i)<<" ";
         }
@@ -42,9 +42,9 @@ public:
     }
 
     template <typename Simplex>
-    static void PrintSimplex(std::ostream &str, Simplex *simplex)
+    static void PrintSimplex(std::ostream &str, const Simplex *simplex)
     {
-        for (typename Simplex::iterator i = simplex->begin(); i != simplex->end(); i++)
+        for (typename Simplex::const_iterator i = simplex->begin(); i != simplex->end(); i++)
         {
             str<<(*i)<<" ";
         }
@@ -52,9 +52,9 @@ public:
     }
 
     template <typename VertsSet>
-    static void PrintVertsSet(std::ostream &str, VertsSet &vertsSet)
+    static void PrintVertsSet(std::ostream &str, const VertsSet &vertsSet)
     {
-        for (typename VertsSet::iterator i = vertsSet.begin(); i != vertsSet.end(); i++)
+        for (typename VertsSet::const_iterator i = vertsSet.begin(); i != vertsSet.end(); i++)
         {
             str<<(*i)<<" ";
         }
@@ -62,49 +62,49 @@ public:
     }
 
     template <typename SimplexList>
-    static void PrintSimplexList(std::ostream &str, SimplexList &simplexList)
+    static void PrintSimplexList(std::ostream &str, const SimplexList &simplexList)
     {
         int index = 0;
-        for (typename SimplexList::iterator i = simplexList.begin(); i != simplexList.end(); i++)
+        for (typename SimplexList::const_iterator i = simplexList.begin(); i != simplexList.end(); i++)
         {
             str<<index++<<" : ";
-            PrintSimplex(*i);
+            PrintSimplex(str, *i);
         }
     }
 
     template <typename SimplexPtrList>
-    static void PrintSimplexPtrList(std::ostream &str, SimplexPtrList &simplexPtrList)
+    static void PrintSimplexPtrList(std::ostream &str, const SimplexPtrList &simplexPtrList)
     {
         int index = 0;
-        for (typename SimplexPtrList::iterator i = simplexPtrList.begin(); i != simplexPtrList.end(); i++)
+        for (typename SimplexPtrList::const_iterator i = simplexPtrList.begin(); i != simplexPtrList.end(); i++)
         {
             str<<index++<<" : ";
-            PrintSimplex(*(*i));
+            PrintSimplex(str, *(*i));
         }
     }
 
     template <typename Nodes>
-    static void PrintNodes(std::ostream &str, Nodes &nodes)
+    static void PrintNodes(std::ostream &str, const Nodes &nodes)
     {
-        for (typename Nodes::iterator i = nodes.begin(); i != nodes.end(); i++)
+        for (typename Nodes::const_iterator i = nodes.begin(); i != nodes.end(); i++)
         {
             PrintSimplex(str, (*i)->simplex);
         }
     }
 
     template <typename Path>
-    static void PrintPath(std::ostream &str, Path &path)
+    static void PrintPath(std::ostream &str, const Path &path)
     {
-        for (typename Path::iterator i = path.begin(); i != path.end(); i++)
+        for (typename Path::const_iterator i = path.begin(); i != path.end(); i++)
         {
             PrintSimplex(str, (*i)->simplex);
         }
     }
 
     template <typename VertexHash>
-    static void PrintVertexHash(std::ostream &str, VertexHash &m)
+    static void PrintVertexHash(std::ostream &str, const VertexHash &m)
     {
-        for (typename VertexHash::iterator i = m.begin(); i != m.end(); i++)
+        for (typename VertexHash::const_iterator i = m.begin(); i != m.end(); i++)
         {
             str<<i->first<<":"<<std::endl;
             PrintNodes(str, i->second);
@@ -113,9 +113,9 @@ public:
     }
 
     template <typename Nodes>
-    static void PrintAccSub(std::ostream &str, Nodes &nodes)
+    static void PrintAccSub(std::ostream &str, const Nodes &nodes)
     {
-        for (typename Nodes::iterator i = nodes.begin(); i != nodes.end(); i++)
+        for (typename Nodes::const_iterator i = nodes.begin(); i != nodes.end(); i++)
         {
             if ((*i)->IsInAccSub())
             {
@@ -142,12 +142,12 @@ public:
     }
 
     template <typename Simplex, typename IntersectionFlags>
-    static void PrintIntersectionFlags(std::ostream &str, std::map<Simplex, IntersectionFlags> &flags)
+    static void PrintIntersectionFlags(std::ostream &str, const std::map<Simplex, IntersectionFlags> &flags)
     {
-        for (typename std::map<Simplex, IntersectionFlags>::iterator i = flags.begin(); i != flags.end(); i++)
+        for (typename std::map<Simplex, IntersectionFlags>::const_iterator i = flags.begin(); i != flags.end(); i++)
         {
             str<<"configuration: ";
-            PrintSimplex(str, const_cast<Simplex &>(i->first));
+            PrintSimplex(str, i->first);
             str<<"flags: "<<std::hex<<i->second<<std::endl;
         }
     }
@@ -170,14 +170,14 @@ public:
     }
 
     template <typename Simplex, typename IntersectionFlags>
-    static void PrintIntersectionFromFlags(std::ostream &str, std::map<Simplex, IntersectionFlags> &flagsMap, IntersectionFlags flags)
+    static void PrintIntersectionFromFlags(std::ostream &str, const std::map<Simplex, IntersectionFlags> &flagsMap, const IntersectionFlags flags)
     {
-        for (typename std::map<Simplex, IntersectionFlags>::iterator i = flagsMap.begin(); i != flagsMap.end(); i++)
+        for (typename std::map<Simplex, IntersectionFlags>::const_iterator i = flagsMap.begin(); i != flagsMap.end(); i++)
         {
             if (i->second & flags)
             {
                 str<<"configuration: ";
-                PrintSimplex(str, const_cast<Simplex &>(i->first));
+                PrintSimplex(str, i->first);
                 str<<"flags: "<<std::dec<<i->second<<std::endl<<std::endl;
             }
         }

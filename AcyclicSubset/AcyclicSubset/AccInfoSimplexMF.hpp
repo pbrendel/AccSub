@@ -1,85 +1,87 @@
 /* 
- * File:   AccInfoFlags.hpp
+ * File:   AccInfoSimplexMF.hpp
  * Author: Piotr Brendel
- *         piotr.brendel@ii.uj.edu.pl
- *
- *         AccSub - constructing and removing acyclic subset
- *                  for simplicial complexes
- *         This code is a part of RedHom library
- *         http://redhom.ii.uj.edu.pl
  */
 
-#ifndef ACCINFOFLAGS_HPP
-#define	ACCINFOFLAGS_HPP
+#ifndef ACCINFOSIMPLEXMF_HPP
+#define	ACCINFOSIMPLEXMF_HPP
 
+#include <algorithm>
 #include <cassert>
 
 template <typename IncidenceGraphType>
-class AccInfoFlags
+class AccInfoSimplexMF
 {
     typedef IncidenceGraphType IncidenceGraph;
     typedef typename IncidenceGraph::Vertex Vertex;
     typedef typename IncidenceGraph::VertsSet VertsSet;
     typedef typename IncidenceGraph::Simplex Simplex;
+    typedef typename IncidenceGraph::SimplexList SimplexList;
     typedef typename IncidenceGraph::Node Node;
     typedef typename IncidenceGraph::Edges Edges;
     typedef typename IncidenceGraph::IntersectionFlags IntersectionFlags;
     typedef typename IncidenceGraph::AccTest AccTest;
 
     Node                *node;
-    IntersectionFlags   intersectionFlags;
-    IntersectionFlags   intersectionFlagsMF;
+    // list of NORMALIZED maximal faces
+    SimplexList         intersectionMF;
     unsigned char       accSubID;
 
 public:
 
-    AccInfoFlags(Node *n)
+    AccInfoSimplexMF(Node *n)
     {
         node = n;
-        intersectionFlags = 0;
-        intersectionFlagsMF = 0;
         accSubID = 0;
     }
 
     bool IsAccIntersectionAcyclic(AccTest *accTest)
     {
-        accTest->IsAcyclic(*node->simplex, intersectionFlags, intersectionFlagsMF);
+        accTest->IsAcyclic(*node->simplex, intersectionMF);
     }
 
     bool IsInsideAccIntersection(const IntersectionFlags &flags)
     {
-        return ((flags & intersectionFlags) == flags);
+        return ((flags & GetIntersectionFlags()) == flags);
     }
 
     bool IsDisjointWithAccIntersection(const IntersectionFlags &flags)
     {
-        return ((flags & intersectionFlags) == 0);
+        return ((flags & GetIntersectionFlags()) == 0);
     }
 
     bool IsVertexInAccIntersection(Vertex vertex)
     {
-        return (intersectionFlags & (1 << node->NormalizeVertex(vertex)));
+        Vertex normalizedVertex = node->NormalizeVertex(vertex);
+        for (typename SimplexList::iterator s = intersectionMF.begin(); s != intersectionMF.end(); s++)
+        {
+            if (std::find(s->begin(), s->end(), normalizedVertex) != s->end())
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     Vertex FindAccVertex()
     {
-        if (intersectionFlags == 0)
+        if (intersectionMF.size() == 0)
         {
             return Vertex(-1);
         }
         for (typename Simplex::iterator v = node->simplex->begin(); v != node->simplex->end(); v++)
         {
-            if (intersectionFlags & (1 << node->NormalizeVertex(*v)))
+            if (IsVertexInAccIntersection(*v))
             {
                 return *v;
             }
         }
         return Vertex(-1);
     }
-    
+
     Vertex FindAccVertexNotEqual(Vertex vertex)
     {
-        if (intersectionFlags == 0)
+        if (intersectionMF.size() == 0)
         {
             return Vertex(-1);
         }
@@ -89,7 +91,7 @@ public:
             {
                 continue;
             }
-            if (intersectionFlags & (1 << node->NormalizeVertex(*v)))
+            if (IsVertexInAccIntersection(*v))
             {
                 return *v;
             }
@@ -99,7 +101,7 @@ public:
 
     Vertex FindAccVertexNotIn(const VertsSet &vertsSet)
     {
-        if (intersectionFlags == 0)
+        if (intersectionMF.size() == 0)
         {
             return Vertex(-1);
         }
@@ -109,16 +111,24 @@ public:
             {
                 continue;
             }
-            if (intersectionFlags & (1 << node->NormalizeVertex(*v)))
+            if (IsVertexInAccIntersection(*v))
             {
                 return *v;
             }
         }
         return Vertex(-1);
     }
-    
+
     void UpdateAccIntersectionWithSimplex(const Simplex &simplex)
     {
+        Simplex normalizedSimplex = node->Normalize(simplex);
+        // if not added it means that simplex was already present in
+        // the intersection (or is face of another simplex present there)
+        // so there is no need to update neighours AccInfo
+        if (!AddNormalizedSimplex(normalizedSimplex))
+        {
+            return;
+        }
         for (typename Edges::iterator edge = node->edges.begin(); edge != node->edges.end(); edge++)
         {
             if ((*edge)->GetNeighbour(node)->IsInAccSub())
@@ -131,31 +141,14 @@ public:
             {
                 Node *neighbour = (*edge)->GetNeighbour(node);
                 s = neighbour->Normalize(s);
-                neighbour->GetAccInfo().UpdateAccIntersectionFlags(neighbour->GetSubconfigurationsFlags(s), neighbour->GetConfigurationsFlags(s));
+                neighbour->GetAccInfo().AddNormalizedSimplex(neighbour->Normalize(s));
             }
         }
-        Simplex normalizedSimplex = node->Normalize(simplex);
-        UpdateAccIntersectionFlags(node->GetSubconfigurationsFlags(normalizedSimplex), node->GetConfigurationsFlags(normalizedSimplex));
     }
 
     void UpdateAccIntersectionWithVertex(Vertex v)
     {
-        Simplex s = Simplex::FromVertex(v);
-        for (typename Edges::iterator edge = node->edges.begin(); edge != node->edges.end(); edge++)
-        {
-            if ((*edge)->GetNeighbour(node)->IsInAccSub())
-            {
-                continue;
-            }
-            if ((*edge)->GetIntersection().ContainsVertex(v))
-            {
-                Node *neighbour = (*edge)->GetNeighbour(node);
-                Simplex s1 = neighbour->Normalize(s);
-                neighbour->GetAccInfo().UpdateAccIntersectionFlags(node->GetSubconfigurationsFlags(s1), node->GetConfigurationsFlags(s1));
-            }
-        }
-        s = node->Normalize(s);
-        UpdateAccIntersectionFlags(node->GetSubconfigurationsFlags(s), node->GetConfigurationsFlags(s));
+        UpdateAccIntersectionWithSimplex(Simplex::FromVertex(v));
     }
 
     void UpdateAccIntersectionWithEdge(Vertex v1, Vertex v2)
@@ -175,20 +168,21 @@ public:
                 continue;
             }
             Simplex::GetIntersection(node->simplex, neighbour->simplex, intersection);
-            intersection = neighbour->Normalize(intersection);
-            neighbour->GetAccInfo().UpdateAccIntersectionFlags(node->GetSubconfigurationsFlags(intersection), node->GetConfigurationsFlags(intersection));
+            if (intersection.size() > 0)
+            {
+                neighbour->GetAccInfo().AddNormalizedSimplex(neighbour->Normalize(intersection));
+            }
         }
     }
 
     void UpdateAccIntersection(const Simplex &intersection)
     {
-        Simplex normalizedIntersection = node->Normalize(intersection);
-        UpdateAccIntersectionFlags(node->GetSubconfigurationsFlags(normalizedIntersection), node->GetConfigurationsFlags(normalizedIntersection));
+        AddNormalizedSimplex(node->Normalize(intersection));
     }
 
     bool HasIntersectionWithAccSub()
     {
-        return (intersectionFlags != 0);
+        return (intersectionMF.size() > 0);
     }
 
     int BufferSize()
@@ -198,12 +192,12 @@ public:
 
     void ReadFromBuffer(int *buffer, int &index)
     {
-        intersectionFlags = buffer[index++];
+    //    intersectionFlags = buffer[index++];
     }
 
     void WriteToBuffer(int *buffer, int &index)
     {
-        buffer[index++] = intersectionFlags;
+    //    buffer[index++] = intersectionFlags;
     }
 
     int GetAccSubID() const { return accSubID; }
@@ -211,20 +205,65 @@ public:
 
 private:
 
-    void UpdateAccIntersectionFlags(const IntersectionFlags &flags, const IntersectionFlags &flagsMF)
+    IntersectionFlags GetIntersectionFlags()
     {
-        // if flags are already set then we're done
-        if ((intersectionFlags & flags) == flags)
+        IntersectionFlags flags = 0;
+        for (typename SimplexList::iterator s = intersectionMF.begin(); s != intersectionMF.end(); s++)
         {
-            return;
+            flags |= node->GetSubconfigurationsFlags(*s);
         }
-        intersectionFlags |= flags;
-        intersectionFlagsMF |= flagsMF;
-        IntersectionFlags flagsSubfaces = flags & (~flagsMF);
-        intersectionFlagsMF &= (~flagsSubfaces);
+        return flags;
     }
 
+    bool IsFaceOf(const Simplex &face, const Simplex &simplex)
+    {
+        typename Simplex::const_iterator itf = face.begin();
+        typename Simplex::const_iterator its = simplex.begin();
+        while (itf != face.end() && its != simplex.end())
+        {
+            if (*itf == *its)
+            {
+                itf++;
+                its++;
+            }
+            else if (*its < *itf)
+            {
+                its++;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        return (itf == face.end());
+    }
+
+    bool AddNormalizedSimplex(const Simplex &simplex)
+    {
+        typename SimplexList::iterator s = intersectionMF.begin();
+        while (s != intersectionMF.end())
+        {
+            // if given simplex is a face of a simplex already present
+            // in intrsection then it's not maximal face -> we're done
+            if (IsFaceOf(simplex, *s))
+            {
+                return false;
+            }
+            // if another simplex in intersection is a face of given simplex
+            // we remove it from the list of maximal faces
+            else if (IsFaceOf(*s, simplex))
+            {
+                s = intersectionMF.erase(s);
+            }
+            else
+            {
+                s++;
+            }
+        }
+        intersectionMF.push_back(simplex);
+        return true;
+    }
 };
 
-#endif	/*ACCINFOFLAGS_HPP */
+#endif	/* ACCINFOSIMPLEXMF_HPP */
 
