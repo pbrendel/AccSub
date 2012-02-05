@@ -140,7 +140,6 @@ public:
             if (s.size() > 0)
             {
                 Node *neighbour = (*edge)->GetNeighbour(node);
-                s = neighbour->Normalize(s);
                 neighbour->GetAccInfo().AddNormalizedSimplex(neighbour->Normalize(s));
             }
         }
@@ -185,19 +184,45 @@ public:
         return (intersectionMF.size() > 0);
     }
 
-    int BufferSize()
+    int GetBufferSize()
     {
-        return 1;
+        // number of all simplices
+        int size = 1;
+        for (typename SimplexList::iterator i = intersectionMF.begin(); i != intersectionMF.end(); i++)
+        {
+            // number of vertices + list of vertices
+            size += (i->size() + 1);
+        }
+        return size;
     }
 
     void ReadFromBuffer(int *buffer, int &index)
     {
-    //    intersectionFlags = buffer[index++];
+        intersectionMF.clear();
+        int total = buffer[index++];
+        for (int i = 0; i < total; i++)
+        {
+            int size = buffer[index++];
+            Simplex s = Simplex::WithSize(size);
+            for (int j = 0; j < size; j++)
+            {
+                s[j] = buffer[index++];
+            }
+            intersectionMF.push_back(s);
+        }
     }
 
     void WriteToBuffer(int *buffer, int &index)
     {
-    //    buffer[index++] = intersectionFlags;
+        buffer[index++] = intersectionMF.size();
+        for (typename SimplexList::iterator i = intersectionMF.begin(); i != intersectionMF.end(); i++)
+        {
+            buffer[index++] = i->size();
+            for (typename Simplex::iterator v = i->begin(); v != i->end(); v++)
+            {
+                buffer[index++] = *v;
+            }
+        }
     }
 
     int GetAccSubID() const { return accSubID; }

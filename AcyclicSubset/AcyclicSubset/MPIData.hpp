@@ -175,7 +175,7 @@ class MPIIncidenceGraphData
             {
                 size++;
             }
-            size += (*node)->GetAccInfo().BufferSize();
+            size += (*node)->GetAccInfo().GetBufferSize();
             // additional 2 ints are:
             // - index
             // - newIndex

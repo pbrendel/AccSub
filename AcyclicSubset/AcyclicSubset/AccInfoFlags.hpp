@@ -12,6 +12,7 @@
 #ifndef ACCINFOFLAGS_HPP
 #define	ACCINFOFLAGS_HPP
 
+#include "IntersectionFlagsHelpers.hpp"
 #include <cassert>
 
 template <typename IncidenceGraphType>
@@ -191,19 +192,19 @@ public:
         return (intersectionFlags != 0);
     }
 
-    int BufferSize()
+    int GetBufferSize()
     {
-        return 1;
+        return IntersectionFlagsHelpers<IntersectionFlags>::GetBufferSize(intersectionFlags);
     }
 
     void ReadFromBuffer(int *buffer, int &index)
     {
-        intersectionFlags = buffer[index++];
+        IntersectionFlagsHelpers<IntersectionFlags>::ReadFromBuffer(intersectionFlags, buffer, index);
     }
 
     void WriteToBuffer(int *buffer, int &index)
     {
-        buffer[index++] = intersectionFlags;
+        IntersectionFlagsHelpers<IntersectionFlags>::WriteToBuffer(intersectionFlags, buffer, index);
     }
 
     int GetAccSubID() const { return accSubID; }

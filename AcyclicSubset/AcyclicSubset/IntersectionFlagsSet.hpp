@@ -184,6 +184,33 @@ public:
         }
     }
 
+    int GetBufferSize() const
+    {
+        // negated + size + list of flags as ints
+        return 2 + flagsSet.size();
+    }
+
+    void ReadFromBuffer(int *buffer, int &index)
+    {
+        negated = (buffer[index++] != 0);
+        int size = buffer[index++];
+        flagsSet.clear();
+        for (int i = 0; i < size; i++)
+        {
+            flagsSet.insert(T(buffer[index++]));
+        }
+    }
+
+    void WriteToBuffer(int *buffer, int &index) const
+    {
+        buffer[index++] = negated ? 1 : 0;
+        buffer[index++] = flagsSet.size();
+        for (typename std::set<T>::const_iterator i = flagsSet.begin(); i != flagsSet.end(); i++)
+        {
+            buffer[index++] = *i;
+        }
+    }
+
     template <typename U> friend bool operator==(const IntersectionFlagsSet<U> &a, const IntersectionFlagsSet<U> &b);
     template <typename U> friend bool operator!=(const IntersectionFlagsSet<U> &a, const IntersectionFlagsSet<U> &b);
     template <typename U> friend bool operator<(const IntersectionFlagsSet<U> &a, const IntersectionFlagsSet<U> &b);

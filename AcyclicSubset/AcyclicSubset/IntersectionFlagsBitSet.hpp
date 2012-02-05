@@ -134,6 +134,27 @@ public:
         return data[0];
     }
 
+    int GetBufferSize() const
+    {
+        return size;
+    }
+
+    void ReadFromBuffer(int *buffer, int &index)
+    {
+        for (int i = 0; i < size; i++)
+        {
+            data[i] = buffer[index++];
+        }
+    }
+
+    void WriteToBuffer(int *buffer, int &index) const
+    {
+        for (int i = 0; i < size; i++)
+        {
+            buffer[index++] = data[i];
+        }
+    }
+
     template <int M> friend bool operator==(const IntersectionFlagsBitSet<M> &a, const IntersectionFlagsBitSet<M> &b);
     template <int M> friend bool operator!=(const IntersectionFlagsBitSet<M> &a, const IntersectionFlagsBitSet<M> &b);
     template <int M> friend bool operator<(const IntersectionFlagsBitSet<M> &a, const IntersectionFlagsBitSet<M> &b);
