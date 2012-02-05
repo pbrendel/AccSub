@@ -9,13 +9,8 @@
  *         http://redhom.ii.uj.edu.pl
  *
  * todo:
- * - AccInfo and IntersectionInfo as maximal simplex list:
- *   - AccInfoSimplexMF
- *   - IntersectionInfoMF
- * - AccInfo and IntersectionInfo storing no data (computing it each time):
- *   - AccInfoNone
- *   - IntersectionInfoNone
- * - IntersectionFlags as set - IntersectionFlagsSet
+ * - AccInfo as maximal simplex list - AccInfoSimplexMF
+ * - AccInfo storing no data (computing it each time) - AccInfoNone
  * - full tests of AccTest classes in maximal simplex list case
  *
  */

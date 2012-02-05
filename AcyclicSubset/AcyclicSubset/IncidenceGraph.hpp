@@ -128,7 +128,7 @@ public:
             return simplexNormalization.NormalizeVertex(this->simplex, v);
         }
 
-        IntersectionFlags GetNormalizedIntersectionFlags(const Simplex &intersection)
+        const IntersectionFlags &GetNormalizedIntersectionFlags(const Simplex &intersection)
         {
             return graph->subconfigurationsFlags[Normalize(intersection)];
         }
@@ -137,8 +137,8 @@ public:
         PropertiesFlags GetPropertiesFlags() { return propertiesFlags; }
         AccInfo &GetAccInfo() { return accInfo; }
 
-        IntersectionFlags GetConfigurationsFlags(const Simplex &s) { return graph->configurationsFlags[s]; }
-        IntersectionFlags GetSubconfigurationsFlags(const Simplex &s) { return graph->subconfigurationsFlags[s]; }
+        const IntersectionFlags &GetConfigurationsFlags(const Simplex &s) { return graph->configurationsFlags[s]; }
+        const IntersectionFlags &GetSubconfigurationsFlags(const Simplex &s) { return graph->subconfigurationsFlags[s]; }
 
         bool operator==(const Node &node)
         {
@@ -190,7 +190,7 @@ public:
             return intersection.Get(this);
         }
 
-        IntersectionFlags &GetIntersectionFlags(Node *node)
+        const IntersectionFlags &GetIntersectionFlags(Node *node)
         {
             return intersection.GetFlags(this, node);
         }

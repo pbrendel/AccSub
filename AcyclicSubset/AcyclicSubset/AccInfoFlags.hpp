@@ -46,12 +46,12 @@ public:
         accTest->IsAcyclic(*node->simplex, intersectionFlags, intersectionFlagsMF);
     }
 
-    bool IsInsideAccIntersection(IntersectionFlags flags)
+    bool IsInsideAccIntersection(const IntersectionFlags &flags)
     {
         return ((flags & intersectionFlags) == flags);
     }
 
-    bool IsDisjointWithAccIntersection(IntersectionFlags flags)
+    bool IsDisjointWithAccIntersection(const IntersectionFlags &flags)
     {
         return ((flags & intersectionFlags) == 0);
     }
@@ -208,7 +208,7 @@ public:
 
 private:
 
-    void UpdateAccIntersectionFlags(IntersectionFlags flags, IntersectionFlags flagsMF)
+    void UpdateAccIntersectionFlags(const IntersectionFlags &flags, const IntersectionFlags &flagsMF)
     {
         // if flags are already set then we're done
         if ((intersectionFlags & flags) == flags)

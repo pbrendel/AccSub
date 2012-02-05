@@ -55,7 +55,7 @@ public:
         return intersection;
     }
 
-    IntersectionFlags &GetFlags(Edge *edge, Node *node)
+    const IntersectionFlags &GetFlags(Edge *edge, Node *node)
     {
         if (!IsCalculated())
         {

@@ -129,7 +129,7 @@ public:
         return (*this);
     }
 
-    operator int()
+    operator int() const
     {
         return data[0];
     }

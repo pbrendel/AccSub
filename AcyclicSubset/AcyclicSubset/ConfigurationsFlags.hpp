@@ -74,12 +74,12 @@ public:
         }
     }
 
-    FlagsType operator[] (const SimplexType &s)
+    const FlagsType &operator[] (const SimplexType &s)
     {
         return flags[s];
     }
 
-    bool GetSimplex(FlagsType f, SimplexType &simplex)
+    bool GetSimplex(const FlagsType &f, SimplexType &simplex)
     {
         for (typename std::map<SimplexType, FlagsType>::iterator i = flags.begin(); i != flags.end(); i++)
         {
@@ -99,7 +99,23 @@ public:
             reverseMap[i->second] = i->first;
         }
     }
+
+    template <typename S, typename F> friend std::ostream &operator<<(std::ostream &str, const ConfigurationsFlags<S, F> &cf);
 };
+
+template <typename SimplexType, typename FlagsType>
+std::ostream &operator<<(std::ostream &str, const ConfigurationsFlags<SimplexType, FlagsType> &cf)
+{
+    for (typename std::map<SimplexType, FlagsType>::const_iterator i = cf.flags.begin(); i != cf.flags.end(); i++)
+    {
+        for (typename SimplexType::const_iterator v = i->first.begin(); v != i->first.end(); v++)
+        {
+            str<<*v<<" ";
+        }
+        str<<": "<<i->second<<std::endl;
+    }
+    return str;
+}
 
 #endif	/* CONFIGURATIONSFLAGS_HPP */
 
