@@ -285,7 +285,7 @@ void Tests::TestAndCompare(SimplexList &simplexList)
 
     if (useCoreductions)
     {
-        std::cout<<std::endl<<"coreduction:"<<std::endl;
+        std::cout<<std::endl<<"coreductions:"<<std::endl;
         Test(simplexList, RT_Coreduction);
         cout<<std::endl;
     }

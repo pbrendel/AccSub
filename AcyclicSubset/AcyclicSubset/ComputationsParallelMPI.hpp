@@ -256,7 +256,7 @@ public:
         {
             MPI_Send(0, 0, MPI_INT, rank, MPI_MY_MEMORY_INFO_TAG, MPI_COMM_WORLD);
             MPI_Recv(&mem, 1, MPI_INT, rank, MPI_MY_MEMORY_INFO_TAG, MPI_COMM_WORLD, &status);          
-            MemoryInfo::AddSlaveMemoryInfo(rank, mem);
+            MemoryInfo::AddSlavesMemoryInfo(rank, mem);
         }
         std::cout<<"slaves killed"<<std::endl;
 #endif

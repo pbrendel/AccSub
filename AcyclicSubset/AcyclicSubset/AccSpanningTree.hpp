@@ -237,7 +237,7 @@ public:
             }
         }
 
-        // paths founded in previous function are formed into tree
+        // paths found in previous function are formed into tree
         // the root if the tree is first vertex on the list
         // we move from currently added vertex towards root at stop once
         // we intersect a part of acyclic subset (in the worst case -> root)
@@ -533,7 +533,7 @@ public:
     
     void JoinAccSubsets()
     {
-        // paths need to be founded in previous steps
+        // paths need to be found in previous steps
         for (typename Edges::iterator i = edges.begin(); i != edges.end(); i++)
         {
             if ((*i)->isInSpanningTree) (*i)->UpdateAccConnections();

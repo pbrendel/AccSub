@@ -713,6 +713,53 @@ public:
 };
 
 ////////////////////////////////////////////////////////////////////////////////
+/*
+template <typename Traits, typename HomologyHelper>
+class AccTestReductions : public AccTestT<Traits>
+{
+    typedef typename Traits::Simplex Simplex;
+    typedef typename Traits::SimplexList SimplexList;
+    typedef typename Traits::IntersectionFlags IntersectionFlags;
+
+    std::map<IntersectionFlags, Simplex> simplexMap;
+    int lastMaximalFacePower;
+
+public:
+
+    AccTestReductions(int dim)
+    {
+        lastMaximalFacePower = (1 << (dim + 1)) - 2;
+        ConfigurationsFlags<Simplex, IntersectionFlags> configurationsFlags(dim, false, true);
+        configurationsFlags.GetReverseMap(simplexMap);
+    }
+
+    bool IsAcyclic(const Simplex &simplex, SimplexList &intersectionMF)
+    {
+        TRIVIAL_TEST_I(simplex, intersectionMF);
+        return HomologyHelper::IsFullyReducible(intersectionMF);
+    }
+
+    bool IsAcyclic(const Simplex &simplex, const IntersectionFlags &intersectionFlags, const IntersectionFlags &intersectionFlagsMF)
+    {
+        TRIVIAL_TEST_F(simplex, intersectionFlags, intersectionFlagsMF);
+        IntersectionFlags flag = 1;
+        SimplexList simplexList;
+        for (int i = 0; i < lastMaximalFacePower; i++)
+        {
+            if ((intersectionFlagsMF & flag) == flag)
+            {
+                simplexList.push_back(simplexMap[flag]);
+            }
+            flag = flag << 1;
+        }
+        return HomologyHelper::IsFullyReducible(simplexList);
+    }
+
+    int GetID() { return 5; }
+
+};
+*/
+////////////////////////////////////////////////////////////////////////////////
 
 template <typename Traits>
 AccTestT<Traits> *AccTestT<Traits>::Create(int accTestNumber, int dim)
@@ -726,6 +773,7 @@ AccTestT<Traits> *AccTestT<Traits>::Create(int accTestNumber, int dim)
     if (accTestNumber == 2) return new AccTestStar<Traits>(dim);
     if (accTestNumber == 3) return new AccTestRecursive<Traits>(dim);
     if (accTestNumber == 4) return new AccTestHomology<Traits, RedHomHelpers>(dim);
+//    if (accTestNumber == 5) return new AccTestReductions<Traits, RedHomHelpers>(dim);
     return new AccTestTabs<Traits>(dim); // default
 }
 
