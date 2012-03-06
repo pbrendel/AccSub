@@ -165,7 +165,7 @@ public:
 
             if (status.MPI_TAG == MPI_MY_MEMORY_INFO_TAG)
             {
-                int memory = MemoryInfo::GetUsage();
+                int memory = MemoryInfo::GetMaxUsage();
                 MPI_Send(&memory, 1, MPI_INT, 0, MPI_MY_MEMORY_INFO_TAG, MPI_COMM_WORLD);
                 MemoryInfo::Print();
                 continue;
@@ -258,7 +258,7 @@ public:
             MPI_Recv(&mem, 1, MPI_INT, rank, MPI_MY_MEMORY_INFO_TAG, MPI_COMM_WORLD, &status);          
             MemoryInfo::AddSlavesMemoryInfo(rank, mem);
         }
-        std::cout<<"slaves killed"<<std::endl;
+        MemoryInfo::PrintSlavesMemoryInfo();
 #endif
     }
 };

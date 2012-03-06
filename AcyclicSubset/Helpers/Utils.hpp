@@ -220,11 +220,13 @@ class MemoryInfo
 {
 
     static std::map<int, int> slavesMemoryInfo;
+    static int maxUsage;
 
 public:
 
     static void Print();
     static int GetUsage();
+    static int GetMaxUsage();
 
     static void AddSlavesMemoryInfo(int rank, int mem);
     static void PrintSlavesMemoryInfo();

@@ -61,11 +61,11 @@ void Tests::PrintHelp()
     std::cout<<"  --use_accsub [0|1]   - use AccSub algorithm ["<<useAccSub<<"]"<<std::endl;
     std::cout<<"  --use_accsubig [0|1] - use AccSubIG algorithm ["<<useAccSubIG<<"]"<<std::endl;
     std::cout<<"  --use_accsubst [0|1] - use AccSubST algorithm ["<<useAccSubST<<"]"<<std::endl;
-    std::cout<<"  --dist [0|1] pc alg  - use distributed computations with specified"<<std::endl;
-    std::cout<<"                         packs count and selected algorithm ["<<useAccSubDist<<"]["<<packsCount<<"]["<<distAccSubAlgorithm<<"]"<<std::endl;
-    std::cout<<"                          - 0 - AccSub"<<std::endl;
-    std::cout<<"                          - 1 - AccSubIG"<<std::endl;
-    std::cout<<"                          - 2 - AccSubST"<<std::endl;
+    std::cout<<"  --use_dist [0|1] pc alg  - use distributed computations with specified"<<std::endl;
+    std::cout<<"                             packs count and selected algorithm ["<<useAccSubDist<<"]["<<packsCount<<"]["<<distAccSubAlgorithm<<"]"<<std::endl;
+    std::cout<<"                              - 0 - AccSub"<<std::endl;
+    std::cout<<"                              - 1 - AccSubIG"<<std::endl;
+    std::cout<<"                              - 2 - AccSubST"<<std::endl;
     std::cout<<"  --test number        - select acyclicity test number ["<<accTestNumber<<"]"<<std::endl;
     std::cout<<"                          - 0 - tabulated configurations (full)"<<std::endl;
     std::cout<<"                          - 1 - CoDim 1 (partial)"<<std::endl;
@@ -403,8 +403,8 @@ void Tests::MPIMaster(int argc, char** argv)
 {
 #ifdef USE_MPI
     TestFromCommandLine(argc, argv);
-    ComputationsParallelMPI<PartitionGraph>::KillSlaves();
     ComputationsParallelMPI<PartitionGraph>::CollectDebugMemoryInfo();
+    ComputationsParallelMPI<PartitionGraph>::KillSlaves();
 #endif
 }
 

@@ -46,10 +46,10 @@ class Tests
     typedef OutputGraphT<IncidenceGraph> OutputGraph;
     
 #ifdef USE_MPI
-    typedef PartitionGraphT<IncidenceGraph, PrepareDataNone, ComputationsParallelMPI> PartitionGraph;
+    typedef PartitionGraphT<IncidenceGraph, PrepareDataBFS, ComputationsParallelMPI> PartitionGraph;
 #else
 #ifdef USE_OMP
-    typedef PartitionGraphT<IncidenceGraph, PrepareDataNone, ComputationsParallelOMP> PartitionGraph;
+    typedef PartitionGraphT<IncidenceGraph, PrepareDataBFS, ComputationsParallelOMP> PartitionGraph;
 #else
     typedef PartitionGraphT<IncidenceGraph, PrepareDataBFS, ComputationsLocal> PartitionGraph;
 #endif

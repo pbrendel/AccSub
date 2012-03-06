@@ -100,18 +100,26 @@ void Timer::TimeStamp(const char* msg)
 ////////////////////////////////////////////////////////////////////////////////
 
 std::map<int, int> MemoryInfo::slavesMemoryInfo;
+int MemoryInfo::maxUsage = 0;
 
 void MemoryInfo::Print()
 {
-    std::cout<<"memory usage: "<<GetUsage()<<" MB"<<std::endl;
+    int usage = GetUsage();
+    std::cout<<"memory usage: "<<usage<<" MB    max: "<<GetMaxUsage()<<std::endl;
 }
 
 int MemoryInfo::GetUsage()
 {
     struct rusage usage;
     getrusage(RUSAGE_SELF, &usage);
-    return (usage.ru_maxrss >> 10);
+    int mu = usage.ru_maxrss >> 10;
+    maxUsage = (mu > maxUsage) ? mu : maxUsage;
+    return mu;
+}
 
+int MemoryInfo::GetMaxUsage()
+{
+    return maxUsage;
 }
 
 void MemoryInfo::AddSlavesMemoryInfo(int rank, int mem)
@@ -130,7 +138,7 @@ void MemoryInfo::PrintSlavesMemoryInfo()
     {
         count++;
         std::cout<<"process: "<<i->first<<" memory: "<<i->second<<std::endl;
-        int mem = i->first;
+        int mem = i->second;
         total += mem;
         if (mem < min) min = mem;
         if (mem > max) max = mem;
