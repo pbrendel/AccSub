@@ -114,27 +114,33 @@ public:
         int packSize = (int)ceil(float(simplexList.size()) / packsCount);
 #ifdef ACCSUB_TRACE
         std::cout<<"pack size: "<<packSize<<std::endl;
+        MemoryInfo::Print();
 #endif
         PrepareDataPolicy<PartitionGraphT>::Prepare(simplexList, packSize);
 #ifdef ACCSUB_TRACE
         Timer::Update("preparing data");
+        MemoryInfo::Print();
 #endif
         DivideData(simplexList, packSize);
 #ifdef ACCSUB_TRACE
         Timer::Update("dividing data");
+        MemoryInfo::Print();
 #endif
         CreateDataEdges();
 #ifdef ACCSUB_TRACE
         Timer::Update("creating data connections");
+        MemoryInfo::Print();
 #endif
         CalculateIncidenceGraphs(nodes);
 #ifdef ACCSUB_TRACE
         Timer::Update("creating incidence graphs");
+        MemoryInfo::Print();
 #endif
         AccSpanningTreeT<PartitionGraphT> *ast = new AccSpanningTreeT<PartitionGraphT>(this);
         CalculateIncidenceGraphs(isolatedNodes);
 #ifdef ACCSUB_TRACE
         Timer::Update("creating isolated incidence graphs");
+        MemoryInfo::Print();
 #endif
         CombineGraphs();
         ast->JoinAccSubsets();

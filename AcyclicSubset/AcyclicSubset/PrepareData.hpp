@@ -61,11 +61,12 @@ class PrepareDataBFS
     
     struct SimplexDescriptor
     {
-        Simplex simplex;
+        Simplex *simplex;
         bool added;
 
-        SimplexDescriptor()
+        SimplexDescriptor(Simplex *s)
         {
+            simplex = s;
             added = false;
         }
     };
@@ -75,40 +76,39 @@ public:
     static void Prepare(SimplexList &simplexList, int packSize)
     {
         int count = simplexList.size();
-        SimplexDescriptor *descriptors = new SimplexDescriptor[count];
+        SimplexDescriptor **descriptors = new SimplexDescriptor*[count];
         int index = 0;
         for (typename SimplexList::iterator i = simplexList.begin(); i != simplexList.end(); i++)
         {
-            descriptors[index++].simplex = *i;
+            descriptors[index++] = new SimplexDescriptor(&(*i));
         }
-        simplexList.clear();
 
         std::map<Vertex, std::vector<SimplexDescriptor *> > H;
         for (int i = 0; i < count; i++)
         {
-            Simplex &s = descriptors[i].simplex;
-            for (typename Simplex::iterator v = s.begin(); v != s.end(); v++)
+            Simplex *s = descriptors[i]->simplex;
+            for (typename Simplex::iterator v = s->begin(); v != s->end(); v++)
             {
-                H[*v].push_back(&descriptors[i]);
+                H[*v].push_back(descriptors[i]);
             }
         }
 
         index = 0;
         for (int i = 0; i < count; i++)
         {
-            if (descriptors[i].added)
+            if (descriptors[i]->added)
             {
                 continue;
             }
             std::queue<SimplexDescriptor *> Q;
-            Q.push(&descriptors[i]);
-            descriptors[i].added = true;
+            Q.push(descriptors[i]);
+            descriptors[i]->added = true;
             while (!Q.empty())
             {
                 SimplexDescriptor *sd = Q.front();
                 Q.pop();
-                simplexList.push_back(sd->simplex);
-                for (typename Simplex::iterator v = sd->simplex.begin(); v != sd->simplex.end(); v++)
+                std::swap(simplexList[index++], *sd->simplex);
+                for (typename Simplex::iterator v = sd->simplex->begin(); v != sd->simplex->end(); v++)
                 {
                     std::vector<SimplexDescriptor *> neighbours = H[*v];
                     for (typename std::vector<SimplexDescriptor *>::iterator n = neighbours.begin(); n != neighbours.end(); n++)
@@ -121,6 +121,10 @@ public:
                     }
                 }
             }
+        }
+        for (int i = 0; i < count; i++)
+        {
+            delete descriptors[i];
         }
         delete [] descriptors;
     }

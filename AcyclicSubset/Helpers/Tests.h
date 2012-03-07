@@ -51,7 +51,7 @@ class Tests
 #ifdef USE_OMP
     typedef PartitionGraphT<IncidenceGraph, PrepareDataBFS, ComputationsParallelOMP> PartitionGraph;
 #else
-    typedef PartitionGraphT<IncidenceGraph, PrepareDataBFS, ComputationsLocal> PartitionGraph;
+    typedef PartitionGraphT<IncidenceGraph, PrepareDataNone, ComputationsLocalMPITest> PartitionGraph;
 #endif
 #endif
 

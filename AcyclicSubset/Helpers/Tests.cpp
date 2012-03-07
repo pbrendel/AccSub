@@ -436,6 +436,7 @@ void Tests::MPITestFromCommandLine(int argc, char **argv)
 
     std::cout<<"terminating process: "<<processRank<<std::endl;
     Timer::TimeFrom(now, "total");
+    std::cout<<"process "<<processRank<<" ";
     MemoryInfo::Print();
     MPI_Finalize();
 #endif

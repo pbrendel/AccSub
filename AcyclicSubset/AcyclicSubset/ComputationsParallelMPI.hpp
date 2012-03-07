@@ -87,6 +87,18 @@ public:
 
     static void Compute(Nodes &nodes, AccSubAlgorithm accSubAlgorithm, AccTest *accTest)
     {
+#ifdef ACCSUB_TRACE
+        Timer::TimeStamp("ComputationsParallelMPI start");
+        Timer::Time start = Timer::Now();
+        if (accSubAlgorithm == AccSubAlgorithm::AccSubIG)
+        {
+            std::cout<<"using AccSubIG"<<std::endl;
+        }
+        else
+        {
+            std::cout<<"using AccSubST"<<std::endl;
+        }
+#endif
 #ifdef USE_MPI
         ComputationsParallelMPI::accSubAlgorithm = accSubAlgorithm;
         ComputationsParallelMPI::accTest = accTest;
@@ -165,9 +177,10 @@ public:
 
             if (status.MPI_TAG == MPI_MY_MEMORY_INFO_TAG)
             {
+                std::cout<<"process "<<processRank<<" ";
+                MemoryInfo::Print();
                 int memory = MemoryInfo::GetMaxUsage();
                 MPI_Send(&memory, 1, MPI_INT, 0, MPI_MY_MEMORY_INFO_TAG, MPI_COMM_WORLD);
-                MemoryInfo::Print();
                 continue;
             }
 
