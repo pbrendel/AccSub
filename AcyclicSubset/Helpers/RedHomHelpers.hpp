@@ -28,9 +28,6 @@
 #include <redHom/complex/simplicial/SimplexSComplex.hpp>
 #include <capd/RedHom/SComplexFiltrT.h>
 
-#include <boost/shared_ptr.hpp>
-
-
 ////////////////////////////////////////////////////////////////////////////////
 // RedHom setup
 
@@ -138,7 +135,6 @@ public:
         return (homSignCR().topDim() < 0 || (homSignCR().topDim() == 0 && homSignCR().bettiNumber(0) == 1));
     }
 
-    /*
     template <typename SimplexList>
     static bool IsFullyReducible(SimplexList &simplexList)
     {
@@ -149,28 +145,10 @@ public:
             simplex.insert(i->begin(), i->end());
             complex.addSimplex(simplex);
         }
-
-        typedef SimplexSComplex ComplexType;
-        typedef typename SComplexFiltrT<ComplexType>::CellFreeModule FreeModuleType;
-        typedef ReducibleFreeChainComplex<FreeModuleType> ReducibleFreeChainComplexType;
-        typedef typename CoreductionAlgorithmFactory<ComplexType, ScalarType>::DefaultAlgorithm Coreduction;
         
-      //  boost::shared_ptr<Coreduction> coreduction = (*CoreductionAlgorithmFactory<ComplexType, ScalarType>::createDefault(complex));
-      //  coreduction->setStoreReducedCells(true);
-     //   (*coreduction)();
-
-        ReducibleFreeChainComplexOverZFromSComplexAlgorithm<ComplexType, ScalarType> rfcBuilder(complex, false);
-        CRef<ReducibleFreeChainComplexType> rfcComplexCR = rfcBuilder.template build<ReducibleFreeChainComplexType>();
-        rfcComplexCR().reduce();
-        std::vector<std::vector<ComplexType::Cell> > simpleHomologyGenerators;
-  	bool fullyReduced = rfcComplexCR().removeSimpleHomologyGenerators(simpleHomologyGenerators);
-        if (!fullyReduced)
-        {
-            std::cout<<fullyReduced<<" "<<IsTrivialHomology(simplexList)<<std::endl;
-        }
-        return fullyReduced;
+        (*CoreductionAlgorithmFactory<SimplexSComplex, ScalarType>::createDefault(complex))();
+        return complex.size() == 1;
     }
-    */
 
 private:
 

@@ -713,7 +713,7 @@ public:
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-/*
+
 template <typename Traits, typename HomologyHelper>
 class AccTestReductions : public AccTestT<Traits>
 {
@@ -758,7 +758,7 @@ public:
     int GetID() { return 5; }
 
 };
-*/
+
 ////////////////////////////////////////////////////////////////////////////////
 
 template <typename Traits>
@@ -773,7 +773,7 @@ AccTestT<Traits> *AccTestT<Traits>::Create(int accTestNumber, int dim)
     if (accTestNumber == 2) return new AccTestStar<Traits>(dim);
     if (accTestNumber == 3) return new AccTestRecursive<Traits>(dim);
     if (accTestNumber == 4) return new AccTestHomology<Traits, RedHomHelpers>(dim);
-//    if (accTestNumber == 5) return new AccTestReductions<Traits, RedHomHelpers>(dim);
+    if (accTestNumber == 5) return new AccTestReductions<Traits, RedHomHelpers>(dim);
     return new AccTestTabs<Traits>(dim); // default
 }
 

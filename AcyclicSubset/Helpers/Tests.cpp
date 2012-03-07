@@ -226,11 +226,7 @@ void Tests::Test(SimplexList &simplexList, ReductionType reductionType)
     }
     else // (reductionType == RT_Coreduction || reductionType == RT_None)
     {
-#ifdef USE_SIMPLEX_S_COMPLEX
         ig = 0;
-#else
-        ig = IncidenceGraphHelpers<IncidenceGraph>::Create(simplexList);
-#endif
     }
     if (accTest)
     {
