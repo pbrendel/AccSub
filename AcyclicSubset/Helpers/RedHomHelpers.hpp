@@ -146,8 +146,16 @@ public:
             complex.addSimplex(simplex);
         }
         
-        (*CoreductionAlgorithmFactory<SimplexSComplex, ScalarType>::createDefault(complex))();
-        return complex.size() == 1;
+        typedef typename CoreductionAlgorithmFactory<SimplexSComplex, ScalarType>::DefaultAlgorithm Coreduction;
+        boost::shared_ptr<Coreduction> algorithm = CoreductionAlgorithmFactory<SimplexSComplex, ScalarType>::createDefault(complex);
+        algorithm->setStoreReducedCells(true);
+        (*algorithm)();
+
+        if (complex.size(1) == 0)
+        {
+            return ((*algorithm).getExtractedCells().size() == 1);
+        }
+        return false;
     }
 
 private:
