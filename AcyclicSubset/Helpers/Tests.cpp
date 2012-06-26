@@ -72,6 +72,7 @@ void Tests::PrintHelp()
     std::cout<<"                          - 2 - star (partial)"<<std::endl;
     std::cout<<"                          - 3 - recursive (partial)"<<std::endl;
     std::cout<<"                          - 4 - homology (full)"<<std::endl;
+    std::cout<<"                          - 5 - coreductions"<<std::endl;
     std::cout<<"  --sv [0|1] - sort vertices before performing computations ["<<sortVerts<<"] "<<std::endl;
     std::cout<<std::endl;
 }
