@@ -22,6 +22,7 @@ template <typename Simplex>
 class SimplexUtils
 {
     typedef std::vector<Simplex> SimplexList;
+    typedef std::set<Simplex> SimplexSet;
 
 public:
     
@@ -203,6 +204,105 @@ public:
         }
         return false;
     }
+
+private:
+
+    void AddWithBorder(Simplex baseSimplex, SimplexSet &configuration)
+    {
+        configuration.insert(baseSimplex);
+        if (baseSimplex.size() > 1)
+        {
+            typename Simplex::iterator i = baseSimplex.begin();
+            while (i != baseSimplex.end())
+            {
+                int v = *i;
+                i = baseSimplex.erase(i);
+                AddWithBorder(baseSimplex, configuration);
+                i = baseSimplex.insert(i, v);
+                i++;
+            }
+        }
+    }
+
+public:
+
+    void GenerateAllConfigurations(Simplex baseSimplex, SimplexSet &configuration, std::set<SimplexSet> &allConfigurations)
+    {
+        std::vector<Simplex> border;
+        if (baseSimplex.size() > 1)
+        {
+            typename Simplex::iterator i = baseSimplex.begin();
+            while (i != baseSimplex.end())
+            {
+                int v = *i;
+                i = baseSimplex.erase(i);
+                border.push_back(baseSimplex);
+                i = baseSimplex.insert(i, v);
+                i++;
+            }
+        }
+        int last = (1 << (border.size())) + 1;
+        for (int i = 0; i < last; i++)
+        {
+            SimplexSet tmpConf;
+            for (int j = 0; j < border.size(); j++)
+            {
+                if (i & (1 << j))
+                {
+                    AddWithBorder(border[j], tmpConf);
+                }
+            }
+            allConfigurations.insert(tmpConf);
+            for (int j = 0; j < border.size(); j++)
+            {
+                if (!(i & (1 << j)))
+                {
+                    std::set<SimplexSet> subconfigurations;
+                    GenerateAllConfigurations(border[j], tmpConf, subconfigurations);
+                    std::set<SimplexSet> tmpConfigurations(allConfigurations.begin(), allConfigurations.end());
+                    allConfigurations.clear();
+                    for (typename std::set<SimplexSet>::iterator c1 = subconfigurations.begin(); c1 != subconfigurations.end(); c1++)
+                    {
+                        for (typename std::set<SimplexSet>::iterator c2 = tmpConfigurations.begin(); c2 != tmpConfigurations.end(); c2++)
+                        {
+                            SimplexSet newConf;
+                            std::set_union(c1->begin(), c1->end(), c2->begin(), c2->end(), std::inserter(newConf, newConf.begin()));
+                            allConfigurations.insert(newConf);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+private:
+
+    int _1pow(int exp)
+    {
+        if (exp % 2)
+        {
+            return -1;
+        }
+        return 1;
+    }
+
+public:
+
+    int ComputeEulerCharacteristic(const SimplexSet &configuration)
+    {
+        std::map<int, int> facesCount;
+        for (typename SimplexSet::iterator s = configuration.begin(); s != configuration.end(); s++)
+        {
+            facesCount[s->size() - 1]++;
+        }
+        int ec = 0;
+        for (std::map<int, int>::iterator i = facesCount.begin(); i != facesCount.end(); i++)
+        {
+            ec = ec + _1pow(i->first) * i->second;
+        }
+        return ec;
+    }
+
 };
 
 #endif	/* SIMPLEXUTILS_HPP */
