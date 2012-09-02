@@ -31,9 +31,42 @@ class AccTestT
     typedef typename Traits::SimplexList SimplexList;
     typedef typename Traits::IntersectionFlags IntersectionFlags;
 
+protected:
+
+    int *flagsDimensions;
+    int dim;
+
+    int NewtonCoefficient(int n, int k)
+    {
+        if (k > n / 2)
+        {
+            k = n - k;
+        }
+        int numerator = n;
+        int denominator = 1;
+        for (int i = 2; i <= k; i++)
+        {
+            numerator *= (n - i + 1);
+            denominator *= i;
+        }
+        return numerator / denominator;
+    }
+
+    void PrepareEulerTest()
+    {
+        flagsDimensions = new int[dim + 1];
+        int index = 0;
+        for (int i = 0; i < dim; i++)
+        {
+            index += this->NewtonCoefficient(dim + 1, i + 1);
+            flagsDimensions[i] = index;
+        }
+    }
+
 public:
 
-    virtual ~AccTestT() { };
+    AccTestT(int d) : dim(d), flagsDimensions(0) { }
+    virtual ~AccTestT() { delete [] flagsDimensions; };
     virtual bool IsAcyclic(const Simplex &simplex, SimplexList &intersectionMF) = 0;
     virtual bool IsAcyclic(const Simplex &simplex, const IntersectionFlags &intersectionFlags, const IntersectionFlags &intersectionFlagsMF) = 0;
     virtual int GetID() = 0;
@@ -62,6 +95,30 @@ public:
             return 1;
         }
         return 0;
+    }
+
+    int EulerCharacteristic(const IntersectionFlags &intersectionFlags)
+    {
+        int currentDim = 0;
+        int index = 0;
+        int eulerCharacteristics = 0;
+        int delta = 1;
+        int flags = 1;
+        while (currentDim < dim)
+        {
+            if (intersectionFlags & flags)
+            {
+                eulerCharacteristics += delta;
+            }
+            flags = flags << 1;
+            index++;
+            while (index >= this->flagsDimensions[currentDim] && currentDim < dim)
+            {
+                currentDim++;
+                delta = -delta;
+            }
+        }
+        return eulerCharacteristics;
     }
 
     static AccTestT *Create(int accTestNumber, int dim);
@@ -106,10 +163,10 @@ class AccTestTabs : public AccTestT<Traits>
     typedef typename Traits::Simplex Simplex;
     typedef typename Traits::SimplexList SimplexList;
     typedef typename Traits::IntersectionFlags IntersectionFlags;
-    
+
 public:
 
-    AccTestTabs(int dim)
+    AccTestTabs(int dim) : AccTestT<Traits>(dim)
     {
         if (dim < 2 || dim > 4)
         {
@@ -196,7 +253,7 @@ class AccTestCodim1 : public AccTestT<Traits>
 
 public:
 
-    AccTestCodim1(int dim)
+    AccTestCodim1(int dim) : AccTestT<Traits>(dim)
     {
         maxSimplexSize = dim + 1;
 
@@ -268,7 +325,7 @@ class AccTestStar : public AccTestT<Traits>
 
 public:
 
-    AccTestStar(int dim)
+    AccTestStar(int dim) : AccTestT<Traits>(dim)
     {
         firstMaximalFacePower = dim + 1;
         lastMaximalFacePower = (1 << (dim + 1)) - 2;
@@ -464,7 +521,7 @@ class AccTestRecursive : public AccTestT<Traits>
     
 public:
 
-    AccTestRecursive(int dim)
+    AccTestRecursive(int dim) : AccTestT<Traits>(dim)
     {
         lastMaximalFacePower = (1 << (dim + 1)) - 2;
 
@@ -679,7 +736,7 @@ class AccTestHomology : public AccTestT<Traits>
 
 public:
 
-    AccTestHomology(int dim)
+    AccTestHomology(int dim) : AccTestT<Traits>(dim)
     {
         lastMaximalFacePower = (1 << (dim + 1)) - 2;
         ConfigurationsFlags<Simplex, IntersectionFlags> configurationsFlags(dim, false, true);
@@ -726,7 +783,7 @@ class AccTestReductions : public AccTestT<Traits>
 
 public:
 
-    AccTestReductions(int dim)
+    AccTestReductions(int dim) : AccTestT<Traits>(dim)
     {
         lastMaximalFacePower = (1 << (dim + 1)) - 2;
         ConfigurationsFlags<Simplex, IntersectionFlags> configurationsFlags(dim, false, true);
