@@ -966,11 +966,22 @@ public:
         RemoveNodesWithPredicate(this, RemoveNodesWithFlags<IncidenceGraphT>(Node::IGNPF_HELPER_FLAG_2));
     }
     
-    void GetAccSub(SimplexList &simplexList)
+    void GetSimplicesInAccSub(SimplexList &simplexList)
     {
         for (typename Nodes::iterator i = nodes.begin(); i != nodes.end(); i++)
         {
             if ((*i)->IsInAccSub())
+            {
+                simplexList.push_back(*(*i)->simplex);
+            }
+        }
+    }
+
+    void GetSimplicesNotInAccSub(SimplexList &simplexList)
+    {
+        for (typename Nodes::iterator i = nodes.begin(); i != nodes.end(); i++)
+        {
+            if (!(*i)->IsInAccSub())
             {
                 simplexList.push_back(*(*i)->simplex);
             }
@@ -990,6 +1001,30 @@ public:
         return size;
     }
 
+    void GetIntersectionWithAccSub(SimplexList &simplexList)
+    {
+        for (typename Nodes::iterator i = nodes.begin(); i != nodes.end(); i++)
+        {
+            if ((*i)->IsInAccSub())
+            {
+                continue;
+            }
+            simplexList.push_back(*(*i)->simplex);
+            for (typename Edges::iterator edge = (*i)->edges.begin(); edge != (*i)->edges.end(); edge++)
+            {
+                if (!(*edge)->GetNeighbour(*i)->IsInAccSub())
+                {
+                    continue;
+                }
+                Simplex intersection;
+                if (Simplex::GetIntersection(*(*i)->simplex, *(*edge)->GetNeighbour(*i)->simplex, intersection))
+                {
+                    simplexList.push_back(intersection);
+                }
+            }
+        }
+    }
+
 private:
 
     void CreateVertexHash(VertexHash &H)
@@ -1003,7 +1038,7 @@ private:
             }
         }
     }
-    
+
 };
 
 ////////////////////////////////////////////////////////////////////////////////
