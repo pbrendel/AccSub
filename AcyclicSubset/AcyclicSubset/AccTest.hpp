@@ -52,7 +52,7 @@ protected:
         return numerator / denominator;
     }
 
-    void PrepareEulerTest()
+    void CreateFlagsDimensions()
     {
         flagsDimensions = new int[dim + 1];
         int index = 0;
@@ -818,19 +818,229 @@ public:
 
 ////////////////////////////////////////////////////////////////////////////////
 
+#define ACCTREE_2D  "acctree2d.dat"
+#define ACCTREE_3D  "acctree3d.dat"
+#define ACCTREE_4D  "acctree4d.dat"
+
+template <typename Traits>
+class AccTestTree : public AccTestT<Traits>
+{
+    typedef typename Traits::Simplex Simplex;
+    typedef typename Traits::SimplexList SimplexList;
+    typedef typename Traits::IntersectionFlags IntersectionFlags;
+
+    struct Node
+    {
+        std::map<int, Node*> nodes;
+        unsigned char type;
+
+        static const unsigned char STANDARD_NODE = 0;
+        static const unsigned char FINAL_NODE_ACC = 1;
+        static const unsigned char FINAL_NODE_CONFLICT = 2;
+
+        Node()
+        {
+            type = STANDARD_NODE;
+        }
+
+        ~Node()
+        {
+            for (typename std::map<int, Node*>::iterator i = nodes.begin(); i != nodes.end(); i++)
+            {
+                delete i->second;
+            }
+        }
+
+        int IsAcyclic(int dim, std::map<int, int> &facesCount, int lastNonzeroDim)
+        {
+            if (dim == lastNonzeroDim)
+            {
+                if (type == STANDARD_NODE) return -1;
+                if (type == FINAL_NODE_ACC) return 1;
+                return 0; // type == FINAL_NODE_CONFLICT
+            }
+            else
+            {
+                int fc = facesCount[dim + 1];
+                if (nodes[fc] == 0)
+                {
+                    return -1;
+                }
+                else
+                {
+                    return nodes[fc]->IsAcyclic(dim + 1, facesCount, lastNonzeroDim);
+                }
+            }
+        }
+
+        void Read(FILE *fp)
+        {
+            fread(&type, sizeof(type), 1, fp);
+            unsigned char nodesCount = 0;
+            fread(&nodesCount, sizeof(nodesCount), 1, fp);
+            for (int i = 0; i < nodesCount; i++)
+            {
+                unsigned char count = 0;
+                fread(&count, sizeof(count), 1, fp);
+                nodes[count] = new Node();
+                nodes[count]->Read(fp);
+            }
+        }
+
+        void Write(int dim, std::ostream &str)
+        {
+            if (type != STANDARD_NODE)
+            {
+                for (int i = 0; i < dim * 2; i++)
+                {
+                    str<<"=";
+                }
+                str<<"type "<<(int)type<<std::endl;
+            }
+            for (typename std::map<int, Node*>::iterator it = nodes.begin(); it != nodes.end(); it++)
+            {
+                for (int i = 0; i < dim * 2; i++)
+                {
+                    str<<"=";
+                }
+                str<<"dim : "<<(dim + 1)<<" faces count: "<<it->first<<std::endl;
+                it->second->Write(dim + 1, str);
+            }
+        }
+    };
+
+    Node rootNode;
+    AccTestT<Traits> *fullTest;
+
+    static int allTests;
+    static int fullTests;
+
+public:
+
+    AccTestTree(int dim) : AccTestT<Traits>(dim)
+    {
+        allTests = 0;
+        fullTests = 0;
+
+        if (dim < 2 || dim > 4)
+        {
+            throw std::string("AccTestTree: dim < 2 || dim > 4");
+        }
+
+        fullTest = AccTestT<Traits>::Create(5, dim);
+
+        std::string filename;
+        if (dim == 2) filename = ACCTREE_2D;
+        else if (dim == 3) filename = ACCTREE_3D;
+        else if (dim == 4) filename = ACCTREE_4D;
+        FILE *fp = fopen(filename.c_str(), "rb");
+        if (fp == 0)
+        {
+            throw (std::string("Can't open data file: ") + filename);
+        }
+        rootNode.Read(fp);
+        fclose(fp);
+
+        this->CreateFlagsDimensions();
+    }
+
+    ~AccTestTree()
+    {
+        std::cout<<"all tests: "<<allTests<<std::endl;
+        std::cout<<"full tests: "<<fullTests<<std::endl;
+        delete fullTest;
+    }
+
+    bool IsAcyclic(const Simplex &simplex, SimplexList &intersectionMF)
+    {
+        allTests++;
+
+        std::map<int, int> facesCount;
+        int lastNonzeroDim = 0;
+        for (typename SimplexList::iterator i = intersectionMF.begin(); i != intersectionMF.end(); i++)
+        {
+            int d = i->size() - 1;
+            facesCount[d] = facesCount[d] + 1;
+            if (d > lastNonzeroDim)
+            {
+                lastNonzeroDim = d;
+            }
+        }
+        int res = IsAcyclic(facesCount, lastNonzeroDim);
+        if (res == 1) return true;
+        if (res = -1) return false;
+        fullTests++;
+        fullTest->IsAcyclic(simplex, intersectionMF);
+    }
+
+    bool IsAcyclic(const Simplex &simplex, const IntersectionFlags &intersectionFlags, const IntersectionFlags &intersectionFlagsMF)
+    {
+        allTests++;
+
+        std::map<int, int> facesCount;
+        int currentDim = 0;
+        int index = 0;
+        int flags = 1;
+        int count = 0;
+        int lastNonzeroDim = 0;
+        while (currentDim < this->dim)
+        {
+            if (intersectionFlagsMF & flags)
+            {
+                count++;
+            }
+            flags = flags << 1;
+            index++;
+            while (index >= this->flagsDimensions[currentDim] && currentDim < this->dim)
+            {
+                facesCount[currentDim] = count;
+                if (count != 0)
+                {
+                    lastNonzeroDim = currentDim;
+                }
+                count = 0;
+                currentDim++;
+            }
+        }
+
+        int res = IsAcyclic(facesCount, lastNonzeroDim);
+        if (res == 1) return true;
+        if (res == -1) return false;
+        fullTests++;
+        return fullTest->IsAcyclic(simplex, intersectionFlags, intersectionFlagsMF);
+    }
+
+    int GetID() { return 6; }
+
+private:
+
+    int IsAcyclic(std::map<int, int> &facesCount, int lastNonzeroDim)
+    {
+        if (facesCount[0] > 1 || (facesCount[0] == 1 && lastNonzeroDim > 0) || lastNonzeroDim == 0)
+        {
+            return -1;
+        }
+        return rootNode.IsAcyclic(0, facesCount, lastNonzeroDim);
+    }
+};
+
+template <typename Traits>
+int AccTestTree<Traits>::allTests = 0;
+template <typename Traits>
+int AccTestTree<Traits>::fullTests = 0;
+
+////////////////////////////////////////////////////////////////////////////////
+
 template <typename Traits>
 AccTestT<Traits> *AccTestT<Traits>::Create(int accTestNumber, int dim)
 {
     if (dim < 2) dim = 2;
-    if (accTestNumber == 0) // if we have chosen tabs then maximal dim is 4
-    {
-        if (dim > 4) dim = 4;
-    }
     if (accTestNumber == 1) return new AccTestCodim1<Traits>(dim);
     if (accTestNumber == 2) return new AccTestStar<Traits>(dim);
     if (accTestNumber == 3) return new AccTestRecursive<Traits>(dim);
     if (accTestNumber == 4) return new AccTestHomology<Traits, RedHomHelpers>(dim);
     if (accTestNumber == 5) return new AccTestReductions<Traits, RedHomHelpers>(dim);
+    if (accTestNumber == 6) return new AccTestTree<Traits>(dim);
     return new AccTestTabs<Traits>(dim); // default
 }
 
