@@ -24,6 +24,70 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 
+class AccTestStats
+{
+    int allTests;
+    int fullTests;
+    int acyclic;
+    int notAcyclic;
+    
+public:
+    
+    AccTestStats()
+    {
+        allTests = 0;
+        fullTests = 0;
+        acyclic = 0;
+        notAcyclic = 0;
+    }
+    
+    void TestPerformed()
+    {
+        allTests++;
+    }
+
+    void FullTestPerformed()
+    {
+        fullTests++;
+    }
+    
+    void IsAcyclic()
+    {
+        acyclic++;                
+    }
+    
+    void IsNotAcyclic()
+    {
+        notAcyclic++;
+    }
+    
+    bool RecordTest(bool isAcyclic)
+    {
+        if (isAcyclic)
+        {
+            acyclic++;
+        }
+        else
+        {
+            notAcyclic++;
+        }
+        return isAcyclic;
+    }
+    
+    void Print()
+    {
+        std::cout<<"all tests: "<<allTests<<std::endl;
+        if (fullTests > 0)
+        {
+            std::cout<<"full tests: "<<fullTests<<std::endl;
+        }
+        std::cout<<"acyclic: "<<acyclic<<std::endl;
+        std::cout<<"not acyclic: "<<notAcyclic<<std::endl;
+    }
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
 template <typename Traits>
 class AccTestT
 {
@@ -780,7 +844,7 @@ class AccTestReductions : public AccTestT<Traits>
 
     std::map<IntersectionFlags, Simplex> simplexMap;
     int lastMaximalFacePower;
-
+    
 public:
 
     AccTestReductions(int dim) : AccTestT<Traits>(dim)
@@ -789,7 +853,7 @@ public:
         ConfigurationsFlags<Simplex, IntersectionFlags> configurationsFlags(dim, false, true);
         configurationsFlags.GetReverseMap(simplexMap);
     }
-
+    
     bool IsAcyclic(const Simplex &simplex, SimplexList &intersectionMF)
     {
         TRIVIAL_TEST_I(simplex, intersectionMF);
@@ -833,7 +897,8 @@ class AccTestTree : public AccTestT<Traits>
     {
         std::map<int, Node*> nodes;
         unsigned char type;
-
+        std::set<IntersectionFlags> acyclicConfigurations;
+        
         static const unsigned char STANDARD_NODE = 0;
         static const unsigned char FINAL_NODE_ACC = 1;
         static const unsigned char FINAL_NODE_CONFLICT = 2;
@@ -851,12 +916,16 @@ class AccTestTree : public AccTestT<Traits>
             }
         }
 
-        int IsAcyclic(int dim, std::map<int, int> &facesCount, int lastNonzeroDim)
+        int IsAcyclic(int dim, std::map<int, int> &facesCount, int lastNonzeroDim, const IntersectionFlags &intersectionFlagsMF)
         {
             if (dim == lastNonzeroDim)
             {
                 if (type == STANDARD_NODE) return -1;
                 if (type == FINAL_NODE_ACC) return 1;
+                if (acyclicConfigurations.size() > 0)
+                {
+                    return (std::find(acyclicConfigurations.begin(), acyclicConfigurations.end(), intersectionFlagsMF) != acyclicConfigurations.end()) ? 1 : -1;
+                }
                 return 0; // type == FINAL_NODE_CONFLICT
             }
             else
@@ -868,14 +937,39 @@ class AccTestTree : public AccTestT<Traits>
                 }
                 else
                 {
-                    return nodes[fc]->IsAcyclic(dim + 1, facesCount, lastNonzeroDim);
+                    return nodes[fc]->IsAcyclic(dim + 1, facesCount, lastNonzeroDim, intersectionFlagsMF);
                 }
             }
         }
 
-        void Read(FILE *fp)
+        void Read(FILE *fp, ConfigurationsFlags<Simplex, IntersectionFlags> &maxFacesFlags)
         {
             fread(&type, sizeof(type), 1, fp);
+            if (type == FINAL_NODE_CONFLICT)
+            {
+                int configurationsCount = 0;
+                fread(&configurationsCount, sizeof(configurationsCount), 1, fp);
+                for (int i = 0; i < configurationsCount; i++)
+                {
+                    IntersectionFlags flags = 0;
+                    unsigned char simplexCount = 0;
+                    fread(&simplexCount, sizeof(simplexCount), 1, fp);   
+                    for (int j = 0; j < simplexCount; j++)
+                    {
+                        unsigned char simplexSize = 0;
+                        fread(&simplexSize, sizeof(simplexSize), 1, fp);
+                        Simplex simplex = Simplex::WithSize(simplexSize);
+                        for (int k = 0; k < simplexSize; k++)
+                        {
+                            unsigned char vert = 0;
+                            fread(&vert, sizeof(vert), 1, fp);   
+                            simplex[k] = vert;
+                        } 
+                        flags = flags | maxFacesFlags[simplex];
+                    }
+                    acyclicConfigurations.insert(flags);
+                }                
+            }
             unsigned char nodesCount = 0;
             fread(&nodesCount, sizeof(nodesCount), 1, fp);
             for (int i = 0; i < nodesCount; i++)
@@ -883,7 +977,7 @@ class AccTestTree : public AccTestT<Traits>
                 unsigned char count = 0;
                 fread(&count, sizeof(count), 1, fp);
                 nodes[count] = new Node();
-                nodes[count]->Read(fp);
+                nodes[count]->Read(fp, maxFacesFlags);
             }
         }
 
@@ -911,24 +1005,19 @@ class AccTestTree : public AccTestT<Traits>
 
     Node rootNode;
     AccTestT<Traits> *fullTest;
-
-    static int allTests;
-    static int fullTests;
-
+    ConfigurationsFlags<Simplex, IntersectionFlags> maxFacesFlags;
+    
 public:
 
-    AccTestTree(int dim) : AccTestT<Traits>(dim)
+    AccTestTree(int dim) : AccTestT<Traits>(dim), maxFacesFlags(dim, false, false)
     {
-        allTests = 0;
-        fullTests = 0;
-
         if (dim < 2 || dim > 4)
         {
             throw std::string("AccTestTree: dim < 2 || dim > 4");
         }
-
-        fullTest = AccTestT<Traits>::Create(5, dim);
-
+        
+        fullTest = 0; //sAccTestT<Traits>::Create(5, dim);
+        
         std::string filename;
         if (dim == 2) filename = ACCTREE_2D;
         else if (dim == 3) filename = ACCTREE_3D;
@@ -938,27 +1027,28 @@ public:
         {
             throw (std::string("Can't open data file: ") + filename);
         }
-        rootNode.Read(fp);
+        rootNode.Read(fp, maxFacesFlags);        
         fclose(fp);
-
+       
         this->CreateFlagsDimensions();
     }
 
     ~AccTestTree()
     {
-        std::cout<<"all tests: "<<allTests<<std::endl;
-        std::cout<<"full tests: "<<fullTests<<std::endl;
-        delete fullTest;
+        if (fullTest != 0)
+        {
+            delete fullTest;
+        }
     }
 
     bool IsAcyclic(const Simplex &simplex, SimplexList &intersectionMF)
     {
-        allTests++;
-
+        IntersectionFlags intersectionFlagsMF = 0;
         std::map<int, int> facesCount;
         int lastNonzeroDim = 0;
         for (typename SimplexList::iterator i = intersectionMF.begin(); i != intersectionMF.end(); i++)
         {
+            intersectionFlagsMF = intersectionFlagsMF | maxFacesFlags[*i];
             int d = i->size() - 1;
             facesCount[d] = facesCount[d] + 1;
             if (d > lastNonzeroDim)
@@ -966,17 +1056,18 @@ public:
                 lastNonzeroDim = d;
             }
         }
-        int res = IsAcyclic(facesCount, lastNonzeroDim);
+        int res = IsAcyclic(facesCount, lastNonzeroDim, intersectionFlagsMF);
         if (res == 1) return true;
         if (res = -1) return false;
-        fullTests++;
-        fullTest->IsAcyclic(simplex, intersectionMF);
+        if (fullTest != 0)
+        {
+            return fullTest->IsAcyclic(simplex, intersectionMF);
+        }
+        return false;
     }
 
     bool IsAcyclic(const Simplex &simplex, const IntersectionFlags &intersectionFlags, const IntersectionFlags &intersectionFlagsMF)
     {
-        allTests++;
-
         std::map<int, int> facesCount;
         int currentDim = 0;
         int index = 0;
@@ -1003,31 +1094,33 @@ public:
             }
         }
 
-        int res = IsAcyclic(facesCount, lastNonzeroDim);
+        int res = IsAcyclic(facesCount, lastNonzeroDim, intersectionFlagsMF);
         if (res == 1) return true;
         if (res == -1) return false;
-        fullTests++;
-        return fullTest->IsAcyclic(simplex, intersectionFlags, intersectionFlagsMF);
+        if (fullTest != 0)
+        {
+            return fullTest->IsAcyclic(simplex, intersectionFlags, intersectionFlagsMF);
+        }
+        return false;
     }
 
     int GetID() { return 6; }
 
 private:
 
-    int IsAcyclic(std::map<int, int> &facesCount, int lastNonzeroDim)
+    int IsAcyclic(std::map<int, int> &facesCount, int lastNonzeroDim, const IntersectionFlags &intersectionFlagsMF)
     {
-        if (facesCount[0] > 1 || (facesCount[0] == 1 && lastNonzeroDim > 0) || lastNonzeroDim == 0)
+        if (facesCount[0] > 1 || (facesCount[0] == 1 && lastNonzeroDim > 0))
         {
             return -1;
         }
-        return rootNode.IsAcyclic(0, facesCount, lastNonzeroDim);
+        if (lastNonzeroDim == 0)
+        {
+            return 1;
+        }
+        return rootNode.IsAcyclic(0, facesCount, lastNonzeroDim, intersectionFlagsMF);
     }
 };
-
-template <typename Traits>
-int AccTestTree<Traits>::allTests = 0;
-template <typename Traits>
-int AccTestTree<Traits>::fullTests = 0;
 
 ////////////////////////////////////////////////////////////////////////////////
 
