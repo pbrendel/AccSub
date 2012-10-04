@@ -128,12 +128,63 @@ public:
         }
         return (*this);
     }
+    
+    IntersectionFlagsBitSet &operator++()
+    {
+        unsigned int minus1 = (unsigned int)-1;
+        int index = 0;
+        while (index < size && data[index] == minus1)
+        {
+            data[index] = 0;
+            index++;
+        }
+        if (index < size)
+        {
+            data[index]++;
+        }
+        return *this;
+    }
 
+    IntersectionFlagsBitSet &operator--()
+    {
+        unsigned int minus1 = (unsigned int)-1;
+        int index = 0;
+        while (index < size - 1 && data[index] == 0)
+        {
+            data[index] = minus1;
+            index++;
+        }
+        if (index == size - 1 && data[index] == 0)
+        {
+            for (int i = 0; i < size; i++)
+            {
+                data[i] = minus1;
+            }
+        }
+        else
+        {
+            if (index < size)
+            {
+                data[index]--;
+            }
+        }
+        return *this;        
+    }
+    
     operator int() const
     {
         return data[0];
     }
 
+    operator bool() const
+    {
+        for (int i = 0; i < size; i++)
+        {
+            if (data[i]) return true;
+        }
+        return false;
+    }
+    
     int GetBufferSize() const
     {
         return size;
