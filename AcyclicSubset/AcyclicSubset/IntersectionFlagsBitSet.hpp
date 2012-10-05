@@ -95,10 +95,11 @@ public:
         return (*this);
     }
 
-    IntersectionFlagsBitSet &operator~()
+    IntersectionFlagsBitSet operator~()
     {
-        for (int i = 0; i < size; i++) data[i] = ~data[i];
-        return (*this);
+        IntersectionFlagsBitSet set;
+        for (int i = 0; i < size; i++) set.data[i] = ~data[i];
+        return set;
     }
 
     IntersectionFlagsBitSet &operator<<(int a)

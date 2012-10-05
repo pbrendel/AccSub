@@ -128,10 +128,12 @@ public:
         return (*this);
     }
 
-    IntersectionFlagsSet &operator~()
+    IntersectionFlagsSet operator~()
     {
-        negated = ~negated;
-        return (*this);
+        IntersectionFlagsSet set;
+        set.flagsSet = flagsSet;
+        set.negated = ~negated;
+        return set;
     }
 
 public:
@@ -139,7 +141,7 @@ public:
     IntersectionFlagsSet &operator<<(int a)
     {
         std::set<T> result;
-        std::transform(flagsSet.begin(), flagsSet.end(), std::inserter(result, result.begin()), tmpinc<T>);
+        std::transform(flagsSet.begin(), flagsSet.end(), std::inserter(result, result.begin()), std::bind1st(std::plus<T>(), T(a)));
         flagsSet = result;
         return (*this);
     }
@@ -147,7 +149,7 @@ public:
     IntersectionFlagsSet &operator>>(int a)
     {
         std::set<T> result;
-        std::transform(flagsSet.begin(), flagsSet.end(), std::inserter(result, result.begin()), tmpdec<T>);
+        std::transform(flagsSet.begin(), flagsSet.end(), std::inserter(result, result.begin()), std::bind1st(std::minus<T>(), T(a)));
         while (result.size() > 0 && *result.begin() < 0)
         {
             result.erase(result.begin());
@@ -155,7 +157,91 @@ public:
         flagsSet = result;
         return (*this);
     }
-    
+
+private:
+
+    void IncFlags()
+    {
+        T first = *flagsSet.begin();
+        flagsSet.erase(flagsSet.begin());
+        while (!flagsSet.empty() && (*flagsSet.begin() - first) == 1)
+        {
+            first = *flagsSet.begin();
+            flagsSet.erase(flagsSet.begin());
+        }
+        flagsSet.insert(first + 1);
+    }
+
+    void DecFlags()
+    {
+        T first = *flagsSet.begin();
+        flagsSet.erase(flagsSet.begin());
+        for (T i = 0; i < first; i++)
+        {
+            flagsSet.insert(i);
+        }
+    }
+
+public:
+
+    IntersectionFlagsSet &operator++()
+    {
+        if (flagsSet.empty())
+        {
+            if (negated)
+            {
+                // its plus infinity plus one
+                // so do nothing
+            }
+            else
+            {
+                // zero plus one is one -> zeroth flag set
+                flagsSet.insert(0);
+            }
+        }
+        else
+        {
+            if (negated)
+            {
+                DecFlags();
+            }
+            else
+            {
+                IncFlags();
+            }
+        }
+        return *this;
+    }
+
+    IntersectionFlagsSet &operator--()
+    {
+        if (flagsSet.empty())
+        {
+            if (negated)
+            {
+                // its plus infinity minus one
+                // so do nothing
+            }
+            else
+            {
+                // its zero minus one and since we
+                // cannot represent -1 we do nothing
+            }
+        }
+        else
+        {
+            if (negated)
+            {
+                IncFlags();
+            }
+            else
+            {
+                DecFlags();
+            }
+        }
+        return *this;
+    }
+
     operator int() const
     {
         int max = sizeof(int) * 8;
@@ -169,6 +255,11 @@ public:
             flags |= (1 << (*i));
         }
         return flags;
+    }
+
+    operator bool() const
+    {
+        return (negated || flagsSet.size() > 0);
     }
 
     static void SetFromFlags(std::set<T> &set, int flags)
