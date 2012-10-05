@@ -100,6 +100,11 @@ public:
         }
     }
 
+    int size()
+    {
+        return flags.size();
+    }
+
     template <typename S, typename F> friend std::ostream &operator<<(std::ostream &str, const ConfigurationsFlags<S, F> &cf);
 };
 

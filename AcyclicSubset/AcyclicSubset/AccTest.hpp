@@ -942,7 +942,7 @@ class AccTestTree : public AccTestT<Traits>
             }
         }
 
-        void Read(FILE *fp, ConfigurationsFlags<Simplex, IntersectionFlags> &maxFacesFlags)
+        void Read(FILE *fp)
         {
             fread(&type, sizeof(type), 1, fp);
             if (type == FINAL_NODE_CONFLICT)
@@ -956,16 +956,11 @@ class AccTestTree : public AccTestT<Traits>
                     fread(&simplexCount, sizeof(simplexCount), 1, fp);   
                     for (int j = 0; j < simplexCount; j++)
                     {
-                        unsigned char simplexSize = 0;
-                        fread(&simplexSize, sizeof(simplexSize), 1, fp);
-                        Simplex simplex = Simplex::WithSize(simplexSize);
-                        for (int k = 0; k < simplexSize; k++)
-                        {
-                            unsigned char vert = 0;
-                            fread(&vert, sizeof(vert), 1, fp);   
-                            simplex[k] = vert;
-                        } 
-                        flags = flags | maxFacesFlags[simplex];
+                        unsigned char index = 0;
+                        fread(&index, sizeof(index), 1, fp);
+                        IntersectionFlags f = 1;
+                        f = f << index;
+                        flags = flags | f;
                     }
                     acyclicConfigurations.insert(flags);
                 }                
@@ -977,7 +972,7 @@ class AccTestTree : public AccTestT<Traits>
                 unsigned char count = 0;
                 fread(&count, sizeof(count), 1, fp);
                 nodes[count] = new Node();
-                nodes[count]->Read(fp, maxFacesFlags);
+                nodes[count]->Read(fp);
             }
         }
 
@@ -1027,7 +1022,7 @@ public:
         {
             throw (std::string("Can't open data file: ") + filename);
         }
-        rootNode.Read(fp, maxFacesFlags);        
+        rootNode.Read(fp);
         fclose(fp);
        
         this->CreateFlagsDimensions();

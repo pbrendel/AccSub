@@ -264,14 +264,15 @@ public:
 
     static void SetFromFlags(std::set<T> &set, int flags)
     {
-        int f = 1;
-        for (T i = 0; i < sizeof(int) * 8; i++)
+        T index = 0;
+        while (flags != 0)
         {
-            if ((flags & f) == f)
+            if (flags & 1)
             {
-                set.insert(i);
+                set.insert(index);
             }
-            f = f << 1;
+            flags = flags >> 1;
+            index++;
         }
     }
 

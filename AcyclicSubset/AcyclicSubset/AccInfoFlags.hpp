@@ -44,7 +44,7 @@ public:
 
     bool IsAccIntersectionAcyclic(AccTest *accTest)
     {
-        accTest->IsAcyclic(*node->simplex, intersectionFlags, intersectionFlagsMF);
+        return accTest->IsAcyclic(*node->simplex, intersectionFlags, intersectionFlagsMF);
     }
 
     bool IsInsideAccIntersection(const IntersectionFlags &flags)
