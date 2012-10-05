@@ -262,10 +262,10 @@ public:
         return (negated || flagsSet.size() > 0);
     }
 
-    static void SetFromFlags(std::set<T> &set, int flags)
+    static void SetFromFlags(std::set<T> &set, unsigned int flags)
     {
         T index = 0;
-        while (flags != 0)
+        while (flags > 0)
         {
             if (flags & 1)
             {
