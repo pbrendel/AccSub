@@ -15,15 +15,15 @@
 #include <fstream>
 #include <string>
 
-#include "../AcyclicSubset/IncidenceGraphTraits.h"
-#include "../AcyclicSubset/IncidenceGraph.hpp"
-#include "../AcyclicSubset/OutputGraph.hpp"
-#include "../AcyclicSubset/PartitionGraph.hpp"
-#include "../AcyclicSubset/PrepareData.hpp"
-#include "../AcyclicSubset/ComputationsLocal.hpp"
-#include "../AcyclicSubset/ComputationsLocalMPITest.hpp"
-#include "../AcyclicSubset/ComputationsParallelMPI.hpp"
-#include "../AcyclicSubset/ComputationsParallelOMP.hpp"
+#include "IncidenceGraphTraits.h"
+#include "IncidenceGraph.hpp"
+#include "OutputGraph.hpp"
+#include "PartitionGraph.hpp"
+#include "PrepareData.hpp"
+#include "ComputationsLocal.hpp"
+#include "ComputationsLocalMPITest.hpp"
+#include "ComputationsParallelMPI.hpp"
+#include "ComputationsParallelOMP.hpp"
 
 enum ReductionType
 {
@@ -44,7 +44,7 @@ class Tests
     typedef IncidenceGraph::AccSubAlgorithm AccSubAlgorithm;
 
     typedef OutputGraphT<IncidenceGraph> OutputGraph;
-    
+
 #ifdef USE_MPI
     typedef PartitionGraphT<IncidenceGraph, PrepareDataBFS, ComputationsParallelMPI> PartitionGraph;
 #else
@@ -61,7 +61,7 @@ public:
     static void MPITestFromCommandLine(int, char**);
 
 private:
-    
+
     // inputType:
     // 0 - single file
     // 1 - list

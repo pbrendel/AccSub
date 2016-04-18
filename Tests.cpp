@@ -13,7 +13,7 @@
 #include "RedHomHelpers.hpp"
 #include "Utils.hpp"
 #include "SimplexUtils.hpp"
-#include "../AcyclicSubset/IncidenceGraphHelpers.hpp"
+#include "IncidenceGraphHelpers.hpp"
 
 #include <cassert>
 
@@ -235,7 +235,7 @@ void Tests::Test(SimplexList &simplexList, ReductionType reductionType)
     }
     total = Timer::TimeFrom(timeStart, "total graph processing");
     MemoryInfo::Print();
-    
+
     if (IsAccSubReduction(reductionType))
     {
         std::cout<<"acyclic subset size: "<<ig->GetAccSubSize()<<std::endl;
@@ -264,7 +264,7 @@ void Tests::Test(SimplexList &simplexList, ReductionType reductionType)
 
     std::cout<<"total: "<<total<<std::endl;
     MemoryInfo::Print();
-    
+
     delete ig;
 }
 
@@ -391,7 +391,7 @@ void Tests::TestFromCommandLine(int argc, char **argv)
     }
 
     MemoryInfo::Print();
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////

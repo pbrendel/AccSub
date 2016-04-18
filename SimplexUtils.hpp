@@ -1,4 +1,4 @@
-/* 
+/*
  * File:   SimplexUtils.hpp
  * Author: Piotr Brendel
  *         piotr.brendel@ii.uj.edu.pl
@@ -16,7 +16,7 @@
 #include <sstream>
 #include <cmath>
 #include <algorithm>
-#include "../Helpers/Rips/rips.hpp"
+#include "external/rips.hpp"
 
 template <typename Simplex>
 class SimplexUtils
@@ -25,7 +25,7 @@ class SimplexUtils
     typedef std::set<Simplex> SimplexSet;
 
 public:
-    
+
     static void ReadSimplexList(SimplexList &simplexList, const char *filename, bool sortVerts)
     {
         std::ifstream input(filename);
@@ -111,7 +111,7 @@ public:
     }
 
 private:
-    
+
     static void GenerateReverseSimplexList(SimplexList &simplexList, Simplex &simplex, int firstVert, int vertsCount, int currentDim, int maxDim, int &index, std::set<int> excludedIndices)
     {
         for (int i = firstVert; i <= vertsCount; i++)

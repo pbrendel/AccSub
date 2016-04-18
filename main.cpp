@@ -9,7 +9,7 @@
  *         http://redhom.ii.uj.edu.pl
  */
 
-#include "Helpers/Tests.h"
+#include "Tests.h"
 #include <iostream>
 
 
@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
         std::cerr<<"something went wrong: "<<s<<std::endl;
         return 1;
     }
-            
+
     return 0;
 }
 

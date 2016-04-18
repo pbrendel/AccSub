@@ -20,7 +20,7 @@
 #include <cassert>
 
 #include "ConfigurationsFlags.hpp"
-#include "../Helpers/RedHomHelpers.hpp"
+#include "RedHomHelpers.hpp"
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -30,9 +30,9 @@ class AccTestStats
     int fullTests;
     int acyclic;
     int notAcyclic;
-    
+
 public:
-    
+
     AccTestStats()
     {
         allTests = 0;
@@ -40,7 +40,7 @@ public:
         acyclic = 0;
         notAcyclic = 0;
     }
-    
+
     void TestPerformed()
     {
         allTests++;
@@ -50,17 +50,17 @@ public:
     {
         fullTests++;
     }
-    
+
     void IsAcyclic()
     {
-        acyclic++;                
+        acyclic++;
     }
-    
+
     void IsNotAcyclic()
     {
         notAcyclic++;
     }
-    
+
     bool RecordTest(bool isAcyclic)
     {
         if (isAcyclic)
@@ -73,7 +73,7 @@ public:
         }
         return isAcyclic;
     }
-    
+
     void Print()
     {
         std::cout<<"all tests: "<<allTests<<std::endl;
@@ -200,7 +200,7 @@ class AccTestFalse : public AccTestT<Traits>
     typedef typename Traits::Simplex Simplex;
     typedef typename Traits::SimplexList SimplexList;
     typedef typename Traits::IntersectionFlags IntersectionFlags;
-    
+
 public:
 
     bool IsAcyclic(const Simplex &simplex, SimplexList &intersectionMF)
@@ -217,9 +217,9 @@ public:
 
 ////////////////////////////////////////////////////////////////////////////////
 
-#define TAB_2D  "tablica2bBin.txt"
-#define TAB_3D  "tablica3bBin.txt"
-#define TAB_4D  "tab4d.txt"
+#define TAB_2D  "data/tablica2bBin.txt"
+#define TAB_3D  "data/tablica3bBin.txt"
+#define TAB_4D  "data/tab4d.txt"
 
 template <typename Traits>
 class AccTestTabs : public AccTestT<Traits>
@@ -311,7 +311,7 @@ class AccTestCodim1 : public AccTestT<Traits>
     typedef typename Traits::Simplex Simplex;
     typedef typename Traits::SimplexList SimplexList;
     typedef typename Traits::IntersectionFlags IntersectionFlags;
-    
+
     int maxSimplexSize;
     std::map<int, IntersectionFlags> codim1flags;
 
@@ -380,7 +380,7 @@ class AccTestStar : public AccTestT<Traits>
     typedef typename Traits::Simplex Simplex;
     typedef typename Traits::SimplexList SimplexList;
     typedef typename Traits::IntersectionFlags IntersectionFlags;
-    
+
     int firstMaximalFacePower;
     int lastMaximalFacePower;
     Vertex firstVertex;
@@ -539,11 +539,11 @@ class AccTestRecursive : public AccTestT<Traits>
     typedef typename Traits::Simplex Simplex;
     typedef typename Traits::SimplexList SimplexList;
     typedef typename Traits::IntersectionFlags IntersectionFlags;
-    
+
     struct MaximalFace;
-    
+
     typedef MaximalFace *MaximalFacePtr;
-    
+
     struct MaximalFace
     {
         IntersectionFlags flag;
@@ -552,7 +552,7 @@ class AccTestRecursive : public AccTestT<Traits>
         IntersectionFlags accIntersectionFlagsMF;
         bool isInAccSub;
         bool isAddedToQueue;
-        
+
         MaximalFace(IntersectionFlags f, IntersectionFlags sf)
         {
             flag = f;
@@ -562,7 +562,7 @@ class AccTestRecursive : public AccTestT<Traits>
             isInAccSub = false;
             isAddedToQueue = false;
         }
-        
+
         void GetNeighboursNotInAccSub(const std::vector<MaximalFacePtr> &faces, std::vector<MaximalFacePtr> &neighbours)
         {
             neighbours.clear();
@@ -577,12 +577,12 @@ class AccTestRecursive : public AccTestT<Traits>
                     neighbours.push_back((*f));
                 }
             }
-        }        
+        }
     };
-        
+
     int lastMaximalFacePower;
     std::map<IntersectionFlags, IntersectionFlags> confToSubconf;
-    
+
 public:
 
     AccTestRecursive(int dim) : AccTestT<Traits>(dim)
@@ -606,8 +606,8 @@ public:
             }
             flag = flag << 1;
         }
-    }        
-    
+    }
+
     bool IsAcyclic(const Simplex &simplex, SimplexList &intersectionMF)
     {
         TRIVIAL_TEST_I(simplex, intersectionMF);
@@ -634,7 +634,7 @@ public:
                 {
                     simplicesInAccSub.push_back(*n);
                     if (simplicesAddedToQueue.find(*n) == simplicesAddedToQueue.end())
-                    {                      
+                    {
                         Q.push(*n);
                         simplicesAddedToQueue.insert(s);
                     }
@@ -644,18 +644,18 @@ public:
 
         return (simplicesInAccSub.size() == intersectionMF.size());
     }
-    
+
     bool IsAcyclic(const Simplex &simplex, const IntersectionFlags &intersectionFlags, const IntersectionFlags &intersectionFlagsMF)
     {
         TRIVIAL_TEST_F(simplex, intersectionFlags, intersectionFlagsMF);
-        
+
         IntersectionFlags flag = 1;
         std::vector<MaximalFacePtr> maximalFaces;
         for (int i = 0; i < lastMaximalFacePower; i++)
         {
             if ((intersectionFlagsMF & flag) != 0)
             {
-                maximalFaces.push_back(new MaximalFace(flag, confToSubconf[flag]));                
+                maximalFaces.push_back(new MaximalFace(flag, confToSubconf[flag]));
             }
             flag = flag << 1;
         }
@@ -694,15 +694,15 @@ public:
                 }
             }
         }
-        
+
         Clear(maximalFaces);
         return (facesInAccSub == maximalFaces.size());
     }
-    
+
     int GetID() { return 3; }
-    
+
 private:
-        
+
     void UpdateNeighboursAccIntersection(const MaximalFacePtr &face, const std::vector<MaximalFacePtr> &maximalFaces)
     {
         std::vector<MaximalFacePtr> neighbours;
@@ -735,8 +735,8 @@ private:
             IntersectionFlags flagsSubfaces = intersection & (~intersectionMF);
             (*f)->accIntersectionFlagsMF &= (~flagsSubfaces);
         }
-    }        
-    
+    }
+
     void Clear(const std::vector<MaximalFacePtr> &maximalFaces)
     {
         for (typename std::vector<MaximalFacePtr>::const_iterator f = maximalFaces.begin(); f != maximalFaces.end(); f++)
@@ -844,7 +844,7 @@ class AccTestReductions : public AccTestT<Traits>
 
     std::map<IntersectionFlags, Simplex> simplexMap;
     int lastMaximalFacePower;
-    
+
 public:
 
     AccTestReductions(int dim) : AccTestT<Traits>(dim)
@@ -853,7 +853,7 @@ public:
         ConfigurationsFlags<Simplex, IntersectionFlags> configurationsFlags(dim, false, true);
         configurationsFlags.GetReverseMap(simplexMap);
     }
-    
+
     bool IsAcyclic(const Simplex &simplex, SimplexList &intersectionMF)
     {
         TRIVIAL_TEST_I(simplex, intersectionMF);
@@ -898,7 +898,7 @@ class AccTestTree : public AccTestT<Traits>
         std::map<int, Node*> nodes;
         unsigned char type;
         std::set<IntersectionFlags> acyclicConfigurations;
-        
+
         static const unsigned char STANDARD_NODE = 0;
         static const unsigned char FINAL_NODE_ACC = 1;
         static const unsigned char FINAL_NODE_CONFLICT = 2;
@@ -953,7 +953,7 @@ class AccTestTree : public AccTestT<Traits>
                 {
                     IntersectionFlags flags = 0;
                     unsigned char simplexCount = 0;
-                    fread(&simplexCount, sizeof(simplexCount), 1, fp);   
+                    fread(&simplexCount, sizeof(simplexCount), 1, fp);
                     for (int j = 0; j < simplexCount; j++)
                     {
                         unsigned char index = 0;
@@ -963,7 +963,7 @@ class AccTestTree : public AccTestT<Traits>
                         flags = flags | f;
                     }
                     acyclicConfigurations.insert(flags);
-                }                
+                }
             }
             unsigned char nodesCount = 0;
             fread(&nodesCount, sizeof(nodesCount), 1, fp);
@@ -1001,7 +1001,7 @@ class AccTestTree : public AccTestT<Traits>
     Node rootNode;
     AccTestT<Traits> *fullTest;
     ConfigurationsFlags<Simplex, IntersectionFlags> maxFacesFlags;
-    
+
 public:
 
     AccTestTree(int dim) : AccTestT<Traits>(dim), maxFacesFlags(dim, false, false)
@@ -1010,9 +1010,9 @@ public:
         {
             throw std::string("AccTestTree: dim < 2 || dim > 4");
         }
-        
+
         fullTest = 0; //sAccTestT<Traits>::Create(5, dim);
-        
+
         std::string filename;
         if (dim == 2) filename = ACCTREE_2D;
         else if (dim == 3) filename = ACCTREE_3D;
@@ -1024,7 +1024,7 @@ public:
         }
         rootNode.Read(fp);
         fclose(fp);
-       
+
         this->CreateFlagsDimensions();
     }
 
