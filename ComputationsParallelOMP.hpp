@@ -1,4 +1,4 @@
-/* 
+/*
  * File:   ComputationsParallelOMP.hpp
  * Author: Piotr Brendel
  *         piotr.brendel@ii.uj.edu.pl
@@ -15,7 +15,7 @@
 #include "ComputationsLocal.hpp"
 
 #ifdef ACCSUB_TRACE
-#include "../Helpers/Utils.hpp"
+#include "Utils.hpp"
 #endif
 
 template <typename PartitionGraph>

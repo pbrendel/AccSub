@@ -44,7 +44,7 @@ float Timer::Update(const char *msg)
     clock_t t = clock();
     float s = float(t - now) / CLOCKS_PER_SEC;
 #endif
-    std::cout<<msg<<" : "<<s<<std::endl;
+    std::cout<<msg<<" : "<<s<<"s"<<std::endl;
     now = t;
     return s;
 }
@@ -74,7 +74,7 @@ float Timer::TimeFrom(Timer::Time t, const char *msg)
 #else
     float s = float(clock() - t) / CLOCKS_PER_SEC;
 #endif
-    std::cout<<msg<<" : "<<s<<std::endl;
+    std::cout<<msg<<" : "<<s<<"s"<<std::endl;
     return s;
 }
 
@@ -93,7 +93,7 @@ void Timer::TimeStamp(const char* msg)
 #ifdef USE_MPI
     std::cout<<msg<<" : "<<float(MPI_Wtime() - timeStart)<<std::endl;
 #else
-    std::cout<<msg<<" : "<<(float(clock() - timeStart) / CLOCKS_PER_SEC)<<std::endl;
+    std::cout<<msg<<" : "<<(float(clock() - timeStart) / CLOCKS_PER_SEC)<<"s"<<std::endl;
 #endif
 }
 

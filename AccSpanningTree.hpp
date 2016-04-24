@@ -18,7 +18,7 @@
 #include <map>
 
 #ifdef ACCSUB_TRACE
-#include "../Helpers/Utils.hpp"
+#include "Utils.hpp"
 #endif
 
 template <typename PartitionGraph>
@@ -37,9 +37,9 @@ class AccSpanningTreeT
     typedef typename PartitionGraph::Node PartitionGraphNode;
 
 public:
-    
+
     struct Edge;
-    
+
     struct Node
     {
         PartitionGraphNode      *parent;
@@ -169,7 +169,7 @@ public:
         // a vertex from part of acyclic subset that we want to connect
         // and move along path towards boundary vertex (of which we are
         // sure that has been already connected to "big" acyclic subset
-        // - see previous function). once we reach boundary vertex or 
+        // - see previous function). once we reach boundary vertex or
         // another part of acyclic subset we stop.
         void UpdatePathFromAccSubToBorder(Vertex borderVertex, Path &path)
         {
@@ -214,7 +214,7 @@ public:
                 }
             }
         }
-        
+
         // finding paths connect boundary vertices
         void FindBoundaryVertsConnectingPaths()
         {
@@ -314,7 +314,7 @@ public:
             }
         }
     };
-    
+
     struct Edge
     {
         Node    *nodeA;
@@ -360,9 +360,9 @@ public:
 
     typedef std::vector<Node *> Nodes;
     typedef std::vector<Edge *> Edges;
-    
+
     Nodes nodes;
-    Edges edges;    
+    Edges edges;
 
     AccSpanningTreeT(PartitionGraph *pg)
     {
@@ -530,7 +530,7 @@ public:
             delete (*i);
         }
     }
-    
+
     void JoinAccSubsets()
     {
         // paths need to be found in previous steps

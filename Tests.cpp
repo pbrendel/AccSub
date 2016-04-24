@@ -250,7 +250,7 @@ void Tests::Test(SimplexList &simplexList, ReductionType reductionType)
         MemoryInfo::Print();
 
         timeStart = Timer::Now();
-        RedHomHelpers::ComputeHomology(og, reductionType == RT_Coreduction);
+        RedHomHelpers::ComputeBettiNumbers(og, reductionType == RT_Coreduction);
         total += Timer::TimeFrom(timeStart);
 
         delete og;
@@ -258,11 +258,11 @@ void Tests::Test(SimplexList &simplexList, ReductionType reductionType)
     else
     {
         timeStart = Timer::Now();
-        RedHomHelpers::ComputeHomology(simplexList, reductionType == RT_Coreduction);
+        RedHomHelpers::ComputeBettiNumbers(simplexList, reductionType == RT_Coreduction);
         total += Timer::TimeFrom(timeStart);
     }
 
-    std::cout<<"total: "<<total<<std::endl;
+    std::cout<<"total: "<<total<<"s"<<std::endl;
     MemoryInfo::Print();
 
     delete ig;

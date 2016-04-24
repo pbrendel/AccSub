@@ -15,34 +15,127 @@
 #include "IncidenceGraphHelpers.hpp"
 #include "Utils.hpp"
 
-////////////////////////////////////////////////////////////////////////////////
-// RedHom stuff
-
 #include <cstdlib>
 #include <iostream>
 #include <string>
 
+////////////////////////////////////////////////////////////////////////////////
+// RedHom stuff
+
 #include <capd/complex/SComplex.h>
 #include <capd/complex/SComplexDefaultTraits.h>
 #include <capd/complex/SimplexSComplex.hpp>
-
-////////////////////////////////////////////////////////////////////////////////
-// RedHom setup
-
-using namespace capd::complex;
-
-typedef SComplex<SComplexDefaultTraits> Complex;
-typedef Complex::Id Id;
-typedef int ScalarType;
+#include <capd/complex/Coreduction.h>
+#include <capd/complex/AKQStrategy.hpp>
+#include <capd/homAlgebra/HomologySignature.h>
+#include <capd/complex/BettiNumbers.hpp>
 
 ////////////////////////////////////////////////////////////////////////////////
 
 class RedHomHelpers
 {
+    typedef capd::complex::SComplex<capd::complex::SComplexDefaultTraits>   SComplex;
+    typedef SComplex::Id                            Id;
+    typedef int                                     Scalar;
+    typedef capd::complex::SimplexSComplex          SimplexSComplex;
+    typedef std::vector<int>                        Betti;
+    typedef HomologySignature<Scalar, int>          Homology;
+
 public:
 
     template <typename OutputGraph>
-    static void GetDimsAndKappaMap(OutputGraph *og, Complex::Dims &dims, Complex::KappaMap &kappaMap)
+    static void ComputeBettiNumbers(OutputGraph *og, bool performCoreductions)
+    {
+        SComplex::Dims dims;
+        SComplex::KappaMap kappaMap;
+        RedHomHelpers::GetDimsAndKappaMap(og, dims, kappaMap);
+        SComplex complex(3, dims, kappaMap, 1);
+        Timer::Update("creating complex");
+
+        Betti betti;
+        if (performCoreductions)
+        {
+            RedHomHelpers::GetBettiNumbersThroughCoreduction(complex, betti, true);
+        }
+        else
+        {
+            RedHomHelpers::GetBettiNumbers(complex, betti, true);
+        }
+
+        RedHomHelpers::PrintBettiNumbers(betti);
+    }
+
+    template <typename SimplexList>
+    static void ComputeBettiNumbers(SimplexList &simplexList, bool performCoreductions)
+    {
+        SimplexSComplex complex;
+        RedHomHelpers::CreateSimplexSComplex(simplexList, complex);
+        Timer::Update("creating complex");
+
+        Betti betti;
+        if (performCoreductions)
+        {
+            RedHomHelpers::GetBettiNumbersThroughCoreduction(complex, betti, true);
+        }
+        else
+        {
+            RedHomHelpers::GetBettiNumbers(complex, betti, true);
+        }
+
+        RedHomHelpers::PrintBettiNumbers(betti);
+    }
+
+    template <typename SimplexList>
+    static int GetBettiNumber(SimplexList &simplexList, int n)
+    {
+        SimplexSComplex complex;
+        RedHomHelpers::CreateSimplexSComplex(simplexList, complex);
+        Betti betti;
+        RedHomHelpers::GetBettiNumbers(complex, betti, false);
+        return betti[n];
+    }
+
+    template <typename SimplexList>
+    static bool IsTrivialHomology(SimplexList &simplexList)
+    {
+        SimplexSComplex complex;
+        RedHomHelpers::CreateSimplexSComplex(simplexList, complex);
+        Betti betti;
+        RedHomHelpers::GetBettiNumbers(complex, betti, false);
+        return (betti.size() == 0 || (betti.size() == 1 && betti[0] == 1));
+    }
+
+    template <typename SimplexList>
+    static bool IsFullyReducible(SimplexList &simplexList)
+    {
+        typedef capd::complex::AKQReduceStrategy<SimplexSComplex, SComplex, Scalar> Strategy;
+        typedef capd::complex::Coreduction<Strategy, Scalar, int>                   Coreduction;
+
+        SimplexSComplex complex;
+        RedHomHelpers::CreateSimplexSComplex(simplexList, complex);
+
+        boost::shared_ptr<Coreduction> coreduction = boost::shared_ptr<Coreduction>(new Coreduction(new Strategy(complex)));
+        (*coreduction)();
+
+        Homology hom = coreduction->getExtractedSignature();
+        return (hom.size() == 1 && hom.bettiNumber(0) == 1);
+    }
+
+private:
+
+    template <typename SimplexList>
+    static void CreateSimplexSComplex(SimplexList &simplexList, SimplexSComplex& complex)
+    {
+        for (typename SimplexList::iterator i = simplexList.begin(); i != simplexList.end(); i++)
+        {
+            std::set<int> simplex;
+            simplex.insert(i->begin(), i->end());
+            complex.addSimplex(simplex);
+        }
+    }
+
+    template <typename OutputGraph>
+    static void GetDimsAndKappaMap(OutputGraph *og, SComplex::Dims &dims, SComplex::KappaMap &kappaMap)
     {
         for (typename OutputGraph::Nodes::iterator i = og->nodes.begin(); i != og->nodes.end(); i++)
         {
@@ -57,119 +150,59 @@ public:
         }
     }
 
-    template <typename OutputGraph>
-    static void ComputeHomology(OutputGraph *og, bool performCoreductions)
+    template <typename SComplexType>
+    static void GetBettiNumbers(SComplexType &complex, Betti &betti, bool updateTimer = false)
     {
-        Complex::Dims dims;
-        Complex::KappaMap kappaMap;
-        GetDimsAndKappaMap(og, dims, kappaMap);
-        Complex complex(3, dims, kappaMap, 1);
-
-        Timer::Update("creating complex");
-
-//        if (performCoreductions)
-//        {
-//            (*CoreductionAlgorithmFactory<Complex, ScalarType>::createDefault(complex))();
-//            Timer::Update("performing coreductions");
-//            MemoryInfo::Print();
-//        }
-//
-//        CRef<HomologySignature<int> > homSignCR = GetHomologySignature(complex);
-//        Timer::Update("computing homology");
-//        std::cout<<homSignCR();
+        typedef capd::complex::BettiNumbers<SComplexType, Scalar, int> BettiNumbersAlg;
+        BettiNumbersAlg alg(complex);
+        betti = alg();
+        if (updateTimer)
+        {
+            Timer::Update("computing homology");
+        }
     }
 
-    template <typename SimplexList>
-    static void ComputeHomology(SimplexList &simplexList, bool performCoreductions)
+    template <typename SComplexType>
+    static void GetBettiNumbersThroughCoreduction(SComplexType& inputComplex, Betti &betti, bool updateTimer = false)
     {
-//        SimplexSComplex complex;
-//        for (typename SimplexList::iterator i = simplexList.begin(); i != simplexList.end(); i++)
-//        {
-//            std::set<int> simplex;
-//            simplex.insert(i->begin(), i->end());
-//            complex.addSimplex(simplex);
-//        }
-//
-//        Timer::Update("creating complex");
-//
-//        if (performCoreductions)
-//        {
-//            (*CoreductionAlgorithmFactory<SimplexSComplex, ScalarType>::createDefault(complex))();
-//            Timer::Update("performing coreductions");
-//            MemoryInfo::Print();
-//        }
-//
-//        CRef<HomologySignature<int> > homSignCR = GetHomologySignature(complex);
-//        Timer::Update("computing homology");
-//        std::cout<<homSignCR();
+        typedef capd::complex::AKQReduceStrategy<SComplexType, SComplex, Scalar>   Strategy;
+        typedef capd::complex::Coreduction<Strategy, Scalar, int>                  Coreduction;
+
+        boost::shared_ptr<Coreduction> coreduction = boost::shared_ptr<Coreduction>(new Coreduction(new Strategy(inputComplex)));
+        (*coreduction)();
+        if (updateTimer)
+        {
+            Timer::Update("performing coreductions");
+            MemoryInfo::Print();
+        }
+
+        typedef capd::complex::BettiNumbers<SComplex, Scalar, int> BettiNumbersAlg;
+        BettiNumbersAlg alg(*coreduction->getStrategy()->getOutputComplex());
+        betti = alg();
+        if (updateTimer)
+        {
+            Timer::Update("computing homology");
+        }
     }
 
-    template <typename SimplexList>
-    static int GetBettiNumber(SimplexList &simplexList, int n)
+    static void PrintBettiNumbers(const Betti& betti)
     {
-//        SimplexSComplex complex;
-//        for (typename SimplexList::iterator i = simplexList.begin(); i != simplexList.end(); i++)
-//        {
-//            std::set<int> simplex;
-//            simplex.insert(i->begin(), i->end());
-//            complex.addSimplex(simplex);
-//        }
-//
-//        (*CoreductionAlgorithmFactory<SimplexSComplex, ScalarType>::createDefault(complex))();
-//        CRef<HomologySignature<int> > homSignCR = GetHomologySignature(complex);
-//        return homSignCR().bettiNumber(n);
+        if (betti.size() == 0)
+        {
+            std::cout<<"H_0 = 0"<<std::endl;
+        }
+        for (size_t i = 0; i < betti.size(); i++)
+        {
+            if (betti[i] > 0)
+            {
+                std::cout<<"H_"<<i<<" = Z^"<<betti[i]<<std::endl;
+            }
+            else
+            {
+                std::cout<<"H_"<<i<<" = 0"<<std::endl;
+            }
+        }
     }
-
-    template <typename SimplexList>
-    static bool IsTrivialHomology(SimplexList &simplexList)
-    {
-//        SimplexSComplex complex;
-//        for (typename SimplexList::iterator i = simplexList.begin(); i != simplexList.end(); i++)
-//        {
-//            std::set<int> simplex;
-//            simplex.insert(i->begin(), i->end());
-//            complex.addSimplex(simplex);
-//        }
-//
-//        CRef<HomologySignature<int> > homSignCR = GetHomologySignature(complex);
-//        return (homSignCR().topDim() < 0 || (homSignCR().topDim() == 0 && homSignCR().bettiNumber(0) == 1));
-    }
-
-    template <typename SimplexList>
-    static bool IsFullyReducible(SimplexList &simplexList)
-    {
-//        SimplexSComplex complex;
-//        for (typename SimplexList::iterator i = simplexList.begin(); i != simplexList.end(); i++)
-//        {
-//            std::set<int> simplex;
-//            simplex.insert(i->begin(), i->end());
-//            complex.addSimplex(simplex);
-//        }
-//
-//        typedef typename CoreductionAlgorithmFactory<SimplexSComplex, ScalarType>::DefaultAlgorithm Coreduction;
-//        boost::shared_ptr<Coreduction> algorithm = CoreductionAlgorithmFactory<SimplexSComplex, ScalarType>::createDefault(complex);
-//        algorithm->setStoreReducedCells(true);
-//        (*algorithm)();
-//
-//        if (complex.size(1) == 0)
-//        {
-//            return ((*algorithm).getExtractedCells().size() == 1);
-//        }
-        return false;
-    }
-
-private:
-
-//    template <typename ComplexType>
-//    static CRef<HomologySignature<int> > GetHomologySignature(ComplexType &complex)
-//    {
-//        typedef typename SComplexFiltrT<ComplexType>::CellFreeModule FreeModuleType;
-//        typedef ReducibleFreeChainComplex<FreeModuleType> ReducibleFreeChainComplexType;
-//
-//        ReducibleFreeChainComplexOverZFromSComplexAlgorithm<ComplexType, ScalarType> rfcBuilder(complex);
-//        CRef<ReducibleFreeChainComplexType> rfcComplexCR = rfcBuilder.template build<ReducibleFreeChainComplexType>();
-//        return HomAlgFunctors<FreeModuleType>::homSignViaAR_Random(rfcComplexCR);
-//    }
 };
 
 #endif	/* REDHOMHELPERS_HPP */

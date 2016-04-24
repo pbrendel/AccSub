@@ -1,4 +1,4 @@
-/* 
+/*
  * File:   ComputationsLocal.hpp
  * Author: Piotr Brendel
  *         piotr.brendel@ii.uj.edu.pl
@@ -15,7 +15,7 @@
 #include "IncidenceGraphHelpers.hpp"
 
 #ifdef ACCSUB_TRACE
-#include "../Helpers/Utils.hpp"
+#include "Utils.hpp"
 #endif
 
 template <typename PartitionGraph>
@@ -35,20 +35,20 @@ public:
         Timer::TimeStamp("ComputationsLocal start");
         Timer::Time start = Timer::Now();
         if (accSubAlgorithm == AccSubAlgorithm::AccSubIG)
-        {    
+        {
             std::cout<<"using AccSubIG"<<std::endl;
         }
         else
         {
             std::cout<<"using AccSubST"<<std::endl;
         }
-#endif    
+#endif
         for (typename Nodes::iterator i = nodes.begin(); i != nodes.end(); i++)
         {
             CreateIncidenceGraph(*i, accSubAlgorithm, accTest);
 #ifdef ACCSUB_TRACE
             Timer::TimeStamp("incidence graph calculated");
-#endif    
+#endif
         }
 #ifdef ACCSUB_TRACE
         Timer::TimeStamp("ComputationsLocal end");

@@ -1,4 +1,4 @@
-/* 
+/*
  * File:   ComputationsParallelMPI.hpp
  * Author: Piotr Brendel
  *         piotr.brendel@ii.uj.edu.pl
@@ -16,14 +16,14 @@
 #include <map>
 
 #ifdef ACCSUB_TRACE
-#include "../Helpers/Utils.hpp"
+#include "Utils.hpp"
 #endif
 
 #ifdef USE_MPI
 #include <mpi.h>
 #include "MPIData.hpp"
 #ifdef DEBUG_MPI
-#include "../Helpers/Utils.hpp"
+#include "Utils.hpp"
 #endif
 #endif
 
@@ -268,7 +268,7 @@ public:
         for (int rank = 1; rank < tasksCount; ++rank)
         {
             MPI_Send(0, 0, MPI_INT, rank, MPI_MY_MEMORY_INFO_TAG, MPI_COMM_WORLD);
-            MPI_Recv(&mem, 1, MPI_INT, rank, MPI_MY_MEMORY_INFO_TAG, MPI_COMM_WORLD, &status);          
+            MPI_Recv(&mem, 1, MPI_INT, rank, MPI_MY_MEMORY_INFO_TAG, MPI_COMM_WORLD, &status);
             MemoryInfo::AddSlavesMemoryInfo(rank, mem);
         }
         MemoryInfo::PrintSlavesMemoryInfo();

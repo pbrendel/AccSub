@@ -1,4 +1,4 @@
-/* 
+/*
  * File:   IncidenceGraphHelpers.hpp
  * Author: Piotr Brendel
  *         piotr.brendel@ii.uj.edu.pl
@@ -13,7 +13,7 @@
 #define	INCIDENCEGRAPHHELPERS_HPP
 
 #ifdef ACCSUB_TRACE
-#include "../Helpers/Utils.hpp"
+#include "Utils.hpp"
 #endif
 
 template <typename IncidenceGraph>
@@ -28,7 +28,7 @@ class IncidenceGraphHelpers
     typedef typename IncidenceGraph::AccSubAlgorithm AccSubAlgorithm;
 
 public:
-    
+
     static IncidenceGraph *Create(SimplexList &simplexList)
     {
 #ifdef ACCSUB_TRACE
@@ -60,7 +60,7 @@ public:
 #endif
         return ig;
     }
-    
+
     static IncidenceGraph *CreateWithBorder(SimplexPtrList &simplexPtrList, const VertsSet &borderVerts)
     {
 #ifdef ACCSUB_TRACE
@@ -132,7 +132,7 @@ public:
 #endif
         return ig;
     }
-    
+
     static IncidenceGraph *CreateAndCalculateAccSubIGWithBorder(SimplexList &simplexList, const VertsSet &borderVerts, AccTest *accTest)
     {
 #ifdef ACCSUB_TRACE
@@ -166,7 +166,7 @@ public:
 #endif
         return ig;
     }
-    
+
     static IncidenceGraph *CreateAndCalculateAccSubST(SimplexList &simplexList, AccTest *accTest)
     {
 #ifdef ACCSUB_TRACE
@@ -204,7 +204,7 @@ public:
 #endif
         return ig;
     }
-    
+
     static IncidenceGraph *CreateAndCalculateAccSubSTWithBorder(SimplexList &simplexList, const VertsSet &borderVerts, AccTest *accTest)
     {
 #ifdef ACCSUB_TRACE
@@ -225,7 +225,7 @@ public:
 #endif
         return ig;
     }
-    
+
     static IncidenceGraph *CreateAndCalculateAccSubSTWithBorder(SimplexPtrList &simplexPtrList, const VertsSet &borderVerts, AccTest *accTest)
     {
 #ifdef ACCSUB_TRACE

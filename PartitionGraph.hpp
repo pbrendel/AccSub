@@ -14,14 +14,14 @@
 #include <cmath> // ceil
 
 #ifdef ACCSUB_TRACE
-#include "../Helpers/Utils.hpp"
+#include "Utils.hpp"
 #endif
 
 template <typename IncidenceGraphType, template <typename> class PrepareDataPolicy, template <typename> class ComputationsPolicy>
 class PartitionGraphT
 {
 public:
-   
+
     typedef IncidenceGraphType IncidenceGraph;
     typedef typename IncidenceGraph::Vertex Vertex;
     typedef typename IncidenceGraph::Simplex Simplex;
@@ -54,7 +54,7 @@ public:
             ig = 0;
             this->simplexPtrList = simplexPtrList;
         }
-        
+
         ~Node()
         {
             delete ig;
@@ -101,10 +101,10 @@ public:
             nodeB = nb;
         }
     };
-    
+
     typedef std::vector<Node *> Nodes;
     typedef std::vector<Edge *> Edges;
-    
+
     PartitionGraphT(SimplexList &simplexList, int packsCount, AccSubAlgorithm accSubAlgorithm, AccTest *accTest)
     {
         this->incidenceGraph = new IncidenceGraph(Simplex::GetSimplexListDimension(simplexList));
@@ -168,14 +168,14 @@ public:
     Nodes nodes;
     Edges edges;
     Nodes isolatedNodes;
-    
+
 private:
 
     IncidenceGraph              *incidenceGraph;
     int                         initialSize;
     AccSubAlgorithm             accSubAlgorithm;
     AccTest                     *accTest;
-    
+
     void DivideData(SimplexList &simplexList, int packSize)
     {
         Node *currentNode = new Node();
@@ -274,7 +274,7 @@ private:
             incidenceGraph->edges.insert(incidenceGraph->edges.end(), (*i)->ig->edges.begin(), (*i)->ig->edges.end());
             (*i)->ig->edges.clear();
         }
-        
+
         for (typename Nodes::iterator i = isolatedNodes.begin(); i != isolatedNodes.end(); i++)
         {
             incidenceGraph->nodes.insert(incidenceGraph->nodes.end(), (*i)->ig->nodes.begin(), (*i)->ig->nodes.end());
