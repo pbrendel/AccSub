@@ -12,7 +12,9 @@
 #include "Utils.hpp"
 
 #include <limits>
+#ifdef USE_GETRUSAGE
 #include <sys/resource.h>
+#endif
 
 #ifdef USE_MPI
 #include <mpi.h>
@@ -104,17 +106,23 @@ int MemoryInfo::maxUsage = 0;
 
 void MemoryInfo::Print()
 {
+#ifdef USE_GETRUSAGE    
     int usage = GetUsage();
     std::cout<<"memory usage: "<<usage<<" MB    max: "<<GetMaxUsage()<<std::endl;
+#endif
 }
 
 int MemoryInfo::GetUsage()
 {
+#ifdef USE_GETRUSAGE    
     struct rusage usage;
     getrusage(RUSAGE_SELF, &usage);
     int mu = usage.ru_maxrss >> 10;
     maxUsage = (mu > maxUsage) ? mu : maxUsage;
     return mu;
+#else
+    return 0;
+#endif
 }
 
 int MemoryInfo::GetMaxUsage()
@@ -129,6 +137,7 @@ void MemoryInfo::AddSlavesMemoryInfo(int rank, int mem)
 
 void MemoryInfo::PrintSlavesMemoryInfo()
 {
+#ifdef USE_GETRUSAGE
     int count = 0;
     int total = 0;
     int min = std::numeric_limits<int>::max();
@@ -150,6 +159,7 @@ void MemoryInfo::PrintSlavesMemoryInfo()
         std::cout<<"max: "<<max<<std::endl;
         std::cout<<"avg: "<<(total / count)<<std::endl;
     }
+#endif
 }
 
 void MemoryInfo::ClearSlavesMemoryInfo()
