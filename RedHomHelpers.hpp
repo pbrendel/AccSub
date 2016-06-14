@@ -44,7 +44,7 @@ class RedHomHelpers
 public:
 
     template <typename OutputGraph>
-    static void ComputeBettiNumbers(OutputGraph *og, bool performCoreductions)
+    static void ComputeBettiNumbers(OutputGraph *og, bool performCoreductions, bool performAllReductions)
     {
         SComplex::Dims dims;
         SComplex::KappaMap kappaMap;
@@ -55,18 +55,18 @@ public:
         Betti betti;
         if (performCoreductions)
         {
-            RedHomHelpers::GetBettiNumbersThroughCoreduction(complex, betti, true);
+            RedHomHelpers::GetBettiNumbersThroughCoreduction(complex, betti, performAllReductions, true);
         }
         else
         {
-            RedHomHelpers::GetBettiNumbers(complex, betti, true);
+            RedHomHelpers::GetBettiNumbers(complex, betti, performAllReductions, true);
         }
 
         RedHomHelpers::PrintBettiNumbers(betti);
     }
 
     template <typename SimplexList>
-    static void ComputeBettiNumbers(SimplexList &simplexList, bool performCoreductions)
+    static void ComputeBettiNumbers(SimplexList &simplexList, bool performCoreductions, bool performAllReductions)
     {
         SimplexSComplex complex;
         RedHomHelpers::CreateSimplexSComplex(simplexList, complex);
@@ -75,11 +75,11 @@ public:
         Betti betti;
         if (performCoreductions)
         {
-            RedHomHelpers::GetBettiNumbersThroughCoreduction(complex, betti, true);
+            RedHomHelpers::GetBettiNumbersThroughCoreduction(complex, betti, performAllReductions, true);
         }
         else
         {
-            RedHomHelpers::GetBettiNumbers(complex, betti, true);
+            RedHomHelpers::GetBettiNumbers(complex, betti, performAllReductions, true);
         }
 
         RedHomHelpers::PrintBettiNumbers(betti);
@@ -91,7 +91,7 @@ public:
         SimplexSComplex complex;
         RedHomHelpers::CreateSimplexSComplex(simplexList, complex);
         Betti betti;
-        RedHomHelpers::GetBettiNumbers(complex, betti, false);
+        RedHomHelpers::GetBettiNumbers(complex, betti, true, false);
         return betti[n];
     }
 
@@ -101,7 +101,7 @@ public:
         SimplexSComplex complex;
         RedHomHelpers::CreateSimplexSComplex(simplexList, complex);
         Betti betti;
-        RedHomHelpers::GetBettiNumbers(complex, betti, false);
+        RedHomHelpers::GetBettiNumbers(complex, betti, true, false);
         return (betti.size() == 0 || (betti.size() == 1 && betti[0] == 1));
     }
 
@@ -151,10 +151,10 @@ private:
     }
 
     template <typename SComplexType>
-    static void GetBettiNumbers(SComplexType &complex, Betti &betti, bool updateTimer = false)
+    static void GetBettiNumbers(SComplexType &complex, Betti &betti, bool performAllReductions, bool updateTimer)
     {
         typedef capd::complex::BettiNumbers<SComplexType, Scalar, int> BettiNumbersAlg;
-        BettiNumbersAlg alg(complex);
+        BettiNumbersAlg alg(complex, performAllReductions);
         betti = alg();
         if (updateTimer)
         {
@@ -163,7 +163,7 @@ private:
     }
 
     template <typename SComplexType>
-    static void GetBettiNumbersThroughCoreduction(SComplexType& inputComplex, Betti &betti, bool updateTimer = false)
+    static void GetBettiNumbersThroughCoreduction(SComplexType& inputComplex, Betti &betti, bool performAllReductions, bool updateTimer)
     {
         typedef capd::complex::AKQReduceStrategy<SComplexType, SComplex, Scalar>   Strategy;
         typedef capd::complex::Coreduction<Strategy, Scalar, int>                  Coreduction;
@@ -177,7 +177,7 @@ private:
         }
 
         typedef capd::complex::BettiNumbers<SComplex, Scalar, int> BettiNumbersAlg;
-        BettiNumbersAlg alg(*coreduction->getStrategy()->getOutputComplex());
+        BettiNumbersAlg alg(*coreduction->getStrategy()->getOutputComplex(), performAllReductions);
         betti = alg();
         if (updateTimer)
         {
