@@ -12,7 +12,9 @@
 #include "Utils.hpp"
 
 #include <limits>
+#ifdef LINUX
 #include <sys/resource.h>
+#endif
 
 #ifdef USE_MPI
 #include <mpi.h>
@@ -110,11 +112,15 @@ void MemoryInfo::Print()
 
 int MemoryInfo::GetUsage()
 {
+#ifdef LINUX
     struct rusage usage;
     getrusage(RUSAGE_SELF, &usage);
     int mu = usage.ru_maxrss >> 10;
     maxUsage = (mu > maxUsage) ? mu : maxUsage;
     return mu;
+#else
+    return 0;
+#endif
 }
 
 int MemoryInfo::GetMaxUsage()
